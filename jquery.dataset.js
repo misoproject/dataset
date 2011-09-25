@@ -226,6 +226,7 @@ dataset.toArray();
 => [ [1, "Bob"], [2, "Sallie"] ...];
 
 dataset.toTabular("\t");
+//default to using the delimiter specified on init?
 
 => "1\tBob\n2\tSallie";
 
