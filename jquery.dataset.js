@@ -27,7 +27,10 @@
   delimiter : "String - a delimiter string that is used in a tabular datafile",
   data : "Object - an actual javascript object that already contains the data",
   table : "Element - a DOM table that contains the data",
-  format : "String - optional file format specification, otherwise we'll try to guess"
+  format : "String - optional file format specification, otherwise we'll try to guess",
+  recursive: "Boolean - if true build nested arrays of objects as datasets",
+  strict: "Whether to expect the json in our format or whether to interpret as raw array of objects, default false",
+  transform: "function to apply to JSON before internal interpretation, optional"
 }
 
 // Using a url - json:
@@ -108,6 +111,10 @@ $.dataset.datatypes.STRING
 $.dataset.datatypes.BOOLEAN
 $.dataset.datatypes.ARRAY
 $.dataset.datatypes.OBJECT
+$.dataset.datatypes.DATASET
+//explicit support for nested datasets could allow for a variety of smarter operations
+//with a touch more magic than simple OBJECT or ARRAY would allow. Nested arrays
+//can be recursively be built as datasets when passed in.
 
 // getting all columns:
 dataset.columns();
