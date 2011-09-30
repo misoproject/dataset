@@ -202,11 +202,11 @@ dataset.sortBy(function(a,b) {
 
 //Filtering / Querying
 //Do these return a partial version of the dataset?
-dataset.filterColumns(function(column) {
+dataset.columns().filter(function(column) {
   return column.isNumber();
 })
 
-dataset.filterRows(function(row) {
+dataset.rows().filter(function(row) {
   return (row('year') > 2000);
 })
 
