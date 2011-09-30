@@ -56,6 +56,9 @@ var datatable = $('table#datatable'),
 // what metadata about columns do we want here?
 dataset.column('GER.1.M').metadata
 => {"definition": "Gross Enrolment Ratio for male students, see http://..."}
+dataset.column('GER.1.M').metadata({
+  definition: "Gross Enrolment Ratio for male students, see UNESCO Doc 3.23.332"
+});
 
 // dataset types
 // -------------
