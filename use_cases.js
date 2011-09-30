@@ -1,6 +1,16 @@
 //UNESCO Data
 var dataset = $.dataset({url : '/data/unesco_primary_enrolment.json'});
 
+//build list of male enrolment by year, highlighting modeled data
+var list = [];
+dataset.rows().each(function(row) {
+  var klass = '';
+  if (row.metadata && row.metadata.estimate) {
+    klass = 'estimate'
+  }
+  list.push( "<li class="+klass+">"+row('year')+": "+row('E.1.M')+"</li>" );
+}
+
 //ISO Data
 var dataset = $.dataset({url : '/data/iso_3166.json', strict: true});
 
