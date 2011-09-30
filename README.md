@@ -22,41 +22,53 @@ Possible event types:
 * Insert - ?
 
 I think we're going to need to figure out a good way to subscribe to these. I started by just having dataset.column(3).change(callback), but that makes way less sense for "delete" for example.
- 
-## Pagination:
-
-Do we want to add any pagination support? This complicates math function computation that require the entire dataset.
 
 ## File formats:
-
-### XML
-
-We don't particularly feel the need to support XML at the moment. Any arguments against this?
 
 ### GeoJSON
 
 Need to sort out how to best support geo data in this lib.
 
-### Time Series
 
-Need to sort out of anything specific needs to happen to support time series
-* A column could be of dataset type
-* anything else?
+
+# Resolved:
+
+### Time Series
 
 ## Transforms
 
-Should transforms be stored on a column and then applied to newly inserted data? I (irene) say yes, with an optional flag that prevents that for happening on a set call.
+Transforms will modify underlying data. We'll add a flag that will let you clone the column with new values?
+Also not going to re-run transforms on insert. Too complicated if depends on rest of dataset.
+
+<del>Should transforms be stored on a column and then applied to newly inserted data? I (irene) say yes, with an optional flag that prevents that for happening on a set call.
 
 ## Constraints on Column insert
-Having the ability to specify constraint functions on a column - is that necessary? are we going to have people use the dataset as a writable object as much as a readable object?
+Having the ability to specify constraint functions on a column - is that necessary? are we going to have people use the dataset as a writable object as much as a readable object?</del>
 
+Too complicated for first release. We'll think about this as we go along.
+
+<del>Need to sort out of anything specific needs to happen to support time series
+* A column could be of dataset type
+* anything else?</del>
+
+## Pagination:
+
+No pagination support in release 1.0.
+<del>Do we want to add any pagination support? This complicates math function computation that require the entire dataset.</del>
+
+## File formats:
+
+### XML
+No XML Support in release 1.0.
+<de>We don't particularly feel the need to support XML at the moment. </del>
+  
 ## Query
+Going with the following model:
 
-Should people be able to `query` the dataset? I feel like they should probably have a way of finding all rows that match a certain filter right? How about:
-        
-    // basically, for each row, see if it passes this function.
-    dataset.query(function(row) {
-      // check if a specific row matches a certain requirement. If it does, return true, otherwise return false
-    })
+dataset.columns().filter("onlyNumbers", function(column) {
+  return column.isNumber();
+})
 
-This makes me realize we probably need to have the `row` actually be some kind of object as well, otherwise, how do you reference a particular column of a row? What do you think?
+dataset.rows().filter("thisDecade", function(row) {
+  return (row('year') > 2000);
+})

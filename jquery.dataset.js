@@ -174,6 +174,11 @@ dataset.column(3).std();
 
 => 0.4
 
+// moving average, with subset 5.
+dataset.column(3).movingAvg(5);
+
+=> [1, 2, 4];
+
 // what other math operations might be worth while here?
 
 // column mapping:
@@ -181,7 +186,7 @@ dataset.column(3).std();
 
 // allows one to map a column based on the value it has.
 // Note2: Transformation function needs to be stored on column so that inserted data can be transformed appropriatly - OR SHOULD IT?! < TODO
-dataset.column(3).map(function(value) {
+dataset.column(3).transform(function(value) {
   
   // this modifier accesses column. Should it access field?
   this.setType($.dataset.datatypes.BOOLEAN);
@@ -193,6 +198,9 @@ dataset.column(3).map(function(value) {
     return false;
   }
 });
+
+// will return a copy of the column and will NOT modify the actual raw data?
+dataset.column(3).transform(someFunction, { clone : true });
 
 
 //Sorting - allow the dataset to be sorted by a function
