@@ -30,7 +30,7 @@
   format : "String - optional file format specification, otherwise we'll try to guess",
   recursive: "Boolean - if true build nested arrays of objects as datasets",
   strict: "Whether to expect the json in our format or whether to interpret as raw array of objects, default false",
-  transform: "function to apply to JSON before internal interpretation, optional"
+  parse: "function to apply to JSON before internal interpretation, optional"
 }
 
 // Using a url - json:
