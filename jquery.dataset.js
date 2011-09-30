@@ -197,6 +197,16 @@ dataset.sortBy(function(a,b) {
   return (a['total_cost'] > b['total_cost']);
 });
 
+//Filtering / Querying
+//Do these return a partial version of the dataset?
+dataset.filterColumns(function(column) {
+  return column.isNumber();
+})
+
+dataset.filterRows(function(row) {
+  return (row('year') > 2000);
+})
+
 // retrieve any transform function applied to a column:
 dataset.column(3).getTransform();
 
@@ -232,7 +242,7 @@ if csv/table:
 
 dataset.toJSON();
 
-=> [ { id: 1, name: "Bob"}, { id: 2, name: "Sallie" }...];
+=> //Internal/strict format?
 
 dataset.toArray();
 
