@@ -173,14 +173,12 @@ dataset.column(3).std();
 
 // what other math operations might be worth while here?
 
-// column transform:
+// column mapping:
 // -----------------
 
-// allows one to transform a column based on the value it has.
-// Note: not sure if transform is the proper function name. Alex pointed out this is just a "map" and
-// it may make more sense to have a map.
+// allows one to map a column based on the value it has.
 // Note2: Transformation function needs to be stored on column so that inserted data can be transformed appropriatly - OR SHOULD IT?! < TODO
-dataset.column(3).transform(function(value) {
+dataset.column(3).map(function(value) {
   
   // this modifier accesses column. Should it access field?
   this.setType($.dataset.datatypes.BOOLEAN);
