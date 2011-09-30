@@ -191,6 +191,12 @@ dataset.column(3).transform(function(value) {
   }
 });
 
+
+//Sorting - allow the dataset to be sorted by a function
+dataset.sortBy(function(a,b) {
+  return (a['total_cost'] > b['total_cost']);
+});
+
 // retrieve any transform function applied to a column:
 dataset.column(3).getTransform();
 
