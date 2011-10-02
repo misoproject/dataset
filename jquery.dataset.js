@@ -124,6 +124,10 @@ $.dataset.datatypes.DATASET
 // getting all columns:
 dataset.columns();
 
+// getting a number of columns
+// would return the same type of object as dataset.columns.filter
+dataset.columns('name','otherName')
+
 => [{ name : "Column1", type: "number|string|boolean|array|object", position: 0 ... }, ... ] //any other types?
 
 // getting specific column:
