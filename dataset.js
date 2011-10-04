@@ -54,9 +54,9 @@ var datatable = $('table#datatable'),
 // ---------------
 
 // what metadata about columns do we want here?
-dataset.column('GER.1.M').metadata
+dataset.columns('GER.1.M').metadata
 => {"definition": "Gross Enrolment Ratio for male students, see http://..."}
-dataset.column('GER.1.M').metadata({
+dataset.columns('GER.1.M').metadata({
   definition: "Gross Enrolment Ratio for male students, see UNESCO Doc 3.23.332"
 });
 
@@ -88,24 +88,38 @@ $.dataset.types.DOMTABLE
 // TODO: what should the callback take here? I feel like it needs old value and new value but it also
 // needs to know what the position of that was and I don't feel like it needs to also take a column and row
 // what do you think alex?
-dataset.change(function(??) {
+
+// event object:
+event.delta = returns the formats below.
+
+// cell delta:
+// { row : 3, column : 4, oldValue: { value : 12 } , newValue : { value : 14 }}
+
+// column / row / dataset delta
+[{ row : 3, column: 4, oldValue: { value : 12 } , newValue : { value : 14 }}, { row : 3, column: 4, oldValue: { value : 12 } , newValue : { value : 14 }} ...]
+
+dataset.push(); // combines the last deltas since preious push into a single delta array
+dataset.pop(); // undoes the last set of deltas
+
+
+dataset.change(function(event) {
   // do things here on dataset change
 });
 
 // 2. On Column
-data.column(3).change(function(??) {
-  
-});
+data.columns(3).change(function(event) {});
 
 // 3. On Row
-data.row(12).change(function(??) {
-  
-});
+data.rows(12).change(function(event) {});
 
 // 4. On Field
-dataset.column(3).row(4).change(function(oldValue, newValue) {
+dataset.columns(3).rows(4).change(event) {
   // do things here on field value change
 });
+
+also available events:
+// Not doing this for now until we need it? .delete
+.create
 
 // columns
 // --------
@@ -131,42 +145,44 @@ dataset.columns('name','otherName')
 => [{ name : "Column1", type: "number|string|boolean|array|object", position: 0 ... }, ... ] //any other types?
 
 // getting specific column:
-dataset.column(3);
-dataset.column("name");
+dataset.columns(3);
+dataset.columns("name");
 
 => { name: "Column5", type: "number", position: 3 ... };
 
 // typechecking
-dataset.column(3).isNumber();
-dataset.column(3).isString();
-dataset.column(3).isBoolean();
-dataset.column(3).isArray();
-dataset.column(3).isObject();
+dataset.columns(3).isNumber();
+dataset.columns(3).isString();
+dataset.columns(3).isBoolean();
+dataset.columns(3).isArray();
+dataset.columns(3).isObject();
 
 // type setting
-dataset.column(3).setType($.dataset.datatypes.NUMBER);
+dataset.columns(3).setType($.dataset.datatypes.NUMBER);
 // This will result in the column being iterated over and converted appropriately.
+
+// TODO: need to define a row object, a column object
 
 // math:
 // -----------------------
 // Note: when calling a math function on a non numeric column, the result will be NaN.
 
-dataset.column(3).min();
+dataset.columns(3).min();
 
 => 3.21 
 
-dataset.column(3).max();
+dataset.columns(3).max();
 
 => 4.2
 
-dataset.column(3).mean();
+dataset.columns(3).mean();
 
 => 4
 
-dataset.column(3).mode();
+dataset.columns(3).mode();
 
 // frequency table
-dataset.column(3).freq();
+dataset.columns(3).freq();
 
 =>[{ 
     value : 12,
@@ -174,23 +190,23 @@ dataset.column(3).freq();
   }, ...];
 
 // standard deviation  
-dataset.column(3).std();
+dataset.columns(3).std();
 
 => 0.4
 
 // moving average, with subset 5.
-dataset.column(3).movingAvg(5);
+dataset.columns(3).movingAvg(5);
 
 => [1, 2, 4];
 
 // what other math operations might be worth while here?
 
-// column mapping:
+// column transformation:
 // -----------------
 
 // allows one to map a column based on the value it has.
 // Note2: Transformation function needs to be stored on column so that inserted data can be transformed appropriatly - OR SHOULD IT?! < TODO
-dataset.column(3).transform(function(value) {
+dataset.columns(3).transform(function(value) {
   
   // this modifier accesses column. Should it access field?
   this.setType($.dataset.datatypes.BOOLEAN);
@@ -203,9 +219,24 @@ dataset.column(3).transform(function(value) {
   }
 });
 
-// will return a copy of the column and will NOT modify the actual raw data?
-dataset.column(3).transform(someFunction, { clone : true });
+dataset.columns.add({ name: "some new column!", metdata: {}, type: "String" }, dataset.columns(3).transform(myTransform, { clone: true }));
 
+dataset.columns.add( ?? );
+
+dataset.rows.add( ?? );
+
+// will return a copy of the column and will NOT modify the actual raw data?
+// does transform trigger the change event?
+//optionally return an object to modify metadata, otherwise return value assumed to be value
+dataset.columns(3).transform(someFunction, { clone : true });
+
+data.columns(3).change(function(event) {
+   listDisplay.update(event.delta);    
+});
+
+dataset.columns(3).transform(function(cell) {
+    return Math.sin(cell.value); 
+});
 
 //Sorting - allow the dataset to be sorted by a function
 dataset.sortBy(function(a,b) {
@@ -219,16 +250,16 @@ dataset.columns().filter(function(column) {
 })
 
 dataset.rows().filter(function(row) {
-  return (row('year') > 2000);
+  return (rows('year') > 2000);
 })
 
 // retrieve any transform function applied to a column:
-dataset.column(3).getTransform();
+dataset.columns(3).getTransform();
 
 => function() { ... }
 
 // check if a column has a transform function applied to it.
-dataset.column(3).hasTransform();
+dataset.columns(3).hasTransform();
 
 // rows
 // ----
@@ -273,16 +304,16 @@ dataset.toTabular("\t");
 // value access:
 // -------------
 
-dataset.column(3).row(2);
+dataset.columns(3).rows(2);
 
-=> "Bob"
+=> {value: "Bob", metadata: {}}
 
-dataset.column("name").row(2);
+dataset.columns("name").rows(2);
 
-=> "Bob"
+=> {value: "Bob", metadata: {}}
 
 // setting value: 
-dataset.column("name").row(2).set(12);
+dataset.columns("name").rows(2).set({ 'value' : 12, metadata: {} }, {silent: true}); //won't trigger a change event.
 
 // this should throw a type check error based on the column type. It could also just return undefined instead if we don't want to throw errors - any preference here?
 
@@ -290,3 +321,4 @@ dataset.column("name").row(2).set(12);
 // Useful codes from maxogden:
 https://github.com/maxogden/recline/blob/master/attachments/script/costco-csv-worker.js
 https://github.com/maxogden/recline/blob/master/app.js#L32
+
