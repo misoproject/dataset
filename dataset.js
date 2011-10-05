@@ -102,24 +102,26 @@ dataset.push(); // combines the last deltas since preious push into a single del
 dataset.pop(); // undoes the last set of deltas
 
 
-dataset.change(function(event) {
+dataset.bind('change', function(event) {
   // do things here on dataset change
 });
 
 // 2. On Column
-data.columns(3).change(function(event) {});
+data.columns(3).bind('change', function(event) {});
 
 // 3. On Row
-data.rows(12).change(function(event) {});
+data.rows(12).bind('change', function(event) {});
 
 // 4. On Field
-dataset.columns(3).rows(4).change(event) {
+dataset.columns(3).rows(4).bind('change', function(event) {
   // do things here on field value change
 });
 
-also available events:
-// Not doing this for now until we need it? .delete
-.create
+// Column / Row add/remove events
+dataset.columns.bind('add', function(column) {});
+dataset.columns.bind('remove', function(column) {});
+dataset.rows.bind('add', function(row) {});
+dataset.rows.bind('remove', function(row) {});
 
 // columns
 // --------
