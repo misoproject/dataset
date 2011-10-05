@@ -8,12 +8,6 @@
   tabular - delimited (specified delimiter)
   json    - array of objects
   dom table - A table object
-
-  Any other types? I don't want to play with XML but if needbe I can be persuaded
-
-
-  TODO:
-    Interpolation 
     
 */
 
