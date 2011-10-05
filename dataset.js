@@ -82,46 +82,69 @@ $.dataset.types.DOMTABLE
 // rows: \n 
 // anything else?
 
-// event types:
-// change - value change
-// 1. On Entire Dataset
-// TODO: what should the callback take here? I feel like it needs old value and new value but it also
-// needs to know what the position of that was and I don't feel like it needs to also take a column and row
-// what do you think alex?
-
-// event object:
-event.delta = returns the formats below.
+// dataset transformations
+// -----------------------
 
 // cell delta:
-// { row : 3, column : 4, oldValue: { value : 12 } , newValue : { value : 14 }}
+{ row : 3, column : 4, oldValue: { value : 12 } , newValue : { value : 14 }}
 
 // column / row / dataset delta
-[{ row : 3, column: 4, oldValue: { value : 12 } , newValue : { value : 14 }}, { row : 3, column: 4, oldValue: { value : 12 } , newValue : { value : 14 }} ...]
+// a collection of cell delta operations.
+[{ row : 3, column: 4, oldValue: { value : 12 } , newValue : { value : 14 }}, 
+ { row : 3, column: 4, oldValue: { value : 12 } , newValue : { value : 14 }} ...]
 
-dataset.push(); // combines the last deltas since preious push into a single delta array
-dataset.pop(); // undoes the last set of deltas
+// when modifying the dataset, it's important to preserve the original dataset and to have
+// a way to revert any transformation of the data. To do so, before modifying the dataset
+// one can call "push" on it, which will allocate a new diff slot. Every subsequent change 
+// will be put into that slot.
+dataset.push();
 
+// When wanting to revert the cumulative changes since the last push, one can call pop
+// which will undo whatever was last put on the queue.
+dataset.pop(); 
 
-dataset.bind('change', function(event) {
-  // do things here on dataset change
-});
+// TODO: Do transformations that happen without having called push modify the dataset?
 
-// 2. On Column
+// Events
+// -------
+
+// event object:
+// Has event type;
+event.type = ["change" | "add" | "remove"];
+
+// Has delta
+// See the dataset transformations section above. 
+// Delta will either be a single delta object or an array of deltas.
+event.delta
+
+// CHANGE event
+// gets triggered when the value changes.
+
+// 1. Subscribe on entire dataset:
+dataset.bind('change', function(event) {});
+
+// 2. Subscribe on Column
 data.columns(3).bind('change', function(event) {});
 
-// 3. On Row
+// 3. Subscribe on Row
 data.rows(12).bind('change', function(event) {});
 
-// 4. On Field
-dataset.columns(3).rows(4).bind('change', function(event) {
-  // do things here on field value change
-});
+// 4. Subscribe on Field
+dataset.columns(3).rows(4).bind('change', function(event) {});
 
 // Column / Row add/remove events
-dataset.columns.bind('add', function(column) {});
+
+// REMOVE event
+// gets triggered on row or column remove
+
 dataset.columns.bind('remove', function(column) {});
-dataset.rows.bind('add', function(row) {});
 dataset.rows.bind('remove', function(row) {});
+
+// ADD event
+// gets triggered on row or column add
+dataset.rows.bind('add', function(row) {});
+dataset.columns.bind('add', function(column) {});
+
 
 // columns
 // --------
