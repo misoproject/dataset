@@ -221,11 +221,18 @@ dataset.columns(3).transform(function(value) {
   }
 });
 
-dataset.columns.add({ name: "some new column!", metdata: {}, type: "String" }, dataset.columns(3).transform(myTransform, { clone: true }));
+dataset.columns(3).transform(myTransform, { clone: true, silent: true }));
 
-dataset.columns.add( ?? );
+// Adding Rows
+dataset.rows.add( [ 15,true,'maybe',{value: 15, metadata: test} ] )
+dataset.rows.add( {total: 15, paid: true, notes: 'maybe', tax: {value: 15, metadata: test} ] )
 
-dataset.rows.add( ?? );
+// Addding columns
+dataset.columns.add( { name: "some new column!", metdata: {}, type: "String" }, data )
+
+// Removing columns and rows
+dataset.columns(3).remove()
+dataset.rows(3).remove()
 
 // will return a copy of the column and will NOT modify the actual raw data?
 // does transform trigger the change event?
