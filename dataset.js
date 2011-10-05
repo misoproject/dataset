@@ -207,7 +207,6 @@ dataset.columns(3).movingAvg(5);
 // -----------------
 
 // allows one to map a column based on the value it has.
-// Note2: Transformation function needs to be stored on column so that inserted data can be transformed appropriatly - OR SHOULD IT?! < TODO
 dataset.columns(3).transform(function(value) {
   
   // this modifier accesses column. Should it access field?
@@ -221,6 +220,9 @@ dataset.columns(3).transform(function(value) {
   }
 });
 
+// Passing in clone will return a new column without modifying the original.
+// New column won't be appended to dataset.
+// Passing silent true, will not trigger change events.
 dataset.columns(3).transform(myTransform, { clone: true, silent: true }));
 
 // Adding Rows
@@ -322,4 +324,3 @@ dataset.columns("name").rows(2).set({ 'value' : 12, metadata: {} }, {silent: tru
 // Useful codes from maxogden:
 https://github.com/maxogden/recline/blob/master/attachments/script/costco-csv-worker.js
 https://github.com/maxogden/recline/blob/master/app.js#L32
-
