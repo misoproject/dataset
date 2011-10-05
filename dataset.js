@@ -1,6 +1,6 @@
 /*
 
-  Spec for a dataset management jquery plugin.
+  Spec for a dataset management plugin.
   The plugin will provide an object that can be queried.
   
 
