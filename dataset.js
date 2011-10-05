@@ -155,25 +155,37 @@ $.dataset.datatypes.STRING
 $.dataset.datatypes.BOOLEAN
 $.dataset.datatypes.ARRAY
 $.dataset.datatypes.OBJECT
+
+// Explicit support for nested datasets could allow for a variety of smarter operations
+// with a touch more magic than simple OBJECT or ARRAY would allow. Nested arrays
+// can be recursively be built as datasets when passed in.
 $.dataset.datatypes.DATASET
-//explicit support for nested datasets could allow for a variety of smarter operations
-//with a touch more magic than simple OBJECT or ARRAY would allow. Nested arrays
-//can be recursively be built as datasets when passed in.
 
 // getting all columns:
 dataset.columns();
 
-// getting a number of columns
-// would return the same type of object as dataset.columns.filter
-dataset.columns('name','otherName')
-
-=> [{ name : "Column1", type: "number|string|boolean|array|object", position: 0 ... }, ... ] //any other types?
-
 // getting specific column:
 dataset.columns(3);
-dataset.columns("name");
+dataset.columns("Column1");
 
-=> { name: "Column5", type: "number", position: 3 ... };
+=> { name : "Column1", 
+      type: "number|string|boolean|array|object|dataset", 
+      position: 3,
+      metadata : {} ... }
+
+// getting a number of columns
+// would return the same type of object as dataset.columns.filter
+dataset.columns('Column1','Column2')
+
+=> [{ name : "Column1", 
+      type: "number|string|boolean|array|object|dataset", 
+      position: 0,
+      metadata : {} ... },
+    { name : "Column2", 
+      type: "number|string|boolean|array|object|dataset", 
+      position: 3,
+      metadata : {} ... } 
+    ...]
 
 // typechecking
 dataset.columns(3).isNumber();
@@ -186,9 +198,7 @@ dataset.columns(3).isObject();
 dataset.columns(3).setType($.dataset.datatypes.NUMBER);
 // This will result in the column being iterated over and converted appropriately.
 
-// TODO: need to define a row object, a column object
-
-// math:
+// column math:
 // -----------------------
 // Note: when calling a math function on a non numeric column, the result will be NaN.
 
@@ -224,12 +234,14 @@ dataset.columns(3).movingAvg(5);
 
 => [1, 2, 4];
 
-// what other math operations might be worth while here?
+// TODO: what other math operations might be worth while here?
 
 // column transformation:
-// -----------------
+// ---------------------
 
-// allows one to map a column based on the value it has.
+// Allows one to modify a column based on the value it has.
+// Without any flags, this is a destructive operation in that 
+// it will alter the column being transformed.
 dataset.columns(3).transform(function(value) {
   
   // this modifier accesses column. Should it access field?
@@ -246,11 +258,19 @@ dataset.columns(3).transform(function(value) {
 // Passing in clone will return a new column without modifying the original.
 // New column won't be appended to dataset.
 // Passing silent true, will not trigger change events.
-dataset.columns(3).transform(myTransform, { clone: true, silent: true }));
+dataset.columns(3).transform(
+  myTransformFunction, { 
+    clone:  true, 
+    silent: true 
+  }
+));
 
 // Adding Rows
-dataset.rows.add( [ 15,true,'maybe',{value: 15, metadata: test} ] )
-dataset.rows.add( {total: 15, paid: true, notes: 'maybe', tax: {value: 15, metadata: test} ] )
+// Array of values in order:
+dataset.rows.add( [ 15, true, 'maybe', {value: 15, metadata: test} ] )
+
+// JSON object that corresponds to a single row:
+dataset.rows.add( { total: 15, paid: true, notes: 'maybe', tax: { value: 15, metadata: test } ] )
 
 // Addding columns
 dataset.columns.add( { name: "some new column!", metdata: {}, type: "String" }, data )
@@ -259,38 +279,28 @@ dataset.columns.add( { name: "some new column!", metdata: {}, type: "String" }, 
 dataset.columns(3).remove()
 dataset.rows(3).remove()
 
-// will return a copy of the column and will NOT modify the actual raw data?
-// does transform trigger the change event?
-//optionally return an object to modify metadata, otherwise return value assumed to be value
-dataset.columns(3).transform(someFunction, { clone : true });
-
-data.columns(3).change(function(event) {
-   listDisplay.update(event.delta);    
-});
-
-dataset.columns(3).transform(function(cell) {
-    return Math.sin(cell.value); 
-});
-
-//Sorting - allow the dataset to be sorted by a function
-dataset.sortBy(function(a,b) {
+// Sorting
+// Allow the dataset to be sorted by a function. It takes two
+// rows?
+dataset.sortBy( function(a, b) {
   return (a['total_cost'] > b['total_cost']);
 });
 
 //Filtering / Querying
 //Do these return a partial version of the dataset?
-dataset.columns.filter(function(column) {
+dataset.columns.filter( function(column) {
   return column.isNumber();
-})
+});
 
 dataset.rows.filter(function(row) {
   return (rows('year') > 2000);
-})
+});
 
 // rows
 // ----
 
-// get all rows - returns rows in what format? Native format of dataset? Should this be consistent?
+// get all rows 
+// TODO: What format? Native to input? Our format?
 dataset.rows();
 
 if json:
@@ -339,11 +349,10 @@ dataset.columns("name").rows(2);
 => {value: "Bob", metadata: {}}
 
 // setting value: 
-dataset.columns("name").rows(2).set({ 'value' : 12, metadata: {} }, {silent: true}); //won't trigger a change event.
-
-// this should throw a type check error based on the column type. It could also just return undefined instead if we don't want to throw errors - any preference here?
-
-
-// Useful codes from maxogden:
-https://github.com/maxogden/recline/blob/master/attachments/script/costco-csv-worker.js
-https://github.com/maxogden/recline/blob/master/app.js#L32
+dataset.columns("name").rows(2).set(
+  { 'value' : 12, 
+    metadata: {} 
+  }, 
+  { silent: true } //won't trigger a change event.
+); 
+// TODO: what should happen if the value is not correct for the column type?
