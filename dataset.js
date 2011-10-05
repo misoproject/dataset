@@ -254,21 +254,13 @@ dataset.sortBy(function(a,b) {
 
 //Filtering / Querying
 //Do these return a partial version of the dataset?
-dataset.columns().filter(function(column) {
+dataset.columns.filter(function(column) {
   return column.isNumber();
 })
 
-dataset.rows().filter(function(row) {
+dataset.rows.filter(function(row) {
   return (rows('year') > 2000);
 })
-
-// retrieve any transform function applied to a column:
-dataset.columns(3).getTransform();
-
-=> function() { ... }
-
-// check if a column has a transform function applied to it.
-dataset.columns(3).hasTransform();
 
 // rows
 // ----
