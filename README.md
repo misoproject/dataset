@@ -72,3 +72,6 @@ dataset.columns().filter("onlyNumbers", function(column) {
 dataset.rows().filter("thisDecade", function(row) {
   return (row('year') > 2000);
 })
+// Useful codes from maxogden:
+https://github.com/maxogden/recline/blob/master/attachments/script/costco-csv-worker.js
+https://github.com/maxogden/recline/blob/master/app.js#L32
