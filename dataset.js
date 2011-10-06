@@ -2,7 +2,6 @@
 
   Spec for a dataset management plugin.
   The plugin will provide an object that can be queried.
-  
 
   Formats that should be supported:
   tabular - delimited (specified delimiter)
@@ -28,29 +27,29 @@
 }
 
 // Using a url - json:
-var dataset = $.dataset({url : 'http://mydata.com/stuff.json'});
+var ds = new Dataset({url : 'http://mydata.com/stuff.json'});
 
 // jsonp
-var dataset = $.dataset({url : 'http://mydata.com/stuff.json', jsonp: true});
+var ds = new Dataset({url : 'http://mydata.com/stuff.json', jsonp: true});
 
 // Using a url - tabular (note delimiter specified):
-var dataset = $.dataset({url : 'http://mydata.com/stuff.csv', delimiter: ","}); 
+var ds = new Dataset({url : 'http://mydata.com/stuff.csv', delimiter: ","}); 
 
 // From existing object:
 var dataObj = [{ id: 1, count: 12 }, { id: 2, count: 14 }],
-    dataset = $.dataset({ data: dataObj });
+    ds = new Dataset({ data: dataObj });
 
 // From dom table
 var datatable = $('table#datatable'),
-    dataset = $.dataset({ table: datatable });
+    ds = new Dataset({ table: datatable });
 
 // dataset metadata
 // ---------------
 
 // what metadata about columns do we want here?
-dataset.columns('GER.1.M').metadata
+ds.columns('GER.1.M').metadata
 => {"definition": "Gross Enrolment Ratio for male students, see http://..."}
-dataset.columns('GER.1.M').metadata({
+ds.columns('GER.1.M').metadata({
   definition: "Gross Enrolment Ratio for male students, see UNESCO Doc 3.23.332"
 });
 
@@ -59,15 +58,15 @@ dataset.columns('GER.1.M').metadata({
 
 // json
 // file endings supporting auto detection: .json
-$.dataset.types.JSON
+Dataset.types.JSON
 
 // tabular
 // file ending supporting auto detection:
 // .csv - "," delimiter unless otherwise specified
 // .tsv - "\t" delimiter unless otherwise specified
 // any other common formats?
-$.dataset.types.TABULAR
-$.dataset.types.DOMTABLE
+Dataset.types.TABULAR
+Dataset.types.DOMTABLE
 ?
 
 // dataset delimiter regex
@@ -91,11 +90,11 @@ $.dataset.types.DOMTABLE
 // a way to revert any transformation of the data. To do so, before modifying the dataset
 // one can call "push" on it, which will allocate a new diff slot. Every subsequent change 
 // will be put into that slot.
-dataset.push();
+ds.push();
 
 // When wanting to revert the cumulative changes since the last push, one can call pop
 // which will undo whatever was last put on the queue.
-dataset.pop(); 
+ds.pop(); 
 
 // TODO: Do transformations that happen without having called push modify the dataset?
 
@@ -115,52 +114,52 @@ event.delta
 // gets triggered when the value changes.
 
 // 1. Subscribe on entire dataset:
-dataset.bind('change', function(event) {});
+ds.bind('change', function(event) {});
 
 // 2. Subscribe on Column
-data.columns(3).bind('change', function(event) {});
+ds.columns(3).bind('change', function(event) {});
 
 // 3. Subscribe on Row
-data.rows(12).bind('change', function(event) {});
+ds.rows(12).bind('change', function(event) {});
 
 // 4. Subscribe on Field
-dataset.columns(3).rows(4).bind('change', function(event) {});
+ds.columns(3).rows(4).bind('change', function(event) {});
 
 // Column / Row add/remove events
 
 // REMOVE event
 // gets triggered on row or column remove
 
-dataset.columns.bind('remove', function(column) {});
-dataset.rows.bind('remove', function(row) {});
+ds.columns.bind('remove', function(column) {});
+ds.rows.bind('remove', function(row) {});
 
 // ADD event
 // gets triggered on row or column add
-dataset.rows.bind('add', function(row) {});
-dataset.columns.bind('add', function(column) {});
+ds.rows.bind('add', function(row) {});
+ds.columns.bind('add', function(column) {});
 
 
 // columns
 // --------
 
 // data types
-$.dataset.datatypes.NUMBER
-$.dataset.datatypes.STRING
-$.dataset.datatypes.BOOLEAN
-$.dataset.datatypes.ARRAY
-$.dataset.datatypes.OBJECT
+Dataset.datatypes.NUMBER
+Dataset.datatypes.STRING
+Dataset.datatypes.BOOLEAN
+Dataset.datatypes.ARRAY
+Dataset.datatypes.OBJECT
 
 // Explicit support for nested datasets could allow for a variety of smarter operations
 // with a touch more magic than simple OBJECT or ARRAY would allow. Nested arrays
 // can be recursively be built as datasets when passed in.
-$.dataset.datatypes.DATASET
+Dataset.datatypes.DATASET
 
 // getting all columns:
-dataset.columns();
+ds.columns();
 
 // getting specific column:
-dataset.columns(3);
-dataset.columns("Column1");
+ds.columns(3);
+ds.columns("Column1");
 
 => { name : "Column1", 
       type: "number|string|boolean|array|object|dataset", 
@@ -169,7 +168,7 @@ dataset.columns("Column1");
 
 // getting a number of columns
 // would return the same type of object as dataset.columns.filter
-dataset.columns('Column1','Column2')
+ds.columns('Column1','Column2')
 
 => [{ name : "Column1", 
       type: "number|string|boolean|array|object|dataset", 
@@ -182,36 +181,36 @@ dataset.columns('Column1','Column2')
     ...]
 
 // typechecking
-dataset.columns(3).isNumber();
-dataset.columns(3).isString();
-dataset.columns(3).isBoolean();
-dataset.columns(3).isArray();
-dataset.columns(3).isObject();
+ds.columns(3).isNumber();
+ds.columns(3).isString();
+ds.columns(3).isBoolean();
+ds.columns(3).isArray();
+ds.columns(3).isObject();
 
 // type setting
-dataset.columns(3).setType($.dataset.datatypes.NUMBER);
+ds.columns(3).setType(Dataset.datatypes.NUMBER);
 // This will result in the column being iterated over and converted appropriately.
 
 // column math:
 // -----------------------
 // Note: when calling a math function on a non numeric column, the result will be NaN.
 
-dataset.columns(3).min();
+ds.columns(3).min();
 
 => 3.21 
 
-dataset.columns(3).max();
+ds.columns(3).max();
 
 => 4.2
 
-dataset.columns(3).mean();
+ds.columns(3).mean();
 
 => 4
 
-dataset.columns(3).mode();
+ds.columns(3).mode();
 
 // frequency table
-dataset.columns(3).freq();
+ds.columns(3).freq();
 
 =>[{ 
     value : 12,
@@ -219,12 +218,12 @@ dataset.columns(3).freq();
   }, ...];
 
 // standard deviation  
-dataset.columns(3).std();
+ds.columns(3).std();
 
 => 0.4
 
 // moving average, with subset 5.
-dataset.columns(3).movingAvg(5);
+ds.columns(3).movingAvg(5);
 
 => [1, 2, 4];
 
@@ -236,10 +235,10 @@ dataset.columns(3).movingAvg(5);
 // Allows one to modify a column based on the value it has.
 // Without any flags, this is a destructive operation in that 
 // it will alter the column being transformed.
-dataset.columns(3).transform(function(value) {
+ds.columns(3).transform(function(value) {
   
   // this modifier accesses column. Should it access field?
-  this.setType($.dataset.datatypes.BOOLEAN);
+  this.setType(Dataset.datatypes.BOOLEAN);
 
   // return value becomes the new row value
   if (value > 1) {
@@ -252,7 +251,7 @@ dataset.columns(3).transform(function(value) {
 // Passing in clone will return a new column without modifying the original.
 // New column won't be appended to dataset.
 // Passing silent true, will not trigger change events.
-dataset.columns(3).transform(
+ds.columns(3).transform(
   myTransformFunction, { 
     clone:  true, 
     silent: true 
@@ -261,32 +260,32 @@ dataset.columns(3).transform(
 
 // Adding Rows
 // Array of values in order:
-dataset.rows.add( [ 15, true, 'maybe', {value: 15, metadata: test} ] )
+ds.rows.add( [ 15, true, 'maybe', {value: 15, metadata: test} ] )
 
 // JSON object that corresponds to a single row:
-dataset.rows.add( { total: 15, paid: true, notes: 'maybe', tax: { value: 15, metadata: test } ] )
+ds.rows.add( { total: 15, paid: true, notes: 'maybe', tax: { value: 15, metadata: test } ] )
 
 // Addding columns
-dataset.columns.add( { name: "some new column!", metdata: {}, type: "String" }, data )
+ds.columns.add( { name: "some new column!", metdata: {}, type: "String" }, data )
 
 // Removing columns and rows
-dataset.columns(3).remove()
-dataset.rows(3).remove()
+ds.columns(3).remove()
+ds.rows(3).remove()
 
 // Sorting
 // Allow the dataset to be sorted by a function. It takes two
 // rows?
-dataset.sortBy( function(a, b) {
+ds.sortBy( function(a, b) {
   return (a['total_cost'] > b['total_cost']);
 });
 
 //Filtering / Querying
 //Do these return a partial version of the dataset?
-dataset.columns.filter( function(column) {
+ds.columns.filter( function(column) {
   return column.isNumber();
 });
 
-dataset.rows.filter(function(row) {
+ds.rows.filter(function(row) {
   return (rows('year') > 2000);
 });
 
@@ -295,7 +294,7 @@ dataset.rows.filter(function(row) {
 
 // get all rows 
 // TODO: What format? Native to input? Our format?
-dataset.rows();
+ds.rows();
 
 if json:
 => [ { id: 1, name: "Bob"}, { id: 2, name: "Sallie" }...];
@@ -305,7 +304,7 @@ if csv/table:
 
 
 // get specific row - same question as above about consistency...
-dataset.rows(3);
+ds.rows(3);
 
 if json:
 => { id: 1, name: "Bob"};
@@ -316,15 +315,15 @@ if csv/table:
 // dataset transformation:
 // -----------------------
 
-dataset.toJSON();
+ds.toJSON();
 
 => //Internal/strict format?
 
-dataset.toArray();
+ds.toArray();
 
 => [ [1, "Bob"], [2, "Sallie"] ...];
 
-dataset.toTabular("\t");
+ds.toTabular("\t");
 //default to using the delimiter specified on init?
 
 => "1\tBob\n2\tSallie";
@@ -334,16 +333,16 @@ dataset.toTabular("\t");
 // value access:
 // -------------
 
-dataset.columns(3).rows(2);
+ds.columns(3).rows(2);
 
 => {value: "Bob", metadata: {}}
 
-dataset.columns("name").rows(2);
+ds.columns("name").rows(2);
 
 => {value: "Bob", metadata: {}}
 
 // setting value: 
-dataset.columns("name").rows(2).set(
+ds.columns("name").rows(2).set(
   { 'value' : 12, 
     metadata: {} 
   }, 

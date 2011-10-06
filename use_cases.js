@@ -1,5 +1,5 @@
 //UNESCO Data
-var dataset = $.dataset({url : '/data/unesco_primary_enrolment.json'});
+var dataset = new Dataset({url : '/data/unesco_primary_enrolment.json'});
 
 //build list of male enrolment by year, highlighting modeled data
 var list = [];
@@ -12,7 +12,7 @@ dataset.rows().each(function(row) {
 }
 
 //ISO Data
-var dataset = $.dataset({url : '/data/iso_3166.json', strict: true});
+var dataset = new Dataset({url : '/data/iso_3166.json', strict: true});
 
 //Sort countries starting with a by length of official name
 dataset
@@ -27,7 +27,7 @@ dataset
 var transform = function(response_json) {
   return response_json["feed"];
 }
-var dataset = $.dataset({
+var dataset = new Dataset({
   url : '/data/google_spreadsheet.json',
   transform: transform
 });
