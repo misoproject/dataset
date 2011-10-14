@@ -117,6 +117,8 @@ dataset.columns(3).rows(4).bind('change', function(event) {
   // do things here on field value change
 });
 
+ds({ row : x, column : y}).bind ... <- this way you can add more flexability about extracting a subset.
+
 // Column / Row add/remove events
 dataset.columns.bind('add', function(column) {});
 dataset.columns.bind('remove', function(column) {});
