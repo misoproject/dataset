@@ -1,19 +1,12 @@
 /*
 
-  Spec for a dataset management jquery plugin.
+  Spec for a dataset management plugin.
   The plugin will provide an object that can be queried.
-  
 
   Formats that should be supported:
   tabular - delimited (specified delimiter)
   json    - array of objects
   dom table - A table object
-
-  Any other types? I don't want to play with XML but if needbe I can be persuaded
-
-
-  TODO:
-    Interpolation 
     
 */
 
@@ -34,29 +27,29 @@
 }
 
 // Using a url - json:
-var dataset = $.dataset({url : 'http://mydata.com/stuff.json'});
+var ds = new Dataset({url : 'http://mydata.com/stuff.json'});
 
 // jsonp
-var dataset = $.dataset({url : 'http://mydata.com/stuff.json', jsonp: true});
+var ds = new Dataset({url : 'http://mydata.com/stuff.json', jsonp: true});
 
 // Using a url - tabular (note delimiter specified):
-var dataset = $.dataset({url : 'http://mydata.com/stuff.csv', delimiter: ","}); 
+var ds = new Dataset({url : 'http://mydata.com/stuff.csv', delimiter: ","}); 
 
 // From existing object:
 var dataObj = [{ id: 1, count: 12 }, { id: 2, count: 14 }],
-    dataset = $.dataset({ data: dataObj });
+    ds = new Dataset({ data: dataObj });
 
 // From dom table
 var datatable = $('table#datatable'),
-    dataset = $.dataset({ table: datatable });
+    ds = new Dataset({ table: datatable });
 
 // dataset metadata
 // ---------------
 
 // what metadata about columns do we want here?
-dataset.columns('GER.1.M').metadata
+ds.columns('GER.1.M').metadata
 => {"definition": "Gross Enrolment Ratio for male students, see http://..."}
-dataset.columns('GER.1.M').metadata({
+ds.columns('GER.1.M').metadata({
   definition: "Gross Enrolment Ratio for male students, see UNESCO Doc 3.23.332"
 });
 
@@ -65,15 +58,15 @@ dataset.columns('GER.1.M').metadata({
 
 // json
 // file endings supporting auto detection: .json
-$.dataset.types.JSON
+Dataset.types.JSON
 
 // tabular
 // file ending supporting auto detection:
 // .csv - "," delimiter unless otherwise specified
 // .tsv - "\t" delimiter unless otherwise specified
 // any other common formats?
-$.dataset.types.TABULAR
-$.dataset.types.DOMTABLE
+Dataset.types.TABULAR
+Dataset.types.DOMTABLE
 ?
 
 // dataset delimiter regex
@@ -82,111 +75,144 @@ $.dataset.types.DOMTABLE
 // rows: \n 
 // anything else?
 
-// event types:
-// change - value change
-// 1. On Entire Dataset
-// TODO: what should the callback take here? I feel like it needs old value and new value but it also
-// needs to know what the position of that was and I don't feel like it needs to also take a column and row
-// what do you think alex?
-
-// event object:
-event.delta = returns the formats below.
+// dataset transformations
+// -----------------------
 
 // cell delta:
-// { row : 3, column : 4, oldValue: { value : 12 } , newValue : { value : 14 }}
+{ row : 3, column : 4, oldValue: { value : 12 } , newValue : { value : 14 }}
 
 // column / row / dataset delta
-[{ row : 3, column: 4, oldValue: { value : 12 } , newValue : { value : 14 }}, { row : 3, column: 4, oldValue: { value : 12 } , newValue : { value : 14 }} ...]
+// a collection of cell delta operations.
+[{ row : 3, column: 4, oldValue: { value : 12 } , newValue : { value : 14 }}, 
+ { row : 3, column: 4, oldValue: { value : 12 } , newValue : { value : 14 }} ...]
 
-dataset.push(); // combines the last deltas since preious push into a single delta array
-dataset.pop(); // undoes the last set of deltas
+// when modifying the dataset, it's important to preserve the original dataset and to have
+// a way to revert any transformation of the data. To do so, before modifying the dataset
+// one can call "push" on it, which will allocate a new diff slot. Every subsequent change 
+// will be put into that slot.
+ds.push();
 
+// When wanting to revert the cumulative changes since the last push, one can call pop
+// which will undo whatever was last put on the queue.
+ds.pop(); 
 
-dataset.bind('change', function(event) {
-  // do things here on dataset change
-});
+// TODO: Do transformations that happen without having called push modify the dataset?
 
-// 2. On Column
-data.columns(3).bind('change', function(event) {});
+// Events
+// -------
 
-// 3. On Row
-data.rows(12).bind('change', function(event) {});
+// event object:
+// Has event type;
+event.type = ["change" | "add" | "remove"];
 
-// 4. On Field
-dataset.columns(3).rows(4).bind('change', function(event) {
-  // do things here on field value change
-});
+// Has delta
+// See the dataset transformations section above. 
+// Delta will either be a single delta object or an array of deltas.
+event.delta
+
+// CHANGE event
+// gets triggered when the value changes.
+
+// 1. Subscribe on entire dataset:
+ds.bind('change', function(event) {});
+
+// 2. Subscribe on Column
+ds.columns(3).bind('change', function(event) {});
+
+// 3. Subscribe on Row
+ds.rows(12).bind('change', function(event) {});
+
+// 4. Subscribe on Field
+ds.columns(3).rows(4).bind('change', function(event) {});
 
 ds({ row : x, column : y}).bind ... <- this way you can add more flexability about extracting a subset.
 
 // Column / Row add/remove events
-dataset.columns.bind('add', function(column) {});
-dataset.columns.bind('remove', function(column) {});
-dataset.rows.bind('add', function(row) {});
-dataset.rows.bind('remove', function(row) {});
+
+// REMOVE event
+// gets triggered on row or column remove
+
+ds.columns.bind('remove', function(column) {});
+ds.rows.bind('remove', function(row) {});
+
+// ADD event
+// gets triggered on row or column add
+ds.rows.bind('add', function(row) {});
+ds.columns.bind('add', function(column) {});
+
 
 // columns
 // --------
 
 // data types
-$.dataset.datatypes.NUMBER
-$.dataset.datatypes.STRING
-$.dataset.datatypes.BOOLEAN
-$.dataset.datatypes.ARRAY
-$.dataset.datatypes.OBJECT
-$.dataset.datatypes.DATASET
-//explicit support for nested datasets could allow for a variety of smarter operations
-//with a touch more magic than simple OBJECT or ARRAY would allow. Nested arrays
-//can be recursively be built as datasets when passed in.
+Dataset.datatypes.NUMBER
+Dataset.datatypes.STRING
+Dataset.datatypes.BOOLEAN
+Dataset.datatypes.ARRAY
+Dataset.datatypes.OBJECT
+
+// Explicit support for nested datasets could allow for a variety of smarter operations
+// with a touch more magic than simple OBJECT or ARRAY would allow. Nested arrays
+// can be recursively be built as datasets when passed in.
+Dataset.datatypes.DATASET
 
 // getting all columns:
-dataset.columns();
+ds.columns();
+
+// getting specific column:
+ds.columns(3);
+ds.columns("Column1");
+
+=> { name : "Column1", 
+      type: "number|string|boolean|array|object|dataset", 
+      position: 3,
+      metadata : {} ... }
 
 // getting a number of columns
 // would return the same type of object as dataset.columns.filter
-dataset.columns('name','otherName')
+ds.columns('Column1','Column2')
 
-=> [{ name : "Column1", type: "number|string|boolean|array|object", position: 0 ... }, ... ] //any other types?
-
-// getting specific column:
-dataset.columns(3);
-dataset.columns("name");
-
-=> { name: "Column5", type: "number", position: 3 ... };
+=> [{ name : "Column1", 
+      type: "number|string|boolean|array|object|dataset", 
+      position: 0,
+      metadata : {} ... },
+    { name : "Column2", 
+      type: "number|string|boolean|array|object|dataset", 
+      position: 3,
+      metadata : {} ... } 
+    ...]
 
 // typechecking
-dataset.columns(3).isNumber();
-dataset.columns(3).isString();
-dataset.columns(3).isBoolean();
-dataset.columns(3).isArray();
-dataset.columns(3).isObject();
+ds.columns(3).isNumber();
+ds.columns(3).isString();
+ds.columns(3).isBoolean();
+ds.columns(3).isArray();
+ds.columns(3).isObject();
 
 // type setting
-dataset.columns(3).setType($.dataset.datatypes.NUMBER);
+ds.columns(3).setType(Dataset.datatypes.NUMBER);
 // This will result in the column being iterated over and converted appropriately.
 
-// TODO: need to define a row object, a column object
-
-// math:
+// column math:
 // -----------------------
 // Note: when calling a math function on a non numeric column, the result will be NaN.
 
-dataset.columns(3).min();
+ds.columns(3).min();
 
 => 3.21 
 
-dataset.columns(3).max();
+ds.columns(3).max();
 
 => 4.2
 
-dataset.columns(3).mean();
+ds.columns(3).mean();
 
 => 4
 
-dataset.columns(3).mode();
+ds.columns(3).mode();
 
 // frequency table
-dataset.columns(3).freq();
+ds.columns(3).freq();
 
 =>[{ 
     value : 12,
@@ -194,25 +220,27 @@ dataset.columns(3).freq();
   }, ...];
 
 // standard deviation  
-dataset.columns(3).std();
+ds.columns(3).std();
 
 => 0.4
 
 // moving average, with subset 5.
-dataset.columns(3).movingAvg(5);
+ds.columns(3).movingAvg(5);
 
 => [1, 2, 4];
 
-// what other math operations might be worth while here?
+// TODO: what other math operations might be worth while here?
 
 // column transformation:
-// -----------------
+// ---------------------
 
-// allows one to map a column based on the value it has.
-dataset.columns(3).transform(function(value) {
+// Allows one to modify a column based on the value it has.
+// Without any flags, this is a destructive operation in that 
+// it will alter the column being transformed.
+ds.columns(3).transform(function(value) {
   
   // this modifier accesses column. Should it access field?
-  this.setType($.dataset.datatypes.BOOLEAN);
+  this.setType(Dataset.datatypes.BOOLEAN);
 
   // return value becomes the new row value
   if (value > 1) {
@@ -225,52 +253,56 @@ dataset.columns(3).transform(function(value) {
 // Passing in clone will return a new column without modifying the original.
 // New column won't be appended to dataset.
 // Passing silent true, will not trigger change events.
-dataset.columns(3).transform(myTransform, { clone: true, silent: true }));
+ds.columns(3).transform(
+  myTransformFunction, { 
+    clone:  true, 
+    silent: true 
+  }
+));
 
 // Adding Rows
-dataset.rows.add( [ 15,true,'maybe',{value: 15, metadata: test} ] )
-dataset.rows.add( {total: 15, paid: true, notes: 'maybe', tax: {value: 15, metadata: test} ] )
+// Array of values in order:
+ds.rows.add( [ 15, true, 'maybe', {value: 15, metadata: test} ] )
+
+// JSON object that corresponds to a single row:
+ds.rows.add( { total: 15, paid: true, notes: 'maybe', tax: { value: 15, metadata: test } ] )
 
 // Addding columns
-dataset.columns.add( { name: "some new column!", metdata: {}, type: "String" }, data )
+ds.columns.add( { name: "some new column!", metdata: {}, type: "String" }, data )
 
 // Removing columns and rows
-dataset.columns(3).remove()
-dataset.rows(3).remove()
+ds.columns(3).remove()
+ds.rows(3).remove()
 
-// will return a copy of the column and will NOT modify the actual raw data?
-// does transform trigger the change event?
-//optionally return an object to modify metadata, otherwise return value assumed to be value
-dataset.columns(3).transform(someFunction, { clone : true });
-
-data.columns(3).change(function(event) {
-   listDisplay.update(event.delta);    
-});
-
-dataset.columns(3).transform(function(cell) {
-    return Math.sin(cell.value); 
-});
-
-//Sorting - allow the dataset to be sorted by a function
-dataset.sortBy(function(a,b) {
+// Sorting
+// Allow the dataset to be sorted by a function. It takes two
+// rows?
+ds.sortBy( function(a, b) {
   return (a['total_cost'] > b['total_cost']);
 });
 
 //Filtering / Querying
 //Do these return a partial version of the dataset?
-dataset.columns.filter(function(column) {
+//Internally filters could be stored as a sparse array of returned values
+//If the filter functions themselves are then stored they could be applied
+//to new rows and the sparse array updated on add/update/delete
+//Filters could also then trigger change events, which could be used
+//to trigger updates to their clients.
+ds.columns().filter(function(column) {
   return column.isNumber();
 })
 
-dataset.rows.filter(function(row) {
+ds.rows().filter(function(row) {
   return (rows('year') > 2000);
-})
-
+}).bind('change', function(filterset) {
+  this.update();
+});
 // rows
 // ----
 
-// get all rows - returns rows in what format? Native format of dataset? Should this be consistent?
-dataset.rows();
+// get all rows 
+// TODO: What format? Native to input? Our format?
+ds.rows();
 
 if json:
 => [ { id: 1, name: "Bob"}, { id: 2, name: "Sallie" }...];
@@ -280,7 +312,7 @@ if csv/table:
 
 
 // get specific row - same question as above about consistency...
-dataset.rows(3);
+ds.rows(3);
 
 if json:
 => { id: 1, name: "Bob"};
@@ -291,15 +323,15 @@ if csv/table:
 // dataset transformation:
 // -----------------------
 
-dataset.toJSON();
+ds.toJSON();
 
 => //Internal/strict format?
 
-dataset.toArray();
+ds.toArray();
 
 => [ [1, "Bob"], [2, "Sallie"] ...];
 
-dataset.toTabular("\t");
+ds.toTabular("\t");
 //default to using the delimiter specified on init?
 
 => "1\tBob\n2\tSallie";
@@ -309,20 +341,19 @@ dataset.toTabular("\t");
 // value access:
 // -------------
 
-dataset.columns(3).rows(2);
+ds.columns(3).rows(2);
 
 => {value: "Bob", metadata: {}}
 
-dataset.columns("name").rows(2);
+ds.columns("name").rows(2);
 
 => {value: "Bob", metadata: {}}
 
 // setting value: 
-dataset.columns("name").rows(2).set({ 'value' : 12, metadata: {} }, {silent: true}); //won't trigger a change event.
-
-// this should throw a type check error based on the column type. It could also just return undefined instead if we don't want to throw errors - any preference here?
-
-
-// Useful codes from maxogden:
-https://github.com/maxogden/recline/blob/master/attachments/script/costco-csv-worker.js
-https://github.com/maxogden/recline/blob/master/app.js#L32
+ds.columns("name").rows(2).set(
+  { 'value' : 12, 
+    metadata: {} 
+  }, 
+  { silent: true } //won't trigger a change event.
+); 
+// TODO: what should happen if the value is not correct for the column type?
