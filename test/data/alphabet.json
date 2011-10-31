@@ -1,0 +1,29 @@
+{ "metadata" : {"name" : "Greek Alphabet" },
+  "columns" : [ {"name" : "character", "type" : "String"}, {"name" : "is_modern", "type" : "Boolean"}, {"name" : "name", "type" : "String"}, {"name" : "numeric_value", "type" : "Integer"} ],
+  "rows" : [ 
+    { "data" : {"character" : "α", "name" : "alpha", "is_modern" : true, "numeric_value" : 1} } 
+    { "data" : {"character" : "β", "name" : "beta", "is_modern" : true, "numeric_value" : 2} } 
+    { "data" : {"character" : "γ", "name" : "gamma", "is_modern" : true, "numeric_value" : 3} } 
+    { "data" : {"character" : "δ", "name" : "delta", "is_modern" : true, "numeric_value" : 4} } 
+    { "data" : {"character" : "ε", "name" : "epsilon", "is_modern" : false, "numeric_value" : 5} } 
+    { "data" : {"character" : "ζ", "name" : "zeta", "is_modern" : true, "numeric_value" : 7} } 
+    { "data" : {"character" : "η", "name" : "eta", "is_modern" : true, "numeric_value" : 8} } 
+    { "data" : {"character" : "θ", "name" : "theta", "is_modern" : true, "numeric_value" : 9} } 
+    { "data" : {"character" : "ι", "name" : "iota", "is_modern" : true, "numeric_value" : 10} } 
+    { "data" : {"character" : "κ", "name" : "kappa", "is_modern" : true, "numeric_value" : 20} } 
+    { "data" : {"character" : "λ", "name" : "lambda", "is_modern" : false, "numeric_value" : 30} } 
+    { "data" : {"character" : "μ", "name" : "mu", "is_modern" : false, "numeric_value" : 40} } 
+    { "data" : {"character" : "ν", "name" : "nu", "is_modern" : false, "numeric_value" : 50} } 
+    { "data" : {"character" : "ξ", "name" : "xi", "is_modern" : false, "numeric_value" : 60} } 
+    { "data" : {"character" : "ο", "name" : "omicron", "is_modern" : false, "numeric_value" : 70} } 
+    { "data" : {"character" : "π", "name" : "pi", "is_modern" : false, "numeric_value" : 80} } 
+    { "data" : {"character" : "ρ", "name" : "rho", "is_modern" : true, "numeric_value" : 100} } 
+    { "data" : {"character" : "σ", "name" : "sigma", "is_modern" : false, "numeric_value" : 200} } 
+    { "data" : {"character" : "τ", "name" : "tau", "is_modern" : false, "numeric_value" : 300} } 
+    { "data" : {"character" : "υ", "name" : "upsilon", "is_modern" : true, "numeric_value" : 400} } 
+    { "data" : {"character" : "φ", "name" : "phi", "is_modern" : true, "numeric_value" : 500} } 
+    { "data" : {"character" : "χ", "name" : "chi", "is_modern" : true, "numeric_value" : 600} } 
+    { "data" : {"character" : "ψ", "name" : "psi", "is_modern" : false, "numeric_value" : 700} } 
+    { "data" : {"character" : "ω", "name" : "omega", "is_modern" : true, "numeric_value" : 800} } 
+  ] 
+}
