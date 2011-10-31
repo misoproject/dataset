@@ -125,6 +125,8 @@ ds.rows(12).bind('change', function(event) {});
 // 4. Subscribe on Field
 ds.columns(3).rows(4).bind('change', function(event) {});
 
+ds({ row : x, column : y}).bind ... <- this way you can add more flexability about extracting a subset.
+
 // Column / Row add/remove events
 
 // REMOVE event
@@ -281,14 +283,20 @@ ds.sortBy( function(a, b) {
 
 //Filtering / Querying
 //Do these return a partial version of the dataset?
-ds.columns.filter( function(column) {
+//Internally filters could be stored as a sparse array of returned values
+//If the filter functions themselves are then stored they could be applied
+//to new rows and the sparse array updated on add/update/delete
+//Filters could also then trigger change events, which could be used
+//to trigger updates to their clients.
+ds.columns().filter(function(column) {
   return column.isNumber();
-});
+})
 
-ds.rows.filter(function(row) {
+ds.rows().filter(function(row) {
   return (rows('year') > 2000);
+}).bind('change', function(filterset) {
+  this.update();
 });
-
 // rows
 // ----
 
