@@ -120,3 +120,12 @@ ds.sortBy( function(a, b) {
 //Value Access
 ds.get(12, "name");
 ds.set(12, { name : "Togo" }, { silent : true });
+
+
+//This is a rough mapping of how we'll store data internally
+{
+  columns : [{ _id : _.uniqueId(), name : "one", type : "Integer" }],
+  rows : [{ _id : 123, data: : [1], metadata : [{something: true}] }],
+  metadata: {}
+};
+
