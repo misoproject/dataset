@@ -44,7 +44,7 @@ ds.filter({
   }
 });
 
-ds.columns("name") === ds.filter({column : "name"});
+ds.columns("name") === ds.filter({column : "name", clone: false});
 
 ds.columns("name").data === [30,22,32];
 
@@ -118,5 +118,5 @@ ds.sortBy( function(a, b) {
 });
 
 //Value Access
-ds.rows(12).get("name")
-ds.rows(12).set({ name : "Togo" }, { silent : true });
+ds.get(12, "name");
+ds.set(12, { name : "Togo" }, { silent : true });
