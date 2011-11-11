@@ -40,32 +40,19 @@
   _.extend(DS.prototype, {
     _buildData : function() {
       if (this._options.strict) {
-        this._data = this._options.data;
+        this._columns = this._options.data.columns;
+        this._rows = this._options.data.rows;
+        this._metadata = this._options.data.metadata;
         delete this._options.data;
-      } else {
-        this._data = this._normalizeData();
       }
     },
 
-    _normalizeData : function() {
-      //TODO preprocessing for CSV/TSV etc
-      this._data = this._fromObject(options.data);
-      delete options.data;
-    },
-
-    _fromObject : function() {
-      //assumes array of objects, takes types from first row
-      _.each(options.data[0], function(value, key) {
-        //TODO fill in
-      });
-    },
-
+   
     metadata : function() {
 
     },
 
-    filter : function() {
-
+    filter : function(properties) {
     },
 
     transform : function() {
@@ -88,6 +75,10 @@
 
     },
 
+    rows : function(num) {
+
+    },
+
     columns : function(name) {
 
     },
@@ -97,7 +88,17 @@
     },
 
     get : function(row, column) {
+      return this._rows[ row ].data[ this._columnPosition( column ) ];
+    },
 
+    _columnByName : function(name) {
+      return _.find(this._columns, function(c) {
+        return c.name === name;
+      });
+    },
+
+    _columnPosition : function(name) {
+      return _.indexOf(this._columns, this._columnByName(name));
     },
 
     set : function(row, data, options) {
