@@ -49,10 +49,25 @@
 
    
     metadata : function() {
-
     },
 
     filter : function(properties) {
+      var data = {};
+      _.each(['columns', 'rows', 'metadata'], function(type) {
+        data[type] = _.clone(this['_'+type]);
+      }, this);
+
+      if (properties.row) {
+        properties.rows = [properties.row];
+      }
+
+      if (properties.rows) {
+        data.rows = _.filter(data.rows, function(row, index) {
+          return _.indexOf(properties.rows, index) !== -1;
+        });
+      }
+
+      return new DS({ data : data, strict : true });
     },
 
     transform : function() {
@@ -76,7 +91,7 @@
     },
 
     rows : function(num) {
-
+      return this.filter({ row : num });
     },
 
     columns : function(name) {
