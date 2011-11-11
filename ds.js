@@ -127,6 +127,27 @@
 
   });
 
+  /**
+   * Returns the type of an input object.
+   * Stolen from jQuery via @rwaldron (http://pastie.org/2849690)
+   * @param {?} obj - the object being detected.
+   */ 
+  DS.typeOf = function(obj) {
+    var classType = {},
+      types = "Boolean Number String Function Array Date RegExp Object".split(" "),
+      length = types.length,
+      i = 0;
+    for ( ; i < length; i++ ) {
+      classType[ "[object " + types[ i ] + "]" ] = types[ i ].toLowerCase();
+    }
+    return obj == null ?
+      String( obj ) :
+      classType[ {}.toString.call(obj) ] || "object";
+  };
+
+  
+  
+  
   DS.VERSION = "0.0.1";
   global.DS = DS;
 

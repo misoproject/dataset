@@ -21,6 +21,29 @@ $(document).ready(function() {
     equal(2, ds.get(1, "one"), "Can get the second value in the one column" )
 
   });
+  
+  module("Type Checkigng");
+  
+  test("Check Boolean type", function() {
+    var bTValue = true,
+        bFValue = false;
+    ok(DS.typeOf(bTValue)=="boolean", "Value should be boolean");
+    ok(DS.typeOf(bFValue)=="boolean", "Value should be boolean");
+  });
+  
+  test("Check number type", function() {
+    var value = 12,
+        value2 = 0;
+    ok(DS.typeOf(value)=="number", "Value should be number");
+    ok(DS.typeOf(value2)=="number", "Value should be number");
+  });
+  
+  test("Check number type", function() {
+    var value = "cats",
+        value2 = "";
+    ok(DS.typeOf(value)=="string", "Value should be string");
+    ok(DS.typeOf(value2)=="string", "Value should be string");
+  });
 
 
 });
