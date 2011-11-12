@@ -29,6 +29,7 @@
 
   // CONSTS
   DS.datatypes = {
+    UNKNOWN: "Unknown",
     NUMBER : 0,
     STRING : 1,
     BOOLEAN: 2, 
@@ -145,7 +146,84 @@
   };
 
   
+  DS.Importers = function() {};
+  _.extend(DS.Importers, {
+    _buildColumn: function(name, type) {
+      return {
+        _id : _.uniqueId(),
+        name : name,
+        type : type
+      };
+    }
+  });
   
+  /**
+   * Converts an array of objects to strict format.
+   * @params {Object} obj = [{},{}...]
+   */
+  DS.Importers.Obj = function(data, options) {
+    this._data = data;
+  };
+  _.extend(DS.Importers.Obj.prototype, {
+    
+    _buildColumns : function(n) {
+      
+      // Pick a sample of n (default is 5) rows
+      (n || (n = 5)); 
+      var sample = this._data.slice(0, n);
+      
+      // How many keys do we have?
+      var keys  = _.keys(this._data[0]);
+      
+      // Aggregate the types. For each key,
+      // check if the value resolution reduces to a single type.
+      // If it does, call that your type.
+      var types = _.map(keys, function(key) {
+        
+        // Build a reduced array of types for this key.
+        // If we have N values, we are going to hope that at the end we
+        // have an array of length 1 with a single type, like ["string"]
+        var vals =  _.inject(this._data, function(memo, row) {
+          if (memo.indexOf(DS.typeOf(row[key])) == -1)
+            memo.push(DS.typeOf(row[key]));
+            return memo;
+        }, []); 
+        
+        if (vals.length == 1) {
+          return DS.Importers._buildColumn(key, vals[0]);
+        } else {
+          return DS.Importers._buildColumn(key, DS.datatypes.UNKNOWN);
+        }
+      }, this);
+      
+      return types;
+    },
+    parse : function() {
+      
+      var d = {};
+      
+      // Build columns
+      d.columns = this._buildColumns(this._data);
+      
+      // Build rows
+      d.rows = _.map(this._data, function(row) {
+        
+        var r = {};
+        
+        // Assemble a row by iterating over each column and grabbing
+        // the values in the order we expect.
+        r.data = _.map(d.columns, function(column) {
+          return row[column.name];
+        });
+        
+        // TODO: add id plucking out of data, if exists.
+        r._id = _.uniqueId();
+        return r;
+      });
+      
+      return d;
+    }
+  });
   
   DS.VERSION = "0.0.1";
   global.DS = DS;
