@@ -23,6 +23,7 @@ $(document).ready(function() {
     // check first row
     _.each(obj, function(row, i){
       ok(_.isEqual(_.values(row), strictData.rows[i].data), "row " + i + " is equal");
+      ok(typeof strictData.rows[i].data !== "undefined", "row " + i + " has an id");
     });
     
     // check column types
