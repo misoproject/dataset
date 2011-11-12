@@ -39,26 +39,30 @@
 
   // Public Methods
   _.extend(DS.prototype, {
+    
     _buildData : function() {
+
+      var importer = null;
+      
       if (this._options.strict) {
+        
+        // TODO process strict data here
         this._data = this._options.data;
-        delete this._options.data;
-      } else {
-        this._data = this._normalizeData();
+        
+      } else if (typeof this._options.data !== "undefined") {
+
+        // If data was set, we've recieved an array of objects?
+        importer = new DS.Importers.Obj(this._options.data);
+      }  
+        
+      // remove temporary data holder.  
+      delete this._options.data;
+      
+      // run parser and append rows and columns to this instance
+      // of dataset.
+      if (importer !== null) {
+        _.extend(this, importer.parse());
       }
-    },
-
-    _normalizeData : function() {
-      //TODO preprocessing for CSV/TSV etc
-      this._data = this._fromObject(options.data);
-      delete options.data;
-    },
-
-    _fromObject : function() {
-      //assumes array of objects, takes types from first row
-      _.each(options.data[0], function(value, key) {
-        //TODO fill in
-      });
     },
 
     metadata : function() {
@@ -203,16 +207,16 @@
       var d = {};
       
       // Build columns
-      d.columns = this._buildColumns(this._data);
+      d._columns = this._buildColumns(this._data);
       
       // Build rows
-      d.rows = _.map(this._data, function(row) {
+      d._rows = _.map(this._data, function(row) {
         
         var r = {};
         
         // Assemble a row by iterating over each column and grabbing
         // the values in the order we expect.
-        r.data = _.map(d.columns, function(column) {
+        r.data = _.map(d._columns, function(column) {
           return row[column.name];
         });
         
