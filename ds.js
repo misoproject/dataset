@@ -135,12 +135,24 @@
 
     },
 
+    //Calculate the minimum value in the entire dataset
+    //TODO memoise and tie to events
     min : function() {
-
+      var min = Infinity;
+      this._eachAll(function(value) {
+        if (value < min) { min = value; }
+      });
+      return min;
     },
 
+    //Calculate the maximum value in the entire dataset
+    //TODO memoise and tie to events
     max : function() {
-
+      var max = -Infinity;
+      this._eachAll(function(value) {
+        if (value > max) { max = value; }
+      });
+      return max;
     },
 
     mean : function() {
@@ -153,7 +165,16 @@
 
     freq : function() {
 
-    } 
+    },
+
+    //Apply a function to every value in every row of the dataset
+    _eachAll: function( iterator ) {
+      _.each(this._rows, function( row ) {
+        _.each(row.data, function( value ) {
+          iterator( value );
+        });
+      });
+    }
 
   });
 
