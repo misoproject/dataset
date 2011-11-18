@@ -1,0 +1,65 @@
+MOTES:
+	We should add a _rowIds and _columnIds arrays to the datasets because as we fork them
+	it will become easier for us to know whether a triggered event needs to act on a specific callback.
+
+	When a new dataset gets forked off of a new dataset, when calling its constructor it should take a parent
+	dataset which will then trigged the default event bindings in the constructor - for example, an update callback
+	that will be responsible for syncing events.
+
+ds = 
+{ columns : [ a, b, c ]}
+ [ _id : 1, data : [2,5,6] ],
+ [ _id : 14, data : [2,5,6] ],
+ [ _id : 19, data : [2,5,6] ]
+
+ds._rowIds = [1,14,19];
+ds._columnIds = [0,1,2];
+// ds.set(row, data options)
+
+
+ds2 = ds.filter({ column: 0});
+{ columns : [ a ]}
+ [ _id : 1, data : [2] ],
+ [ _id : 14, data : [2] ],
+ [ _id : 19, data : [2] ]
+
+
+ds2._rowIds = [1,14,19];
+ds2._columnIds = [0]
+
+=== data syncing - there will be a default sync event that all datasets will
+=== 			   have by default.
+
+ds.set(14, { a : 5 }) 
+  => trigger("update", { _id : 14, old : { a : 2 }, new : { a : 5 }});
+  => for (subscriber in events["update"]) {
+  	subscriber(delta);
+  }
+  => ds2.callback
+    => if this.hasRowId(delta._id) {
+    	 ds2.set(delta._id, delta.new);
+       }
+  
+
+_event["update"] = [ array of callbacks ]
+callback: { pos : { intenal position desc }, callback : func }
+ds.trigger("update", { intenal position desc });
+ds.bind("update", { intenal position desc }, function(){});
+
+internal position desc:
+	// THIS WON'T WORK: 
+	// Because if a row is removed, the positions need to be updated. That's a pain.
+	rows: [[1,20], [24,27]] <-- ranges (convenient because we don't have to do indexOf)
+	columns: ""
+
+extenral position desc:
+	{ row : N,
+	  rows : [[1,20], [28,30]],
+	  column: N,
+	  columns: [[1,20], [28,30]] }
+
+
+
+
+
+
