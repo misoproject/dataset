@@ -24,6 +24,19 @@
     options = options || (options = {});
 
     this._options = options;
+
+    // stores events that are subscribed on this dataset. Format is:
+    // _events["eventName"] = { pos : { rowIds : [], columnIds : [] }, callback : function }
+    this._events = {};
+
+    // if this is a forked dataset, the parent property should be set. We need to
+    // auto subscribe this dataset to sync with its parent.
+    if (options.parent) {
+      
+      // TODO: do some auto subscribing here...
+      
+    }
+
     this._buildData();
   };
 
@@ -46,9 +59,8 @@
       
       if (this._options.strict) {
         
-        // TODO process strict data here
-        this._rows = this._options.data.rows;
-        this._columns = this._options.data.columns;
+       // If this is a strict format import, use the Strict importer.
+        importer = new DS.Importers.Strict(this._options.data);
         
       } else if (typeof this._options.data !== "undefined") {
 
@@ -66,23 +78,31 @@
       }
     },
 
-    filter : function(properties) {
+    filter : function(options) {
       var data = {};
       _.each(['columns', 'rows', 'metadata'], function(type) {
         data[type] = _.clone(this['_'+type]);
       }, this);
 
-      if (properties.row) {
-        properties.rows = [properties.row];
+      if (options.row) {
+        options.rows = [options.row];
       }
 
-      if (properties.rows) {
+      if (options.rows) {
         data.rows = _.filter(data.rows, function(row, index) {
-          return _.indexOf(properties.rows, index) !== -1;
+          return _.indexOf(options.rows, index) !== -1;
         });
       }
 
-      return new DS({ data : data, strict : true });
+      // if properties.clone is set to false, return just the
+      // reference to the data.
+      if (typeof options.clone !== "undefined" && !options.clone) {
+        return data;
+      // else return a new dataset of which this is the parent.
+      } else {
+        return new DS({ data : data, strict : true, parent: this });  
+      }
+      
     },
 
     transform : function() {
@@ -174,6 +194,20 @@
           iterator( value );
         });
       });
+    },
+
+    // bind a specific event to a specific callback.
+    bind: function(event, pos, callback) {
+    
+    },
+
+    // Trigger callbacks for a specific event. Optionally takes in a position.
+    trigger : function(event, pos) {
+     
+    },
+
+    _sync: function(event) {
+      
     }
 
   });
@@ -208,6 +242,48 @@
     }
   });
   
+  /**
+  * Handles basic import. 
+  * TODO: add verify flag to disable auto id assignment for example.
+  */
+  DS.Importers.Strict = function(data, options) {
+    this._data = data;  
+  };
+
+  _.extend(DS.Importers.Strict.prototype, {
+    _buildColumns : function(n) {
+      var columns = this._data.columns;
+      
+      // verify columns have ids
+      _.each(columns, function(column) {
+        if (typeof column._id === "undefined") {
+          column._id = _.uniqueId();
+        }
+      });
+
+      return columns;
+    },
+
+    parse : function() {
+      var d = {};
+      
+      // Build columns
+      d._columns = this._buildColumns();
+      
+      // Build rows
+      d._rows = this._data.rows;
+            
+      // verify rows have ids
+      _.each(d._rows, function(row) {
+        if (typeof row._id === "undefined") {
+          row._id = _.uniqueId();
+        }
+      });
+
+      return d;
+    }
+  });
+
   /**
    * Converts an array of objects to strict format.
    * @params {Object} obj = [{},{}...]
@@ -254,7 +330,7 @@
       var d = {};
       
       // Build columns
-      d._columns = this._buildColumns(this._data);
+      d._columns = this._buildColumns();
       
       // Build rows
       d._rows = _.map(this._data, function(row) {
