@@ -102,6 +102,29 @@
         });
       }
 
+      if (options.column) {
+        options.columns = [options.column];
+      }
+
+      if (options.columns) {
+
+        // filter down the columns to only contain the ones we want
+        data.columns = _.filter(data.columns, function(column) {
+          return _.indexOf(options.columns, column.name) !== -1;
+        });
+
+        // filter down the rows to just the values we are looking for
+        data.rows = _.map(data.rows, function(row, index) {
+          var newRowData = { _id : row._id, data : [] };
+          _.each(options.columns, function(cName) {
+            console.log(this._byColumnName[cName]);
+            newRowData.data.push(row.data[this._byColumnName[cName].position]);
+          }, this);
+          
+          return newRowData;
+        }, this);
+      }
+
       // if properties.clone is set to false, return just the
       // reference to the data.
       if (typeof options.clone !== "undefined" && !options.clone) {
@@ -129,7 +152,7 @@
 
     },
 
-    pop : function() {
+    pop : function() { 
 
     },
 
@@ -145,21 +168,16 @@
 
     },
 
-    get : function(rid, column) {
+    get : function(index, column) {
+      return this._rows[index].data[this._byColumnName[column].position];
+    },
+
+    getByRowId : function(rid, column) {
       return this._byRowId[rid].data[this._byColumnName[column].position];
     },
 
-    /**
-     * Sets the values in a particular row to the data object provided
-     * as a parameter. Takes an optional set of arguments.
-     * @param {int} rid - the row identifier to be modified
-     * @param {Object} data - The object containing the new data
-     * @param {Object} options (optional) - Contains flags such as, silent(true|false) 
-     *   which will prevent event triggering.
-     */
-    set : function(rid, data, options) {
+    _set: function(row, data, options) {
       this.options || (this.options = {});
-      var row = this._byRowId[rid];
 
       if (typeof row === "undefined") {
         return false;
@@ -213,26 +231,89 @@
       // row makes the most sense, although maybe we should be returning this, for
       // chaining purposes. Thoughts?
       return row;
-       
+    },
+
+    /**
+     * Sets the values in a particular row to the data object provided
+     * as a parameter. Takes an optional set of arguments.
+     * @param {int} index - the row position in the data array to be modified
+     * @param {Object} data - The object containing the new data
+     * @param {Object} options (optional) - Contains flags such as, silent(true|false) 
+     *   which will prevent event triggering.
+     */
+    set : function(index, data, options) {
+      var row = this._rows[index];
+      this._set(row, data, options);
+    },
+
+    /**
+     * Sets the values in a particular row to the data object provided
+     * as a parameter. Takes an optional set of arguments.
+     * @param {int} rid - the row _id to be modified
+     * @param {Object} data - The object containing the new data
+     * @param {Object} options (optional) - Contains flags such as, silent(true|false) 
+     *   which will prevent event triggering.
+     */
+    setByRowId : function(rid, data, options) {
+      var row = this._byRowId[rid];
+      this._set(row, data, options);
     },
 
     //Calculate the minimum value in the entire dataset
     //TODO memoise and tie to events
-    min : function() {
-      var min = Infinity;
-      this._eachAll(function(value) {
-        if (value < min) { min = value; }
+    min : function(columns) {
+      var min = Infinity,
+          rows = this._rows;
+
+      
+      if (typeof columns !== "undefined") {
+        if (DS.typeOf(columns) !== "array") {
+          columns = [columns];
+        }
+
+        // build a subset over each we're building max.
+        rows = this.filter({ 
+          clone: false,
+          columns : columns
+        }).rows;
+      }
+
+      // Iterate over all rows and get the max.
+      this._eachAll(rows, function(value) {
+        if (DS.typeOf(value) === "number" && value < min) { 
+          min = value; 
+        }
       });
+    
       return min;
     },
 
     //Calculate the maximum value in the entire dataset
     //TODO memoise and tie to events
-    max : function() {
-      var max = -Infinity;
-      this._eachAll(function(value) {
-        if (value > max) { max = value; }
+    max : function(columns) {
+      var max = -Infinity,
+          rows = this._rows;
+
+      
+      if (typeof columns !== "undefined") {
+        if (DS.typeOf(columns) !== "array") {
+          columns = [columns];
+        }
+
+        // build a subset over each we're building max.
+        rows = this.filter({ 
+          clone: false,
+          columns : columns
+        }).rows;
+      }
+
+      // Iterate over all rows and get the max.
+      this._eachAll(rows, function(value) {
+        if (DS.typeOf(value) === "number" && value > max) { 
+          max = value; 
+        }
       });
+    
       return max;
     },
 
@@ -248,11 +329,13 @@
 
     },
 
-    //Apply a function to every value in every row of the dataset
-    _eachAll: function( iterator ) {
-      _.each(this._rows, function( row ) {
-        _.each(row.data, function( value ) {
-          iterator( value );
+    /**
+     * Apply a function to every value in every row of the dataset. 
+     */
+    _eachAll: function(rows, iterator ) {
+      _.each(rows, function( row ) {
+        _.each(row.data, function( value, index ) {
+          iterator( value, index );
         });
       });
     },

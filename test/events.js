@@ -35,7 +35,7 @@ $(document).ready(function() {
       ];
         
       var ds = new DS({ data : obj }),
-          rid = ds._rows[0]._id;
+          rid = 0;
 
       ds.push();
 
@@ -81,7 +81,7 @@ $(document).ready(function() {
       ];
         
       var ds = new DS({ data : obj }),
-          rid = ds._rows[0]._id;
+          rid = 0;
 
       ds.push();
 
