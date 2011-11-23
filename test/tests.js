@@ -75,7 +75,7 @@ $(document).ready(function() {
     });
 
     test("Setting multiple values", function() {
-    var obj = [
+      var obj = [
         {"character" : "α", "name" : "alpha", "is_modern" : true, "numeric_value" : 1}, 
         {"character" : "ε", "name" : "epsilon", "is_modern" : false, "numeric_value" : 5}
       ];
@@ -90,6 +90,45 @@ $(document).ready(function() {
       ok(ds.get(rid, "name") === "Em", "post set character is correct");
     });
 
+    test("Basic Queuing works on Set", function() {
+      var obj = [
+        {"character" : "α", "name" : "alpha", "is_modern" : true, "numeric_value" : 1}, 
+        {"character" : "ε", "name" : "epsilon", "is_modern" : false, "numeric_value" : 5}
+      ];
+        
+      var ds = new DS({ data : obj }),
+          rid = ds._rows[0]._id;
+
+      ds.push();
+
+      ok(ds._queing === true, "queing started");
+      ok(ds.get(rid, "character") === "α", "pre set character is correct");
+      ok(ds.get(rid, "name") === "alpha", "pre set character is correct");
+      ds.set(rid, { "character" : "M", "name" : "Em" });
+      ok(ds.get(rid, "character") === "M", "post set character is correct");
+      ok(ds.get(rid, "name") === "Em", "post set character is correct");
+
+      ok(ds._deltaQueue.length === 1, "There are deltas in the queue");
+      // TODO: upgrade our underscore.js version, the current one doesn't have deep equal
+      // which is needed here.
+      // ok(_.deepEqual(ds._deltaQueue[0], {
+        
+      //   _id : rid,
+      //   old : {
+      //     "character" : "α",
+      //     "name" : "alpha"
+      //   },
+      //   changed : {
+      //     "character" : "M",
+      //     "name" : "Em"
+      //   }
+      // }), "deltas are equal");
+
+      ds.pop();
+      ok(ds._queing === false, "no longer queing");
+      ok(ds._deltaQueue.length === 0, "no deltas in the queue")
+    });
+      
     //TODO: add event related triggers here!
 
     //TODO: add subset related triggers here 
