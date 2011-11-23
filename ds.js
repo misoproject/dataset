@@ -257,6 +257,41 @@
       });
     },
 
+    /**
+     * builds an event object that either contains the optional
+     * delta parameter or it takes the queue.
+     * @param {string} name The event name
+     * @param {delta} delta The delta object 
+     */
+    _buildEvent : function(name, delta) {
+      var e = {};
+
+      // Set event name
+      e.name = name;
+
+      if (delta) {
+
+        // Set event delta
+        if (DS.typeOf(delta) !== "array") {
+          e.delta = [delta];  
+        } else {
+          e.delta = delta;
+        }
+        
+      }  
+
+      if (this._queing) {
+        e.delta = _.clone(this._deltaQueue);
+
+        if (delta) {
+          e.delta.push(delta);
+          e.delta = _.flatten(e.delta);
+        }
+      }
+
+      return e;
+    },
+
     // bind a specific event to a specific callback.
     bind: function(event, pos, callback) {
     

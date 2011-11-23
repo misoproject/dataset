@@ -1,5 +1,129 @@
 $(document).ready(function() {
   
+  module("Event Building");
+  (function() {
+    test("Basic event creation with delta", function() {
+      
+      var obj = { "metadata" : {"name" : "Greek Alphabet" },
+        "columns" : [ 
+          {"name" : "character", "type" : "string"}, 
+          {"name" : "is_modern", "type" : "boolean"}, 
+          {"name" : "name", "type" : "string"}, 
+          {"name" : "numeric_value", "type" : "number"} 
+        ],
+        "rows" : [   
+          { data : ["α","alpha",true,1] },
+          { data : ["ε","epsilon",false,5] }
+        ]};
+
+      var ds = new DS({ data : obj, strict : true });
+
+      e = ds._buildEvent("update", { _id : 1, old : { "a" : "b" }, changed : { "a" : "c" }});
+      ok(e.name === "update", "event name was set");
+      ok(typeof e.delta !== "undefined", "delta was set");
+      // TODO uncomment this when we update underscore.js
+      // ok(_.deepEqual(e.delta[0],
+      //   { _id : 1, old : { "a" : "b" }, changed : { "a" : "c" }}
+      // ), "deltas are the same");
+
+    });
+
+    test("Basic event creation with queuing", function() {
+      var obj = [
+        {"character" : "α", "name" : "alpha", "is_modern" : true, "numeric_value" : 1}, 
+        {"character" : "ε", "name" : "epsilon", "is_modern" : false, "numeric_value" : 5}
+      ];
+        
+      var ds = new DS({ data : obj }),
+          rid = ds._rows[0]._id;
+
+      ds.push();
+
+      ok(ds._queing === true, "queing started");
+      ok(ds.get(rid, "character") === "α", "pre set character is correct");
+      ok(ds.get(rid, "name") === "alpha", "pre set character is correct");
+      ds.set(rid, { "character" : "M", "name" : "Em" });
+      ok(ds.get(rid, "character") === "M", "post set character is correct");
+      ok(ds.get(rid, "name") === "Em", "post set character is correct");
+
+      ok(ds._deltaQueue.length === 1, "There are deltas in the queue");
+      var expectedDelta = {        
+        _id : rid,
+        old : {
+          "character" : "α",
+          "name" : "alpha"
+        },
+        changed : {
+          "character" : "M",
+          "name" : "Em"
+        }
+      };
+      // TODO: upgrade our underscore.js version, the current one doesn't have deep equal
+      // which is needed here.
+      // ok(_.deepEqual(ds._deltaQueue[0], expectedDelta), "deltas are equal");
+
+      e = ds._buildEvent("update");
+      ok(e.name === "update", "event name was set");
+      ok(typeof e.delta !== "undefined", "delta was set");
+      // TODO uncomment this when we update underscore.js
+      // ok(_.deepEqual(e.delta[0], expectedDelta), "deltas are the same");
+
+      ds.pop();
+      ok(ds._queing === false, "no longer queing");
+      ok(ds._deltaQueue.length === 0, "no deltas in the queue")
+  
+    });
+
+    test("Basic event creation with queuing plus delta param", function() {
+      var obj = [
+        {"character" : "α", "name" : "alpha", "is_modern" : true, "numeric_value" : 1}, 
+        {"character" : "ε", "name" : "epsilon", "is_modern" : false, "numeric_value" : 5}
+      ];
+        
+      var ds = new DS({ data : obj }),
+          rid = ds._rows[0]._id;
+
+      ds.push();
+
+      ok(ds._queing === true, "queing started");
+      ok(ds.get(rid, "character") === "α", "pre set character is correct");
+      ok(ds.get(rid, "name") === "alpha", "pre set character is correct");
+      ds.set(rid, { "character" : "M", "name" : "Em" });
+      ok(ds.get(rid, "character") === "M", "post set character is correct");
+      ok(ds.get(rid, "name") === "Em", "post set character is correct");
+
+      ok(ds._deltaQueue.length === 1, "There are deltas in the queue");
+      var expectedDelta = {        
+        _id : rid,
+        old : {
+          "character" : "α",
+          "name" : "alpha"
+        },
+        changed : {
+          "character" : "M",
+          "name" : "Em"
+        }
+      };
+      // TODO: upgrade our underscore.js version, the current one doesn't have deep equal
+      // which is needed here.
+      // ok(_.deepEqual(ds._deltaQueue[0], expectedDelta), "deltas are equal");
+
+      e = ds._buildEvent("update", {_id : 20, old : { "a" : "b" }, changed : { "a" : "c" }});
+      ok(e.name === "update", "event name was set");
+      ok(typeof e.delta !== "undefined", "delta was set");
+      ok(e.delta.length === 2, "there are two deltas");
+      ok(e.delta[1]._id === 20, "the last one is the param delta");
+      // TODO uncomment this when we update underscore.js
+      // ok(_.deepEqual(e.delta[0], expectedDelta), "deltas are the same");
+
+      ds.pop();
+      ok(ds._queing === false, "no longer queing");
+      ok(ds._deltaQueue.length === 0, "no deltas in the queue")
+  
+    });
+  })();
+
+
   module("Events");
 
   (function() {

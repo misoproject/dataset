@@ -126,7 +126,7 @@ $(document).ready(function() {
 
       ds.pop();
       ok(ds._queing === false, "no longer queing");
-      ok(ds._deltaQueue.length === 0, "no deltas in the queue")
+      ok(ds._deltaQueue.length === 0, "no deltas in the queue");
     });
       
     //TODO: add event related triggers here!
