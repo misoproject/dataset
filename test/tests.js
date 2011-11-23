@@ -4,84 +4,128 @@ $(document).ready(function() {
 
   (function() {
     var data = {
-      "columns" : [{ "name" : "one", "type" : "Integer" }],
+      "columns" : [{ "name" : "one", "type" : "integer" }],
       "rows" : [ 
         {"data" : [1] }, 
         {"data" : [2] } 
       ]
     };
-    var ds = new DS({ data : data, strict : true });
+    var ds = new DS({ data : data, strict : true }),
+        rid1 = ds._rows[0]._id,
+        rid2 = ds._rows[1]._id;
 
     test("getting values", function() {
-      equal(1, ds.get(0, "one"), "Can get the first value in the one column" )
-      equal(2, ds.get(1, "one"), "Can get the second value in the one column" )
+      equal(1, ds.get(rid1, "one"), "Can get the first value in the one column" )
+      equal(2, ds.get(rid2, "one"), "Can get the second value in the one column" )
     });
 
     test("filtering to rows via filter:row", function() {
-      var sub = ds.filter({ row : 1 });
-      equal( sub.get(0, "one") , ds.get(1, "one"), "Same data exists in sub dataset" )
+      var sub = ds.filter({ row : 1 }),
+          rid = sub._rows[0]._id;
+      equal( sub.get(rid, "one") , ds.get(rid, "one"), "Same data exists in sub dataset" )
     });
 
     test("filtering to rows via filter:rows", function() {
-      var sub = ds.filter({ rows : [0, 1] });
-      equal( sub.get(0, "one") , ds.get(0, "one"), "Same data exists in sub dataset" )
-      equal( sub.get(1, "one") , ds.get(1, "one"), "Same data exists in sub dataset" )
+      var sub = ds.filter({ rows : [0, 1] }),
+          rid1 = sub._rows[0]._id,
+          rid2 = sub._rows[0]._id;
+      equal( sub.get(rid1, "one") , ds.get(rid1, "one"), "Same data exists in sub dataset" )
+      equal( sub.get(rid2, "one") , ds.get(rid2, "one"), "Same data exists in sub dataset" )
     });
 
     test("filtering to rows via rows", function() {
-      var sub = ds.rows(1);
-      equal( sub.get(0, "one") , ds.get(1, "one"), "Same data exists in sub dataset" )
+      var sub = ds.rows(1),
+          rid = sub._rows[0]._id
+      equal( sub.get(rid, "one") , ds.get(rid, "one"), "Same data exists in sub dataset" )
     });
   }());
 
-  module("Type Checking");
+  module("Setting values");
+  (function() {
 
-  
-  test("Creating a DS instance from object", function() {
-    var obj = [{"character" : "α", "name" : "alpha", "is_modern" : true, "numeric_value" : 1}, 
-      {"character" : "β", "name" : "beta", "is_modern" : true, "numeric_value" : 2}, 
-      {"character" : "γ", "name" : "gamma", "is_modern" : true, "numeric_value" : 3}, 
-      {"character" : "δ", "name" : "delta", "is_modern" : true, "numeric_value" : 4}, 
-      {"character" : "ε", "name" : "epsilon", "is_modern" : false, "numeric_value" : 5}];
+    test("Setting a single value", function() {
+      var obj = [
+        {"character" : "α", "name" : "alpha", "is_modern" : true, "numeric_value" : 1}, 
+        {"character" : "ε", "name" : "epsilon", "is_modern" : false, "numeric_value" : 5}
+      ];
+        
+      var ds = new DS({ data : obj }),
+          rid = ds._rows[0]._id;
 
-    var ds = new DS({ data : obj });
-    ok(typeof ds._columns !== "undefined", "columns are in place");
-    ok(typeof ds._rows !== "undefined", "rows are in place");
-    
-    // check data size
-    ok(ds._rows.length === 5, "there are 5 rows");
-    ok(ds._columns.length === 4, "there are 4 columns");
-    
-    // check first row
-    _.each(obj, function(row, i){
-      ok(_.isEqual(_.values(row), ds._rows[i].data), "row " + i + " is equal");      
-      ok(typeof ds._rows[i].data !== "undefined", "row " + i + " has an id");
+      ok(ds.get(rid, "character") === "α", "pre set character is correct");
+      ds.set(rid, { "character" : "M" });
+      ok(ds.get(rid, "character") === "M", "post set character is correct");
+      
     });
-    
-  });
-  
+
+    test("Setting a single value to the same value that already exists", function(){
+      var obj = [
+        {"character" : "α", "name" : "alpha", "is_modern" : true, "numeric_value" : 1}, 
+        {"character" : "ε", "name" : "epsilon", "is_modern" : false, "numeric_value" : 5}
+      ];
+        
+      var ds = new DS({ data : obj }),
+          rid = ds._rows[0]._id;
+
+      ok(ds.get(rid, "character") === "α", "pre set character is correct");
+      ds.set(rid, { "character" : "α" });
+      ok(ds.get(rid, "character") === "α", "post set character is correct");
+
+      // TODO: check that things weren't triggered here in the future.
+    });
+
+    test("Setting multiple values", function() {
+    var obj = [
+        {"character" : "α", "name" : "alpha", "is_modern" : true, "numeric_value" : 1}, 
+        {"character" : "ε", "name" : "epsilon", "is_modern" : false, "numeric_value" : 5}
+      ];
+        
+      var ds = new DS({ data : obj }),
+          rid = ds._rows[0]._id;
+
+      ok(ds.get(rid, "character") === "α", "pre set character is correct");
+      ok(ds.get(rid, "name") === "alpha", "pre set character is correct");
+      ds.set(rid, { "character" : "M", "name" : "Em" });
+      ok(ds.get(rid, "character") === "M", "post set character is correct");
+      ok(ds.get(rid, "name") === "Em", "post set character is correct");
+    });
+
+    //TODO: add event related triggers here!
+
+    //TODO: add subset related triggers here 
+    // - changing value in parent
+    //   should change values in sub datasets.
+    // - changing value in sub dataset
+    //   should change value in parent?
+    // May need to think about this in great detail.
+
+  })();
+
+
+
   module("Type Checking");
-  
-  test("Check Boolean type", function() {
-    var bTValue = true,
-        bFValue = false;
-    ok(DS.typeOf(bTValue)=="boolean", "Value should be boolean");
-    ok(DS.typeOf(bFValue)=="boolean", "Value should be boolean");
-  });
+  (function() {
+    test("Check Boolean type", function() {
+      var bTValue = true,
+          bFValue = false;
+      ok(DS.typeOf(bTValue)=="boolean", "Value should be boolean");
+      ok(DS.typeOf(bFValue)=="boolean", "Value should be boolean");
+    });
 
-  test("Check number type", function() {
-    var value = 12,
-        value2 = 0;
-    ok(DS.typeOf(value)=="number", "Value should be number");
-    ok(DS.typeOf(value2)=="number", "Value should be number");
-  });
+    test("Check number type", function() {
+      var value = 12,
+          value2 = 0;
+      ok(DS.typeOf(value)=="number", "Value should be number");
+      ok(DS.typeOf(value2)=="number", "Value should be number");
+    });
 
-  test("Check number type", function() {
-    var value = "cats",
-        value2 = "";
-    ok(DS.typeOf(value)=="string", "Value should be string");
-    ok(DS.typeOf(value2)=="string", "Value should be string");
-  });
+    test("Check number type", function() {
+      var value = "cats",
+          value2 = "";
+      ok(DS.typeOf(value)=="string", "Value should be string");
+      ok(DS.typeOf(value2)=="string", "Value should be string");
+    });
+  })();
 
   module("Calculated Values");
   (function() {

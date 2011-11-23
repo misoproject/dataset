@@ -29,6 +29,14 @@
     // _events["eventName"] = { pos : { rowIds : [], columnIds : [] }, callback : function }
     this._events = {};
 
+    // This queue holds changes as they occur. Calling .push on a dataset
+    // starts aggregating all the changes in the queue and calling pop returns
+    // them all and clears the queue.
+    this._queing = false;
+    this._deltaQueue = [];
+
+
+
     // if this is a forked dataset, the parent property should be set. We need to
     // auto subscribe this dataset to sync with its parent.
     if (options.parent) {
@@ -137,22 +145,70 @@
 
     },
 
-    get : function(row, column) {
-      return this._rows[ row ].data[ this._columnPosition( column ) ];
+    get : function(rid, column) {
+      return this._byRowId[rid].data[this._byColumnName[column].position];
     },
 
-    _columnByName : function(name) {
-      return _.find(this._columns, function(c) {
-        return c.name === name;
-      });
-    },
+    /**
+     * Sets the values in a particular row to the data object provided
+     * as a parameter. Takes an optional set of arguments.
+     * @param {int} rid - the row identifier to be modified
+     * @param {Object} data - The object containing the new data
+     * @param {Object} options (optional) - Contains flags such as, silent(true|false) 
+     *   which will prevent event triggering.
+     */
+    set : function(rid, data, options) {
+      this.options || (this.options = {});
+      var row = this._byRowId[rid];
 
-    _columnPosition : function(name) {
-      return _.indexOf(this._columns, this._columnByName(name));
-    },
+      if (typeof row === "undefined") {
+        return false;
+      } else {
+        
+        // What a delta object is going to look like.
+        var delta = {
+          _id : row._id,
+          old : {},
+          changed : {}
+        };
 
-    set : function(row, data, options) {
+        _.each(_.keys(data), function(key) {
 
+          // Find column we're modifying
+          var column = this._byColumnName[key];
+
+          // If this is not an existing column skip it.
+          // No new column values can be set.
+          if (typeof column !== "undefined") {
+            if (row.data[key] !== data[key]) {
+
+              // Save old value if it's different
+              delta.old[key] = row.data[column.position];
+
+              // Save the new value in the data object
+              delta.changed[key] = data[key];
+
+              // Overwrite actual value
+              row.data[column.position] = data[key];
+            }
+          }
+        }, this);
+
+      }
+
+      // if we're queing deltas and this wasn't
+      // supposed to be a silent trigger, save it and return the row.
+      if (this._queing && !this.options.silent) {
+        this._deltaQueue.push(delta);
+        
+      } else if (!this.options.silent) {
+        // TODO: trigger proper event here? What exactly should we
+        // be triggering here? Which events? All update events listening
+        // to this position row?
+      }
+
+      return row;
+       
     },
 
     //Calculate the minimum value in the entire dataset
@@ -208,9 +264,37 @@
 
     _sync: function(event) {
       
-    }
+    },
 
+    /**
+     * Starts the queing of the detals. By doing this, events will
+     * not be triggered while the queue is being filled. This allows
+     * for manual event triggering later down the road.
+     */
+    push : function() {
+      this._queing = true;
+    },
+
+    /**
+     * This methods offers a peek into the current state of the 
+     * delta queue.
+     */
+    peek : function() {
+      return this._deltaQueue;
+    },
+
+    /**
+     * This method stops the queing of the deltas. It returns a copy
+     * of the existing deltas and clears the current queue.
+     */
+    pop : function() {
+      this._queing = false;
+      var deltas = _.clone(this._deltaQueue);
+      this._deltaQueue = [];
+      return deltas;
+    }
   });
+
 
   /**
    * Returns the type of an input object.
@@ -232,6 +316,7 @@
 
   
   DS.Importers = function() {};
+
   _.extend(DS.Importers, {
     _buildColumn: function(name, type) {
       return {
@@ -239,6 +324,27 @@
         name : name,
         type : type
       };
+    }, 
+
+    /**
+     * Used by internal importers to cache the rows and columns
+     * in an actual quick lookup table for any id based operations.
+     */
+    _cache : function(d) {
+      d._byRowId = {};
+      d._byColumnId = {};
+      d._byColumnName = {};
+
+      _.each(d._rows, function(row) {
+        d._byRowId[row._id] = row;
+      });
+
+      // cache columns, also cache their position
+      _.each(d._columns, function(column, index) {
+        column.position = index;
+        d._byColumnId[column._id] = column;
+        d._byColumnName[column.name] = column;
+      });
     }
   });
   
@@ -250,7 +356,7 @@
     this._data = data;  
   };
 
-  _.extend(DS.Importers.Strict.prototype, {
+  _.extend(DS.Importers.Strict.prototype, DS.Importers, {
     _buildColumns : function(n) {
       var columns = this._data.columns;
       
@@ -280,6 +386,7 @@
         }
       });
 
+      this._cache(d);
       return d;
     }
   });
@@ -291,7 +398,7 @@
   DS.Importers.Obj = function(data, options) {
     this._data = data;
   };
-  _.extend(DS.Importers.Obj.prototype, {
+  _.extend(DS.Importers.Obj.prototype, DS.Importers, {
     
     _buildColumns : function(n) {
       
@@ -348,6 +455,7 @@
         return r;
       });
       
+      this._cache(d);
       return d;
     }
   });
