@@ -172,6 +172,8 @@
           changed : {}
         };
 
+        // Iterate over each key in the data being set
+        // and replace the value based on it.
         _.each(_.keys(data), function(key) {
 
           // Find column we're modifying
@@ -207,6 +209,9 @@
         // to this position row?
       }
 
+      // TODO: should we be returning the row here? Or the delta? I feel like
+      // row makes the most sense, although maybe we should be returning this, for
+      // chaining purposes. Thoughts?
       return row;
        
     },
@@ -318,6 +323,13 @@
   DS.Importers = function() {};
 
   _.extend(DS.Importers, {
+
+    /**
+     * Creates an internal representation of a column based on 
+     * the form expected by our strict json.
+     * @param {string} name The column name
+     * @param {string} type The type of the data in the column
+     */
     _buildColumn: function(name, type) {
       return {
         _id : _.uniqueId(),
@@ -331,15 +343,16 @@
      * in an actual quick lookup table for any id based operations.
      */
     _cache : function(d) {
-      d._byRowId = {};
-      d._byColumnId = {};
+      d._byRowId      = {};
+      d._byColumnId   = {};
       d._byColumnName = {};
 
+      // cache rows by their _ids.
       _.each(d._rows, function(row) {
         d._byRowId[row._id] = row;
       });
 
-      // cache columns, also cache their position
+      // cache columns by their column _ids, also cache their position by name.
       _.each(d._columns, function(column, index) {
         column.position = index;
         d._byColumnId[column._id] = column;
@@ -432,6 +445,7 @@
       
       return types;
     },
+
     parse : function() {
       
       var d = {};
