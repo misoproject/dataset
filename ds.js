@@ -117,7 +117,6 @@
         data.rows = _.map(data.rows, function(row, index) {
           var newRowData = { _id : row._id, data : [] };
           _.each(options.columns, function(cName) {
-            console.log(this._byColumnName[cName]);
             newRowData.data.push(row.data[this._byColumnName[cName].position]);
           }, this);
           
@@ -168,14 +167,29 @@
 
     },
 
+    /**
+     * Returns a row based on its position in the rows array.
+     * @param {number} index The position in the rows array (0 - for first row, etc.)
+     * @param {string} column The name of the column for which the value is being fetched.
+     */
     get : function(index, column) {
       return this._rows[index].data[this._byColumnName[column].position];
     },
 
+    /**
+     * Returns a row based on its row._id, independent of position in the 
+     * rows array.
+     * @param {number} rid The row identifier
+     * @param {string} column The name of the column for which the value is being fetched.
+     */
     getByRowId : function(rid, column) {
       return this._byRowId[rid].data[this._byColumnName[column].position];
     },
 
+    /**
+     * Internal setter implementation. Differs from API setters in that
+     * it expects an actual row object rather than a position specification.
+     */
     _set: function(row, data, options) {
       this.options || (this.options = {});
 
