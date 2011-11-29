@@ -668,20 +668,20 @@
   };
 
   _.extend(DS.Importers.Remote.prototype, 
-      DS.Importers.prototype, 
-      DS.Importers.Obj.prototype, 
-      {
-        fetch : function(options) {
-          
-          // call the original parse method of object parsing.
-          var callback = _.bind(function(data) {
-            this._data = this.parse(data);
-            DS.Importers.Obj.prototype.fetch.apply(this, [options]);
-          }, this);
+    DS.Importers.prototype, 
+    DS.Importers.Obj.prototype, 
+    {
+      fetch : function(options) {
+        
+        // call the original parse method of object parsing.
+        var callback = _.bind(function(data) {
+          this._data = this.parse(data);
+          DS.Importers.Obj.prototype.fetch.apply(this, [options]);
+        }, this);
 
-          // make ajax call to fetch remote url.
-          $.ajax(this.params).success(callback);
-      }
+        // make ajax call to fetch remote url.
+        $.ajax(this.params).success(callback);
+    }
   });
   
   DS.VERSION = "0.0.1";
