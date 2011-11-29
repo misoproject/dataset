@@ -1,4 +1,4 @@
-[   
+window.DS.alphabet_obj = [   
     { "character":"α", "name":"alpha", "is_modern":true, "numeric_value":1 },
     { "character":"β", "name":"beta", "is_modern":true, "numeric_value":2 },
     { "character":"γ", "name":"gamma", "is_modern":true, "numeric_value":3 },
@@ -23,4 +23,4 @@
     { "character":"χ", "name":"chi", "is_modern":true, "numeric_value":600 },
     { "character":"ψ", "name":"psi", "is_modern":false, "numeric_value":700 },
     { "character":"ω", "name":"omega", "is_modern":true, "numeric_value":800 }
-] 
+];

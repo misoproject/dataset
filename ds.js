@@ -20,33 +20,41 @@
 
 (function(global) {
 
-  var DS = function(options) {
-    options = options || (options = {});
+  // If a global DS constructor is already defined, used that instead
+  // otherwise make sure the global namespace is set and 
+  // define the constructor.
+  var DS = (global.DS || function() {
+    
+    // Define global scope if it hasn't been defined yet.
+    global.DS = function(options) {
 
-    this._options = options;
+      options = options || (options = {});
 
-    // stores events that are subscribed on this dataset. Format is:
-    // _events["eventName"] = { pos : { rowIds : [], columnIds : [] }, callback : function }
-    this._events = {};
+      this._options = options;
 
-    // This queue holds changes as they occur. Calling .push on a dataset
-    // starts aggregating all the changes in the queue and calling pop returns
-    // them all and clears the queue.
-    this._queing = false;
-    this._deltaQueue = [];
+      // stores events that are subscribed on this dataset. Format is:
+      // _events["eventName"] = { pos : { rowIds : [], columnIds : [] }, callback : function }
+      this._events = {};
 
+      // This queue holds changes as they occur. Calling .push on a dataset
+      // starts aggregating all the changes in the queue and calling pop returns
+      // them all and clears the queue.
+      this._queing = false;
+      this._deltaQueue = [];
 
-
-    // if this is a forked dataset, the parent property should be set. We need to
-    // auto subscribe this dataset to sync with its parent.
-    if (options.parent) {
-      
-      // TODO: do some auto subscribing here...
-      
+      // if this is a forked dataset, the parent property should be set. We need to
+      // auto subscribe this dataset to sync with its parent.
+      if (options.parent) {
+        
+        // TODO: do some auto subscribing here...
+        
+      }
+      this._buildData();
     }
 
-    this._buildData();
-  };
+    return global.DS;
+
+  }());
 
   // CONSTS
   DS.datatypes = {
@@ -82,7 +90,11 @@
       // run parser and append rows and columns to this instance
       // of dataset.
       if (importer !== null) {
-        _.extend(this, importer.parse());
+        importer.fetch({
+          success : _.bind(function(d) {
+            _.extend(this, d);    
+          }, this)
+        });
       }
     },
 
@@ -168,12 +180,27 @@
     },
 
     /**
+     * Row + value lookup private method to generalize access to the various
+     * caches.
+     * @param {string} rowcache The row cache name (_rows | _byRowId)
+     * @param {number} index The position|id of the element.
+     * @param {string} column The column name for the value being fetched. optional.
+     */
+    _get : function(rowcache, index, column) {
+      if (column) {
+        return this[rowcache][index].data[this._byColumnName[column].position];
+      } else {
+        return this[rowcache][index];
+      }
+    },
+
+    /**
      * Returns a row based on its position in the rows array.
      * @param {number} index The position in the rows array (0 - for first row, etc.)
      * @param {string} column The name of the column for which the value is being fetched.
      */
     get : function(index, column) {
-      return this._rows[index].data[this._byColumnName[column].position];
+      return this._get("_rows", index, column);
     },
 
     /**
@@ -183,7 +210,7 @@
      * @param {string} column The name of the column for which the value is being fetched.
      */
     getByRowId : function(rid, column) {
-      return this._byRowId[rid].data[this._byColumnName[column].position];
+      return this._get("_byRowId", rid, column);
     },
 
     /**
@@ -452,56 +479,72 @@
   };
 
   
+  /**
+   * Base importer class.
+   */
   DS.Importers = function() {};
 
-  _.extend(DS.Importers, {
+  /**
+   * Creates an internal representation of a column based on 
+   * the form expected by our strict json.
+   * @param {string} name The column name
+   * @param {string} type The type of the data in the column
+   */
+  DS.Importers.prototype._buildColumn = function(name, type) {
+    return {
+      _id : _.uniqueId(),
+      name : name,
+      type : type
+    };
+  };
 
-    /**
-     * Creates an internal representation of a column based on 
-     * the form expected by our strict json.
-     * @param {string} name The column name
-     * @param {string} type The type of the data in the column
-     */
-    _buildColumn: function(name, type) {
-      return {
-        _id : _.uniqueId(),
-        name : name,
-        type : type
-      };
-    }, 
+  /**
+   * Used by internal importers to cache the rows and columns
+   * in quick lookup tables for any id based operations.
+   */
+  DS.Importers.prototype._cache = function(d) {
+    d._byRowId      = {};
+    d._byColumnId   = {};
+    d._byColumnName = {};
 
-    /**
-     * Used by internal importers to cache the rows and columns
-     * in an actual quick lookup table for any id based operations.
-     */
-    _cache : function(d) {
-      d._byRowId      = {};
-      d._byColumnId   = {};
-      d._byColumnName = {};
+    // cache rows by their _ids.
+    _.each(d._rows, function(row) {
+      d._byRowId[row._id] = row;
+    });
 
-      // cache rows by their _ids.
-      _.each(d._rows, function(row) {
-        d._byRowId[row._id] = row;
-      });
+    // cache columns by their column _ids, also cache their position by name.
+    _.each(d._columns, function(column, index) {
+      column.position = index;
+      d._byColumnId[column._id] = column;
+      d._byColumnName[column.name] = column;
+    });
+  };
 
-      // cache columns by their column _ids, also cache their position by name.
-      _.each(d._columns, function(column, index) {
-        column.position = index;
-        d._byColumnId[column._id] = column;
-        d._byColumnName[column.name] = column;
-      });
-    }
-  });
+  /**
+  * By default we are assuming that our data is in
+  * the correct form from the fetching.
+  */
+  DS.Importers.prototype.parse = function(data) {
+    return data;
+  };
   
   /**
   * Handles basic import. 
   * TODO: add verify flag to disable auto id assignment for example.
   */
   DS.Importers.Strict = function(data, options) {
-    this._data = data;  
+    options || (options = {});
+    
+    if (options.parse) {
+      this.parse = options.parse;
+    }
+
+    this._data = this.parse(data);  
   };
 
-  _.extend(DS.Importers.Strict.prototype, DS.Importers, {
+  _.extend(
+    DS.Importers.Strict.prototype, 
+    DS.Importers.prototype, {
     _buildColumns : function(n) {
       var columns = this._data.columns;
       
@@ -515,7 +558,7 @@
       return columns;
     },
 
-    parse : function() {
+    fetch : function(options) {
       var d = {};
       
       // Build columns
@@ -532,18 +575,28 @@
       });
 
       this._cache(d);
-      return d;
+      options.success(d);
     }
   });
+
 
   /**
    * Converts an array of objects to strict format.
    * @params {Object} obj = [{},{}...]
    */
   DS.Importers.Obj = function(data, options) {
-    this._data = data;
+    options || (options = {});
+
+    if (options.parse) {
+      this.parse = options.parse;
+    }
+
+    this._data = this.parse(data);  
   };
-  _.extend(DS.Importers.Obj.prototype, DS.Importers, {
+
+  _.extend(
+    DS.Importers.Obj.prototype,
+    DS.Importers.prototype, {
     
     _buildColumns : function(n) {
       
@@ -569,16 +622,16 @@
         }, []); 
         
         if (vals.length == 1) {
-          return DS.Importers._buildColumn(key, vals[0]);
+          return this._buildColumn(key, vals[0]);
         } else {
-          return DS.Importers._buildColumn(key, DS.datatypes.UNKNOWN);
+          return this._buildColumn(key, DS.datatypes.UNKNOWN);
         }
       }, this);
       
       return types;
     },
 
-    parse : function() {
+    fetch : function(options) {
       
       var d = {};
       
@@ -602,11 +655,51 @@
       });
       
       this._cache(d);
-      return d;
+      options.success(d);
+    }
+  });
+
+
+  /**
+   * Fetches a remote url of json data and then parses it.
+   * @param {string} url The url to fetch
+   * @param {object} options An object containing options specfic to this
+   * importer, such as { jsonp : true|false }
+   */
+  DS.Importers.Remote = function(url, options) {
+    options || (options = {});
+    this._url = url;
+
+    if (options.parse) {
+      this.parse = options.parse;
+    }
+    
+    // Default ajax request parameters
+    this.params = {
+      type : "GET",
+      url : this._url,
+      dataType : options.jsonp ? "jsonp" : "json"
+    };
+
+  };
+
+  _.extend(DS.Importers.Remote.prototype, 
+    DS.Importers.prototype, 
+    DS.Importers.Obj.prototype, 
+    {
+      fetch : function(options) {
+        
+        // call the original parse method of object parsing.
+        var callback = _.bind(function(data) {
+          this._data = this.parse(data);
+          DS.Importers.Obj.prototype.fetch.apply(this, [options]);
+        }, this);
+
+        // make ajax call to fetch remote url.
+        $.ajax(this.params).success(callback);
     }
   });
   
   DS.VERSION = "0.0.1";
-  global.DS = DS;
 
 }(this));
