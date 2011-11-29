@@ -27,7 +27,7 @@ $(document).ready(function() {
     };
      
     module("Importing Obj");   
-    test("Convert object to dataset", function() {        
+    test("Convert object to dataset", 94, function() {        
       var importer = new DS.Importers.Obj(DS.alphabet_obj);
       importer.fetch({
         success : function(strictData) {
@@ -59,7 +59,7 @@ $(document).ready(function() {
     });
 
     module("Strict Importer")
-    test("Basic Strict Import", function() {
+    test("Basic Strict Import", 46, function() {
       
       var importer = new DS.Importers.Strict(DS.alphabet_strict);
       importer.fetch({
@@ -89,7 +89,7 @@ $(document).ready(function() {
     });
 
     module("Remote Importer");
-    test("Basic json url fetch", function() {
+    test("Basic json url fetch", 36, function() {
       // This is a random yahoo pipe that just grabs the alphabet_obj.js file and
       // pipes it back as json. Nothing clever happens here.
       var url = "http://pipes.yahoo.com/pipes/pipe.run?_id=ea8f8a21cf15cb73a884adca0d49e227&_render=json";
@@ -109,7 +109,7 @@ $(document).ready(function() {
       
     });
 
-    test("Basic jsonp url fetch", function() {
+    test("Basic jsonp url fetch", 36, function() {
       // This is a random yahoo pipe that just grabs the alphabet_obj.js file and
       // pipes it back as json. Nothing clever happens here.
       var url = "http://pipes.yahoo.com/pipes/pipe.run?_id=ea8f8a21cf15cb73a884adca0d49e227&_render=json&_callback=?";
