@@ -668,7 +668,7 @@
    * importer, such as { jsonp : true|false }
    */
   DS.Importers.Remote = function(url, options) {
-    options || (options = {});
+    options = options || {};
     this._url = url;
 
     if (options.parse) {
