@@ -29,6 +29,16 @@ $(document).ready(function() {
       equal(2, ds.getByRowId(rid2, "one"), "Can get the second value in the one column" )
     });
 
+    test("getting a whole row by position", function() {
+      ok(typeof ds.get(pos1)._id !== "undefined", "Whole row fetch has _id");
+      ok(typeof ds.get(pos1).data !== "undefined", "Whole row fetch has data");
+    });
+
+    test("getting a whole row by id", function() {
+      ok(typeof ds.getByRowId(rid1)._id !== "undefined", "Whole row fetch has _id");
+      ok(typeof ds.getByRowId(rid1).data !== "undefined", "Whole row fetch has data");
+    });
+
     test("filtering to rows via filter:row", function() {
       var rid = 0,
           sub = ds.filter({ row : rid });
@@ -153,20 +163,19 @@ $(document).ready(function() {
       ok(ds.get(rid, "name") === "Em", "post set character is correct");
 
       ok(ds._deltaQueue.length === 1, "There are deltas in the queue");
-      // TODO: upgrade our underscore.js version, the current one doesn't have deep equal
-      // which is needed here.
-      // ok(_.deepEqual(ds._deltaQueue[0], {
+
+      ok(_.isEqual(ds._deltaQueue[0], {
         
-      //   _id : rid,
-      //   old : {
-      //     "character" : "α",
-      //     "name" : "alpha"
-      //   },
-      //   changed : {
-      //     "character" : "M",
-      //     "name" : "Em"
-      //   }
-      // }), "deltas are equal");
+        _id : ds.get(rid)._id,
+        old : {
+          "character" : "α",
+          "name" : "alpha"
+        },
+        changed : {
+          "character" : "M",
+          "name" : "Em"
+        }
+      }), "deltas are equal");
 
       ds.pop();
       ok(ds._queing === false, "no longer queing");

@@ -21,10 +21,10 @@ $(document).ready(function() {
       e = ds._buildEvent("update", { _id : 1, old : { "a" : "b" }, changed : { "a" : "c" }});
       ok(e.name === "update", "event name was set");
       ok(typeof e.delta !== "undefined", "delta was set");
-      // TODO uncomment this when we update underscore.js
-      // ok(_.deepEqual(e.delta[0],
-      //   { _id : 1, old : { "a" : "b" }, changed : { "a" : "c" }}
-      // ), "deltas are the same");
+      
+      ok(_.isEqual(e.delta[0],
+        { _id : 1, old : { "a" : "b" }, changed : { "a" : "c" }}
+      ), "deltas are the same");
 
     });
 
@@ -48,7 +48,7 @@ $(document).ready(function() {
 
       ok(ds._deltaQueue.length === 1, "There are deltas in the queue");
       var expectedDelta = {        
-        _id : rid,
+        _id : ds.get(rid)._id,
         old : {
           "character" : "α",
           "name" : "alpha"
@@ -58,15 +58,14 @@ $(document).ready(function() {
           "name" : "Em"
         }
       };
-      // TODO: upgrade our underscore.js version, the current one doesn't have deep equal
-      // which is needed here.
-      // ok(_.deepEqual(ds._deltaQueue[0], expectedDelta), "deltas are equal");
+      
+      ok(_.isEqual(ds._deltaQueue[0], expectedDelta), "deltas are equal");
 
       e = ds._buildEvent("update");
       ok(e.name === "update", "event name was set");
       ok(typeof e.delta !== "undefined", "delta was set");
-      // TODO uncomment this when we update underscore.js
-      // ok(_.deepEqual(e.delta[0], expectedDelta), "deltas are the same");
+      
+      ok(_.isEqual(e.delta[0], expectedDelta), "deltas are the same");
 
       ds.pop();
       ok(ds._queing === false, "no longer queing");
@@ -94,7 +93,7 @@ $(document).ready(function() {
 
       ok(ds._deltaQueue.length === 1, "There are deltas in the queue");
       var expectedDelta = {        
-        _id : rid,
+        _id : ds.get(rid)._id,
         old : {
           "character" : "α",
           "name" : "alpha"
@@ -104,17 +103,16 @@ $(document).ready(function() {
           "name" : "Em"
         }
       };
-      // TODO: upgrade our underscore.js version, the current one doesn't have deep equal
-      // which is needed here.
-      // ok(_.deepEqual(ds._deltaQueue[0], expectedDelta), "deltas are equal");
+  
+      ok(_.isEqual(ds._deltaQueue[0], expectedDelta), "deltas are equal");
 
       e = ds._buildEvent("update", {_id : 20, old : { "a" : "b" }, changed : { "a" : "c" }});
       ok(e.name === "update", "event name was set");
       ok(typeof e.delta !== "undefined", "delta was set");
       ok(e.delta.length === 2, "there are two deltas");
       ok(e.delta[1]._id === 20, "the last one is the param delta");
-      // TODO uncomment this when we update underscore.js
-      // ok(_.deepEqual(e.delta[0], expectedDelta), "deltas are the same");
+      
+      ok(_.isEqual(e.delta[0], expectedDelta), "deltas are the same");
 
       ds.pop();
       ok(ds._queing === false, "no longer queing");
