@@ -11,6 +11,7 @@
 		"node": ">=v0.4.8"
 	},
 	"devDependencies": {
+		"jake": "*",
 		"underscore": "*",
 		"jshint": "*",
 		"uglify-js": "*",
