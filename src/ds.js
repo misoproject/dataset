@@ -253,7 +253,7 @@
 
       // if we're queing deltas and this wasn't
       // supposed to be a silent trigger, save it and return the row.
-      if (this._queing && !this.options.silent) {
+      if (this._queing && !options.silent) {
 
         this._deltaQueue.push(delta);
 
