@@ -2,7 +2,7 @@ $(document).ready(function() {
   
   module("Event Building");
   (function() {
-    test("Basic event creation with delta", function() {
+    test("Basic event creation with delta", 3, function() {
       
       var obj = { "metadata" : {"name" : "Greek Alphabet" },
         "columns" : [ 
@@ -28,7 +28,7 @@ $(document).ready(function() {
 
     });
 
-    test("Basic event creation with queuing", function() {
+    test("Basic event creation with queuing", 12, function() {
       var obj = [
         {"character" : "α", "name" : "alpha", "is_modern" : true, "numeric_value" : 1}, 
         {"character" : "ε", "name" : "epsilon", "is_modern" : false, "numeric_value" : 5}
@@ -73,7 +73,7 @@ $(document).ready(function() {
   
     });
 
-    test("Basic event creation with queuing plus delta param", function() {
+    test("Basic event creation with queuing plus delta param", 14, function() {
       var obj = [
         {"character" : "α", "name" : "alpha", "is_modern" : true, "numeric_value" : 1}, 
         {"character" : "ε", "name" : "epsilon", "is_modern" : false, "numeric_value" : 5}
@@ -141,40 +141,35 @@ $(document).ready(function() {
 
     var ds = new DS({ data : obj, strict : true });
 
-    test("basic event binding on entire dataset", function() {
-      expect(1);
+    test("basic event binding on entire dataset", 1, function() {
       ds.bind("sampleevent", null, function() {
         ok(true, "sample event was triggered!");
       });
       ds.trigger("sampleevent");
     });
 
-    test("basic binding on specific row", function() {
-      expect(1);
+    test("basic binding on specific row", 1, function() {
       ds.bind("sampleevent2", {row : ds._rows[0]._id} , function() {
         ok(true, "sampleevent2 triggered with row 1");
       });
       ds.trigger("sampleevent2", { row : ds._rows[0]._id });
     });
 
-    test("basic binding on specific row from array ", function() {
-      expect(1);
+    test("basic binding on specific row from array ", 1, function() {
       ds.bind("sampleevent3", {row : ds._rows[0]._id} , function() {
         ok(true, "sampleevent3 triggered with row 1");
       });
       ds.trigger("sampleevent3", { row : [ds._rows[0]._id, ds._rows[1]._id] });
     });
 
-    test("basic binding on specific row from array reverse", function() {
-      expect(1);
+    test("basic binding on specific row from array reverse", 1, function() {
       ds.bind("sampleevent4", {row : [ds._rows[0]._id, ds._rows[1]._id]} , function() {
         ok(true, "sampleevent4 triggered with row 1");
       });
       ds.trigger("sampleevent4", { row : ds._rows[0]._id });
     });
 
-    test("multiple subscribers", function() {
-      expect(2);
+    test("multiple subscribers", 2, function() {
       ds.bind("s1", {row : [ds._rows[0]._id, ds._rows[1]._id]} , function() {
         ok(true, "s1 triggered callback 1");
       });
@@ -185,8 +180,7 @@ $(document).ready(function() {
     });
 
     // TODO: sort out why this is still triggering!
-    test("out of range shouldn't trigger", function() {
-      expect(0);
+    test("out of range shouldn't trigger", 0, function() {
       ds.bind("s2", {row : [ds._rows[0]._id, ds._rows[1]._id]} , function() {
         ok(true, "s2 triggered callback 1");
       });
