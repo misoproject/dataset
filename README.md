@@ -5,6 +5,27 @@ Dataset
 
 Dataset is a  plugin that handles client side dataset management. It is entirely separate from any sort of UI for a reason. It's meant to function as a layer on top of which tools such as data visualization libraries can be written with a separation of concerns between the data and ui.
 
+# Setup & Development
+
+Create dev environment:
+
+```
+$ npm install
+```
+
+Build:
+
+```
+$ jake
+```
+
+Lint Source:
+
+```
+$ jake hint
+```
+
+
 # Status
 
 Currently, the spec for the library is being written.
@@ -67,12 +88,12 @@ No pagination support in release 1.0.
 
 No XML Support in release 1.0.
 <de>We don't particularly feel the need to support XML at the moment. </del>
-  
+
 ### GeoJSON
 
 Not going to worry about it right now.
 <del>Need to sort out how to best support geo data in this lib.</del>
-  
+
 ## Query
 Going with the following model:
 
