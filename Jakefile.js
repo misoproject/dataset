@@ -226,15 +226,19 @@ task( "hint", function() {
 
 		var files = config.files[ minpath ],
 		concat = files.src.map(function( path ) {
-			var src = readFile( path );
 
-			config.jshint.devel = config.jshint.debug = files.debug;
+			// Ignore vendor scripts in src/lib
+			if ( !/src\/lib\//.test(path) ) {
+				var src = readFile( path );
 
-			if ( files.prehint ) {
-				hint( src, path );
+				config.jshint.devel = config.jshint.debug = files.debug;
+
+				if ( files.prehint ) {
+					hint( src, path );
+				}
+
+				return src;
 			}
-
-			return src;
 		}).join( "\n" );
 
 		if ( files.src.length ) {

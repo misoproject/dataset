@@ -1,12 +1,12 @@
 {
 	"files": {
-		"dist/ds.js": {
+		"dist/ds": {
 			"src": [
 				"src/lib/underscore.js",
 				"src/ds.js"
 			],
 			"prehint": true,
-			"posthint": true,
+			"posthint": false,
 			"debug": true,
 
 			"meta": {
