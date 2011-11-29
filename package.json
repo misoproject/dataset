@@ -17,7 +17,6 @@
 		"uglify-js": "*",
 		"express": "*",
 		"vows": "*",
-		"stats": "*",
 		"colors": "*",
 		"zlib": "*",
 		"dateformat": "*",
