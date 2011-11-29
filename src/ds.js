@@ -265,11 +265,15 @@
 
         this._deltaQueue.push(delta);
 
-      } else if (!this.options.silent) {
-        // TODO: trigger proper event here? What exactly should we
-        // be triggering here? Which events? All update events listening
-        // to this position row?
       }
+/*
+      else if (!this.options.silent) {
+              // TODO: trigger proper event here? What exactly should we
+              // be triggering here? Which events? All update events listening
+              // to this position row?
+            }
+*/
+
 
       // TODO: should we be returning the row here? Or the delta? I feel like
       // row makes the most sense, although maybe we should be returning this, for
