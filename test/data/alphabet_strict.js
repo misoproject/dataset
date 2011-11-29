@@ -1,11 +1,11 @@
 window.DS.alphabet_strict = { "metadata" : {"name" : "Greek Alphabet" },
-  "columns" : [ 
-    {"name" : "character", "type" : "string"}, 
-    {"name" : "name", "type" : "string"}, 
-    {"name" : "is_modern", "type" : "boolean"}, 
-    {"name" : "numeric_value", "type" : "number"} 
+  "columns" : [
+    {"name" : "character", "type" : "string"},
+    {"name" : "name", "type" : "string"},
+    {"name" : "is_modern", "type" : "boolean"},
+    {"name" : "numeric_value", "type" : "number"}
   ],
-  "rows" : [   
+  "rows" : [
     { data : ["α","alpha",true,1] },
     { data : ["β","beta",true,2] },
     { data : ["γ","gamma",true,3] },
@@ -30,6 +30,6 @@ window.DS.alphabet_strict = { "metadata" : {"name" : "Greek Alphabet" },
     { data : ["χ","chi",true,600] },
     { data : ["ψ","psi",false,700] },
     { data : ["ω","omega",true,800] }
-  ] 
-}
+  ]
+};
 
