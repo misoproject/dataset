@@ -51,7 +51,7 @@ var // Program References
 				eqnull: true,
 				curly: true,
 				browser: true,
-				predef: [ "_" ]
+				predef: [ "_", "$" ]
 				// onevar: true,
 				// "eqnull": true,
 				// "immed": true,
@@ -64,7 +64,7 @@ var // Program References
 			// Uglify Optional Settings
 			"uglify": {
 				"mangle": {
-					"except": [ "_" ]
+					"except": [ "_", "$" ]
 				},
 				"squeeze": {},
 				"codegen": {}
