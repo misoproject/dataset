@@ -616,9 +616,10 @@
         // If we have N values, we are going to hope that at the end we
         // have an array of length 1 with a single type, like ["string"]
         var vals =  _.inject(this._data, function(memo, row) {
-          if (memo.indexOf(DS.typeOf(row[key])) == -1)
+          if (memo.indexOf(DS.typeOf(row[key])) == -1) {
             memo.push(DS.typeOf(row[key]));
-            return memo;
+          }
+          return memo;
         }, []);
 
         if (vals.length == 1) {
