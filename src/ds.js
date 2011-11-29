@@ -160,14 +160,6 @@
 
     },
 
-    push : function() {
-
-    },
-
-    pop : function() {
-
-    },
-
     rows : function(num) {
       return this.filter({ row : num });
     },
@@ -540,7 +532,7 @@
   * TODO: add verify flag to disable auto id assignment for example.
   */
   DS.Importers.Strict = function(data, options) {
-    options || (options = {});
+    options = options || {};
 
     if (options.parse) {
       this.parse = options.parse;
@@ -592,7 +584,7 @@
    * @params {Object} obj = [{},{}...]
    */
   DS.Importers.Obj = function(data, options) {
-    options || (options = {});
+    options = options || {};
 
     if (options.parse) {
       this.parse = options.parse;
