@@ -99,8 +99,30 @@ $(document).ready(function() {
           return data.value.items[0].json;
         }
       });
+      stop();
       var data = parser.fetch({
         success: function(strictData) {
+          start();
+          verifyImport({}, strictData);
+        }
+      });
+      
+    });
+
+    test("Basic jsonp url fetch", function() {
+      // This is a random yahoo pipe that just grabs the alphabet_obj.js file and
+      // pipes it back as json. Nothing clever happens here.
+      var url = "http://pipes.yahoo.com/pipes/pipe.run?_id=ea8f8a21cf15cb73a884adca0d49e227&_render=json&_callback=?";
+      var parser = new DS.Importers.Remote(url, { 
+        jsonp : true, 
+        parse : function(data) {
+          return data.value.items[0].json;
+        }
+      });
+      stop();
+      var data = parser.fetch({
+        success: function(strictData) {
+          start();
           verifyImport({}, strictData);
         }
       });
