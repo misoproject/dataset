@@ -20,31 +20,41 @@
 
 (function(global) {
 
-  var DS = function(options) {
-    options = options || (options = {});
+  // If a global DS constructor is already defined, used that instead
+  // otherwise make sure the global namespace is set and 
+  // define the constructor.
+  var DS = (global.DS || function() {
+    
+    // Define global scope if it hasn't been defined yet.
+    global.DS = function(options) {
 
-    this._options = options;
+      options = options || (options = {});
 
-    // stores events that are subscribed on this dataset. Format is:
-    // _events["eventName"] = { pos : { rowIds : [], columnIds : [] }, callback : function }
-    this._events = {};
+      this._options = options;
 
-    // This queue holds changes as they occur. Calling .push on a dataset
-    // starts aggregating all the changes in the queue and calling pop returns
-    // them all and clears the queue.
-    this._queing = false;
-    this._deltaQueue = [];
+      // stores events that are subscribed on this dataset. Format is:
+      // _events["eventName"] = { pos : { rowIds : [], columnIds : [] }, callback : function }
+      this._events = {};
 
-    // if this is a forked dataset, the parent property should be set. We need to
-    // auto subscribe this dataset to sync with its parent.
-    if (options.parent) {
-      
-      // TODO: do some auto subscribing here...
-      
+      // This queue holds changes as they occur. Calling .push on a dataset
+      // starts aggregating all the changes in the queue and calling pop returns
+      // them all and clears the queue.
+      this._queing = false;
+      this._deltaQueue = [];
+
+      // if this is a forked dataset, the parent property should be set. We need to
+      // auto subscribe this dataset to sync with its parent.
+      if (options.parent) {
+        
+        // TODO: do some auto subscribing here...
+        
+      }
+      this._buildData();
     }
 
-    this._buildData();
-  };
+    return global.DS;
+
+  }());
 
   // CONSTS
   DS.datatypes = {
@@ -691,6 +701,5 @@
   });
   
   DS.VERSION = "0.0.1";
-  global.DS = DS;
 
 }(this));
