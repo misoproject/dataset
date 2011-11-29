@@ -1,0 +1,25 @@
+{
+	"authors": "Alex Graul, Irene Ros",
+	"name": "Dataset",
+	"description": "see readme.md",
+	"version": "0.0.1",
+	"repository": {
+		"type": "git",
+		"url": "git@github.com:alexgraul/dataset.git"
+	},
+	"engines": {
+		"node": ">=v0.4.8"
+	},
+	"devDependencies": {
+		"jake": "*",
+		"underscore": "*",
+		"jshint": "*",
+		"uglify-js": "*",
+		"express": "*",
+		"vows": "*",
+		"colors": "*",
+		"zlib": "*",
+		"dateformat": "*",
+		"jsonlint": "*"
+	}
+}

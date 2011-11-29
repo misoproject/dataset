@@ -1,7 +1,7 @@
 /**
 * Library Deets go here
 * USE OUR CODES
-* 
+*
 * Version 0.0.1
 *
 * // Constructor Parameters :
@@ -21,10 +21,10 @@
 (function(global) {
 
   // If a global DS constructor is already defined, used that instead
-  // otherwise make sure the global namespace is set and 
+  // otherwise make sure the global namespace is set and
   // define the constructor.
   var DS = (global.DS || function() {
-    
+
     // Define global scope if it hasn't been defined yet.
     global.DS = function(options) {
 
@@ -44,13 +44,14 @@
 
       // if this is a forked dataset, the parent property should be set. We need to
       // auto subscribe this dataset to sync with its parent.
+      /*
       if (options.parent) {
-        
         // TODO: do some auto subscribing here...
-        
       }
+      */
+
       this._buildData();
-    }
+    };
 
     return global.DS;
 
@@ -61,38 +62,38 @@
     UNKNOWN: "Unknown",
     NUMBER : 0,
     STRING : 1,
-    BOOLEAN: 2, 
-    ARRAY  : 3, 
+    BOOLEAN: 2,
+    ARRAY  : 3,
     OBJECT : 4
   };
 
   // Public Methods
   _.extend(DS.prototype, {
-    
+
     _buildData : function() {
 
       var importer = null;
-      
+
       if (this._options.strict) {
-        
+
        // If this is a strict format import, use the Strict importer.
         importer = new DS.Importers.Strict(this._options.data);
-        
+
       } else if (typeof this._options.data !== "undefined") {
 
         // If data was set, we've recieved an array of objects?
         importer = new DS.Importers.Obj(this._options.data);
-      }  
-        
-      // remove temporary data holder.  
+      }
+
+      // remove temporary data holder.
       delete this._options.data;
-      
+
       // run parser and append rows and columns to this instance
       // of dataset.
       if (importer !== null) {
         importer.fetch({
           success : _.bind(function(d) {
-            _.extend(this, d);    
+            _.extend(this, d);
           }, this)
         });
       }
@@ -131,7 +132,7 @@
           _.each(options.columns, function(cName) {
             newRowData.data.push(row.data[this._byColumnName[cName].position]);
           }, this);
-          
+
           return newRowData;
         }, this);
       }
@@ -142,9 +143,9 @@
         return data;
       // else return a new dataset of which this is the parent.
       } else {
-        return new DS({ data : data, strict : true, parent: this });  
+        return new DS({ data : data, strict : true, parent: this });
       }
-      
+
     },
 
     transform : function() {
@@ -156,14 +157,6 @@
     },
 
     sort : function() {
-
-    },
-
-    push : function() {
-
-    },
-
-    pop : function() { 
 
     },
 
@@ -204,7 +197,7 @@
     },
 
     /**
-     * Returns a row based on its row._id, independent of position in the 
+     * Returns a row based on its row._id, independent of position in the
      * rows array.
      * @param {number} rid The row identifier
      * @param {string} column The name of the column for which the value is being fetched.
@@ -218,18 +211,19 @@
      * it expects an actual row object rather than a position specification.
      */
     _set: function(row, data, options) {
-      this.options || (this.options = {});
+
+      options = options || {};
+
+      // What a delta object is going to look like.
+      var delta = {
+        _id : row._id,
+        old : {},
+        changed : {}
+      };
 
       if (typeof row === "undefined") {
         return false;
       } else {
-        
-        // What a delta object is going to look like.
-        var delta = {
-          _id : row._id,
-          old : {},
-          changed : {}
-        };
 
         // Iterate over each key in the data being set
         // and replace the value based on it.
@@ -259,14 +253,19 @@
 
       // if we're queing deltas and this wasn't
       // supposed to be a silent trigger, save it and return the row.
-      if (this._queing && !this.options.silent) {
+      if (this._queing && !options.silent) {
+
         this._deltaQueue.push(delta);
-        
-      } else if (!this.options.silent) {
-        // TODO: trigger proper event here? What exactly should we
-        // be triggering here? Which events? All update events listening
-        // to this position row?
+
       }
+/*
+      else if (!this.options.silent) {
+              // TODO: trigger proper event here? What exactly should we
+              // be triggering here? Which events? All update events listening
+              // to this position row?
+            }
+*/
+
 
       // TODO: should we be returning the row here? Or the delta? I feel like
       // row makes the most sense, although maybe we should be returning this, for
@@ -279,7 +278,7 @@
      * as a parameter. Takes an optional set of arguments.
      * @param {int} index - the row position in the data array to be modified
      * @param {Object} data - The object containing the new data
-     * @param {Object} options (optional) - Contains flags such as, silent(true|false) 
+     * @param {Object} options (optional) - Contains flags such as, silent(true|false)
      *   which will prevent event triggering.
      */
     set : function(index, data, options) {
@@ -292,7 +291,7 @@
      * as a parameter. Takes an optional set of arguments.
      * @param {int} rid - the row _id to be modified
      * @param {Object} data - The object containing the new data
-     * @param {Object} options (optional) - Contains flags such as, silent(true|false) 
+     * @param {Object} options (optional) - Contains flags such as, silent(true|false)
      *   which will prevent event triggering.
      */
     setByRowId : function(rid, data, options) {
@@ -306,14 +305,14 @@
       var min = Infinity,
           rows = this._rows;
 
-      
+
       if (typeof columns !== "undefined") {
         if (DS.typeOf(columns) !== "array") {
           columns = [columns];
         }
 
         // build a subset over each we're building max.
-        rows = this.filter({ 
+        rows = this.filter({
           clone: false,
           columns : columns
         }).rows;
@@ -321,11 +320,11 @@
 
       // Iterate over all rows and get the max.
       this._eachAll(rows, function(value) {
-        if (DS.typeOf(value) === "number" && value < min) { 
-          min = value; 
+        if (DS.typeOf(value) === "number" && value < min) {
+          min = value;
         }
       });
-    
+
       return min;
     },
 
@@ -335,14 +334,14 @@
       var max = -Infinity,
           rows = this._rows;
 
-      
+
       if (typeof columns !== "undefined") {
         if (DS.typeOf(columns) !== "array") {
           columns = [columns];
         }
 
         // build a subset over each we're building max.
-        rows = this.filter({ 
+        rows = this.filter({
           clone: false,
           columns : columns
         }).rows;
@@ -350,11 +349,11 @@
 
       // Iterate over all rows and get the max.
       this._eachAll(rows, function(value) {
-        if (DS.typeOf(value) === "number" && value > max) { 
-          max = value; 
+        if (DS.typeOf(value) === "number" && value > max) {
+          max = value;
         }
       });
-    
+
       return max;
     },
 
@@ -371,7 +370,7 @@
     },
 
     /**
-     * Apply a function to every value in every row of the dataset. 
+     * Apply a function to every value in every row of the dataset.
      */
     _eachAll: function(rows, iterator ) {
       _.each(rows, function( row ) {
@@ -385,7 +384,7 @@
      * builds an event object that either contains the optional
      * delta parameter or it takes the queue.
      * @param {string} name The event name
-     * @param {delta} delta The delta object 
+     * @param {delta} delta The delta object
      */
     _buildEvent : function(name, delta) {
       var e = {};
@@ -397,12 +396,12 @@
 
         // Set event delta
         if (DS.typeOf(delta) !== "array") {
-          e.delta = [delta];  
+          e.delta = [delta];
         } else {
           e.delta = delta;
         }
-        
-      }  
+
+      }
 
       if (this._queing) {
         e.delta = _.clone(this._deltaQueue);
@@ -418,16 +417,16 @@
 
     // bind a specific event to a specific callback.
     bind: function(event, pos, callback) {
-    
+
     },
 
     // Trigger callbacks for a specific event. Optionally takes in a position.
     trigger : function(event, pos) {
-     
+
     },
 
     _sync: function(event) {
-      
+
     },
 
     /**
@@ -440,7 +439,7 @@
     },
 
     /**
-     * This methods offers a peek into the current state of the 
+     * This methods offers a peek into the current state of the
      * delta queue.
      */
     peek : function() {
@@ -464,7 +463,7 @@
    * Returns the type of an input object.
    * Stolen from jQuery via @rwaldron (http://pastie.org/2849690)
    * @param {?} obj - the object being detected.
-   */ 
+   */
   DS.typeOf = function(obj) {
     var classType = {},
       types = "Boolean Number String Function Array Date RegExp Object".split(" "),
@@ -478,14 +477,14 @@
       classType[ {}.toString.call(obj) ] || "object";
   };
 
-  
+
   /**
    * Base importer class.
    */
   DS.Importers = function() {};
 
   /**
-   * Creates an internal representation of a column based on 
+   * Creates an internal representation of a column based on
    * the form expected by our strict json.
    * @param {string} name The column name
    * @param {string} type The type of the data in the column
@@ -527,27 +526,27 @@
   DS.Importers.prototype.parse = function(data) {
     return data;
   };
-  
+
   /**
-  * Handles basic import. 
+  * Handles basic import.
   * TODO: add verify flag to disable auto id assignment for example.
   */
   DS.Importers.Strict = function(data, options) {
-    options || (options = {});
-    
+    options = options || {};
+
     if (options.parse) {
       this.parse = options.parse;
     }
 
-    this._data = this.parse(data);  
+    this._data = this.parse(data);
   };
 
   _.extend(
-    DS.Importers.Strict.prototype, 
+    DS.Importers.Strict.prototype,
     DS.Importers.prototype, {
     _buildColumns : function(n) {
       var columns = this._data.columns;
-      
+
       // verify columns have ids
       _.each(columns, function(column) {
         if (typeof column._id === "undefined") {
@@ -560,13 +559,13 @@
 
     fetch : function(options) {
       var d = {};
-      
+
       // Build columns
       d._columns = this._buildColumns();
-      
+
       // Build rows
       d._rows = this._data.rows;
-            
+
       // verify rows have ids
       _.each(d._rows, function(row) {
         if (typeof row._id === "undefined") {
@@ -585,75 +584,77 @@
    * @params {Object} obj = [{},{}...]
    */
   DS.Importers.Obj = function(data, options) {
-    options || (options = {});
+    options = options || {};
 
     if (options.parse) {
       this.parse = options.parse;
     }
 
-    this._data = this.parse(data);  
+    this._data = this.parse(data);
   };
 
   _.extend(
     DS.Importers.Obj.prototype,
     DS.Importers.prototype, {
-    
+
     _buildColumns : function(n) {
-      
+
       // Pick a sample of n (default is 5) rows
-      (n || (n = 5)); 
+      n = n || 5;
+
       var sample = this._data.slice(0, n);
-      
+
       // How many keys do we have?
       var keys  = _.keys(this._data[0]);
-      
+
       // Aggregate the types. For each key,
       // check if the value resolution reduces to a single type.
       // If it does, call that your type.
       var types = _.map(keys, function(key) {
-        
+
         // Build a reduced array of types for this key.
         // If we have N values, we are going to hope that at the end we
         // have an array of length 1 with a single type, like ["string"]
         var vals =  _.inject(this._data, function(memo, row) {
-          if (memo.indexOf(DS.typeOf(row[key])) == -1)
+          if (memo.indexOf(DS.typeOf(row[key])) == -1) {
             memo.push(DS.typeOf(row[key]));
-            return memo;
-        }, []); 
-        
+          }
+          return memo;
+        }, []);
+
         if (vals.length == 1) {
           return this._buildColumn(key, vals[0]);
         } else {
           return this._buildColumn(key, DS.datatypes.UNKNOWN);
         }
       }, this);
-      
+
       return types;
     },
 
     fetch : function(options) {
-      
+
       var d = {};
-      
+
       // Build columns
       d._columns = this._buildColumns();
-      
+
       // Build rows
       d._rows = _.map(this._data, function(row) {
-        
+
         var r = {};
-        
+
         // Assemble a row by iterating over each column and grabbing
         // the values in the order we expect.
         r.data = _.map(d._columns, function(column) {
           return row[column.name];
         });
-        
+
         // TODO: add id plucking out of data, if exists.
         r._id = _.uniqueId();
         return r;
       });
-      
+
       this._cache(d);
       options.success(d);
     }
@@ -667,13 +668,13 @@
    * importer, such as { jsonp : true|false }
    */
   DS.Importers.Remote = function(url, options) {
-    options || (options = {});
+    options = options || {};
     this._url = url;
 
     if (options.parse) {
       this.parse = options.parse;
     }
-    
+
     // Default ajax request parameters
     this.params = {
       type : "GET",
@@ -683,12 +684,12 @@
 
   };
 
-  _.extend(DS.Importers.Remote.prototype, 
-    DS.Importers.prototype, 
-    DS.Importers.Obj.prototype, 
+  _.extend(DS.Importers.Remote.prototype,
+    DS.Importers.prototype,
+    DS.Importers.Obj.prototype,
     {
       fetch : function(options) {
-        
+
         // call the original parse method of object parsing.
         var callback = _.bind(function(data) {
           this._data = this.parse(data);
@@ -699,7 +700,7 @@
         $.ajax(this.params).success(callback);
     }
   });
-  
+
   DS.VERSION = "0.0.1";
 
 }(this));
