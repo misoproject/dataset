@@ -600,7 +600,8 @@
     _buildColumns : function(n) {
 
       // Pick a sample of n (default is 5) rows
-      (n || (n = 5));
+      n = n || 5;
+
       var sample = this._data.slice(0, n);
 
       // How many keys do we have?
