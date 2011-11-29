@@ -1,9 +1,9 @@
-{ "metadata" : {"name" : "Greek Alphabet" },
+window.DS.alphabet_strict = { "metadata" : {"name" : "Greek Alphabet" },
   "columns" : [ 
-    {"name" : "character", "type" : "String"}, 
-    {"name" : "name", "type" : "String"}, 
-    {"name" : "is_modern", "type" : "Boolean"}, 
-    {"name" : "numeric_value", "type" : "Integer"} 
+    {"name" : "character", "type" : "string"}, 
+    {"name" : "name", "type" : "string"}, 
+    {"name" : "is_modern", "type" : "boolean"}, 
+    {"name" : "numeric_value", "type" : "number"} 
   ],
   "rows" : [   
     { data : ["α","alpha",true,1] },
