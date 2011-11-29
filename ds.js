@@ -469,54 +469,54 @@
   };
 
   
+  /**
+   * Base importer class.
+   */
   DS.Importers = function() {};
 
-  _.extend(DS.Importers.prototype, {
+  /**
+   * Creates an internal representation of a column based on 
+   * the form expected by our strict json.
+   * @param {string} name The column name
+   * @param {string} type The type of the data in the column
+   */
+  DS.Importers.prototype._buildColumn = function(name, type) {
+    return {
+      _id : _.uniqueId(),
+      name : name,
+      type : type
+    };
+  };
 
-    /**
-     * Creates an internal representation of a column based on 
-     * the form expected by our strict json.
-     * @param {string} name The column name
-     * @param {string} type The type of the data in the column
-     */
-    _buildColumn: function(name, type) {
-      return {
-        _id : _.uniqueId(),
-        name : name,
-        type : type
-      };
-    }, 
+  /**
+   * Used by internal importers to cache the rows and columns
+   * in quick lookup tables for any id based operations.
+   */
+  DS.Importers.prototype._cache = function(d) {
+    d._byRowId      = {};
+    d._byColumnId   = {};
+    d._byColumnName = {};
 
-    /**
-     * Used by internal importers to cache the rows and columns
-     * in an actual quick lookup table for any id based operations.
-     */
-    _cache : function(d) {
-      d._byRowId      = {};
-      d._byColumnId   = {};
-      d._byColumnName = {};
+    // cache rows by their _ids.
+    _.each(d._rows, function(row) {
+      d._byRowId[row._id] = row;
+    });
 
-      // cache rows by their _ids.
-      _.each(d._rows, function(row) {
-        d._byRowId[row._id] = row;
-      });
+    // cache columns by their column _ids, also cache their position by name.
+    _.each(d._columns, function(column, index) {
+      column.position = index;
+      d._byColumnId[column._id] = column;
+      d._byColumnName[column.name] = column;
+    });
+  };
 
-      // cache columns by their column _ids, also cache their position by name.
-      _.each(d._columns, function(column, index) {
-        column.position = index;
-        d._byColumnId[column._id] = column;
-        d._byColumnName[column.name] = column;
-      });
-    },
-
-    /**
-    * By default we are assuming that our data is in
-    * the correct form from the fetching.
-    */
-    parse: function(data) {
-      return data;
-    }
-  });
+  /**
+  * By default we are assuming that our data is in
+  * the correct form from the fetching.
+  */
+  DS.Importers.prototype.parse = function(data) {
+    return data;
+  };
   
   /**
   * Handles basic import. 
