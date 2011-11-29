@@ -1,0 +1,22 @@
+{
+	"files": {
+		"dist/ds.js": {
+			"src": [
+				"src/lib/underscore.js",
+				"src/ds.js"
+			],
+			"prehint": true,
+			"posthint": true,
+			"debug": true,
+
+			"meta": {
+				"label": "Dataset",
+				"author": "Alex Graul, Irene Rose",
+				"version": "0.0.1",
+				"homeurl": "",
+				"license": [],
+				"copyright": ""
+			}
+		}
+	}
+}
