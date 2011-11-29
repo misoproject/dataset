@@ -668,7 +668,6 @@
     this.params = {
       type : "GET",
       url : this._url,
-      async: false,
       dataType : options.jsonp ? "jsonp" : "json"
     };
 
