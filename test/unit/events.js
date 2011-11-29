@@ -122,7 +122,6 @@ test("Basic event creation with queuing plus delta param", 14, function() {
 module("Events");
 
 test("basic event binding on entire dataset", 1, function() {
-
   var ds = new DS({ data : shortObj, strict : true });
   ds.bind("sampleevent", null, function() {
     ok(true, "sample event was triggered!");
@@ -131,16 +130,9 @@ test("basic event binding on entire dataset", 1, function() {
 });
 
 test("basic binding on specific row", 1, function() {
-	stop();
-	console.log( shortObj );
-
   var ds = new DS({ data : shortObj, strict : true });
-
-console.log( ds );
-
   ds.bind("sampleevent2", {row : ds._rows[0]._id} , function() {
     ok(true, "sampleevent2 triggered with row 1");
-		start();
   });
   ds.trigger("sampleevent2", { row : ds._rows[0]._id });
 });
