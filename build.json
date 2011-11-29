@@ -11,11 +11,11 @@
 
 			"meta": {
 				"label": "Dataset",
-				"author": "Alex Graul, Irene Rose",
+				"author": "Alex Graul, Irene Ros",
 				"version": "0.0.1",
 				"homeurl": "",
 				"license": [],
-				"copyright": ""
+				"copyright": "Dataset (c) Alex Graul, Irene Ros; Underscore.js 1.2.2 (c) 2011 Jeremy Ashkenas, DocumentCloud Inc."
 			}
 		}
 	}
