@@ -219,18 +219,19 @@
      * it expects an actual row object rather than a position specification.
      */
     _set: function(row, data, options) {
-      this.options || (this.options = {});
+
+      options = options || {};
+
+      // What a delta object is going to look like.
+      var delta = {
+        _id : row._id,
+        old : {},
+        changed : {}
+      };
 
       if (typeof row === "undefined") {
         return false;
       } else {
-
-        // What a delta object is going to look like.
-        var delta = {
-          _id : row._id,
-          old : {},
-          changed : {}
-        };
 
         // Iterate over each key in the data being set
         // and replace the value based on it.
@@ -261,6 +262,7 @@
       // if we're queing deltas and this wasn't
       // supposed to be a silent trigger, save it and return the row.
       if (this._queing && !this.options.silent) {
+
         this._deltaQueue.push(delta);
 
       } else if (!this.options.silent) {
