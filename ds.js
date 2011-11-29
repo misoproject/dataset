@@ -170,16 +170,27 @@
     },
 
     /**
+     * Row + value lookup private method to generalize access to the various
+     * caches.
+     * @param {string} rowcache The row cache name (_rows | _byRowId)
+     * @param {number} index The position|id of the element.
+     * @param {string} column The column name for the value being fetched. optional.
+     */
+    _get : function(rowcache, index, column) {
+      if (column) {
+        return this[rowcache][index].data[this._byColumnName[column].position];
+      } else {
+        return this[rowcache][index];
+      }
+    },
+
+    /**
      * Returns a row based on its position in the rows array.
      * @param {number} index The position in the rows array (0 - for first row, etc.)
      * @param {string} column The name of the column for which the value is being fetched.
      */
     get : function(index, column) {
-      if (column) {
-        return this._rows[index].data[this._byColumnName[column].position];
-      } else {
-        return this._rows[index];
-      }
+      return this._get("_rows", index, column);
     },
 
     /**
@@ -189,11 +200,7 @@
      * @param {string} column The name of the column for which the value is being fetched.
      */
     getByRowId : function(rid, column) {
-      if (column) {
-        return this._byRowId[rid].data[this._byColumnName[column].position];
-      } else {
-        return this._byRowId[rid];
-      }
+      return this._get("_byRowId", rid, column);
     },
 
     /**
