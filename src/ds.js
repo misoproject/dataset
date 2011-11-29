@@ -44,11 +44,12 @@
 
       // if this is a forked dataset, the parent property should be set. We need to
       // auto subscribe this dataset to sync with its parent.
+      /*
       if (options.parent) {
-
         // TODO: do some auto subscribing here...
-
       }
+      */
+
       this._buildData();
     };
 
