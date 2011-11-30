@@ -3,7 +3,7 @@ Dataset
 
 # About
 
-Dataset is a  plugin that handles client side dataset management. It is entirely separate from any sort of UI for a reason. It's meant to function as a layer on top of which tools such as data visualization libraries can be written with a separation of concerns between the data and ui.
+Dataset is a library that handles client side dataset management. It is entirely separate from any sort of UI for a reason. It's meant to function as a layer on top of which tools such as data visualization libraries can be written with a separation of concerns between the data and ui.
 
 # Setup & Development
 
