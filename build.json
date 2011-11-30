@@ -3,7 +3,8 @@
 		"dist/ds": {
 			"src": [
 				"src/lib/underscore.js",
-				"src/ds.js"
+				"src/ds.js",
+				"src/importers.js"
 			],
 			"prehint": true,
 			"posthint": false,
