@@ -83,6 +83,20 @@
 
         // If data was set, we've recieved an array of objects?
         importer = new DS.Importers.Obj(this._options.data);
+      } else if (typeof this._options.data === "undefined" && 
+                 typeof this._options.url !== "undefined") {
+        
+        var parserSettings = {};
+
+        if (typeof this._options.delimiter !== "undefined") {
+          
+          // This is a delimited data file, needs parsing.
+          parserSettings.importer = DS.Importers.Delimited;
+           
+        }
+        
+        // if this is a remote importer, pass a url and the rest of the options along.
+        importer = new DS.Importers.Remote(this._options.url, _.extend(parserSettings, this._options));
       }
 
       // remove temporary data holder.
@@ -460,13 +474,19 @@
 
 
   (function() {
+
     var classType = {},
       types = "Boolean Number String Function Array Date RegExp Object".split(" "),
       length = types.length,
-      i = 0;
+      i = 0,
+      patterns = {
+        "number" : /^\d+$/,
+        "boolean" : /^(true|false)$/
+      };
     for ( ; i < length; i++ ) {
       classType[ "[object " + types[ i ] + "]" ] = types[ i ].toLowerCase();
     }
+    
     /**
      * Returns the type of an input object.
      * Stolen from jQuery via @rwaldron (http://pastie.org/2849690)
@@ -474,9 +494,21 @@
      */
     DS.typeOf = function(obj) {
       
-      return obj == null ?
+      var type = obj == null ?
         String( obj ) :
         classType[ {}.toString.call(obj) ] || "object";
+
+      // if the resulting object is a string, test to see if it's
+      // a string of numbers or a boolean. We want those cast
+      // properly.
+      if (type === "string") {
+        _.each(patterns, function(regex, name) {
+          if (regex.test(obj)) {
+            type = name;
+          }
+        });
+      }
+      return type;
     };
   })();
 

@@ -52,8 +52,6 @@ test("Convert object to dataset", 94, function() {
       ok(strictData._columns[3].type === "number", "numeric_value is boolean type");
     }
   });
-
-
 });
 
 module("Strict Importer")
@@ -82,8 +80,6 @@ test("Basic Strict Import", 46, function() {
       ok(strictData._columns[3].type === "number", "numeric_value is number type");
     }
   });
-
-
 });
 
 module("Remote Importer");
@@ -100,8 +96,8 @@ test("Basic json url fetch", 36, function() {
   stop();
   var data = parser.fetch({
     success: function(strictData) {
-      start();
       verifyImport({}, strictData);
+      start();
     }
   });
 });
@@ -119,8 +115,64 @@ test("Basic jsonp url fetch", 36, function() {
   stop();
   var data = parser.fetch({
     success: function(strictData) {
-      start();
       verifyImport({}, strictData);
+      start();
+    }
+  });
+});
+  
+module("Delimiter Importer");
+test("Basic delimiter parsing test", 46, function() {
+  var parser = new DS.Importers.Delimited(window.DS.alphabet_csv, {});
+  parser.fetch({
+    success : function(strictData) {
+      verifyImport(DS.alphabet_strict, strictData);
+
+      // check data size
+      ok(strictData._rows.length === 24, "there are 24 rows");
+      ok(strictData._columns.length === 4, "there are 4 columns");
+
+      // check column types
+      ok(strictData._columns[0].name === "character", "character is first column");
+      ok(strictData._columns[0].type === "string", "character is string type");
+
+      ok(strictData._columns[1].name === "name", "name is 2nd column");
+      ok(strictData._columns[1].type === "string", "name is string type");
+
+      ok(strictData._columns[2].name === "is_modern", "is_modern is 3rd column");
+      ok(strictData._columns[2].type === "boolean", "is_modern is boolean type");
+
+      ok(strictData._columns[3].name === "numeric_value", "numeric_value is 4th column");
+      ok(strictData._columns[3].type === "number", "numeric_value is number type");
+    }
+  });
+});
+
+test("Basic delimiter parsing test with custom separator", 46, function() {
+  var parser = new DS.Importers.Delimited(window.DS.alphabet_customseparator, {
+    delimiter : "###"
+  });
+  parser.fetch({
+    success : function(strictData) {
+      verifyImport(DS.alphabet_strict, strictData);
+
+      console.log(strictData);
+      // check data size
+      ok(strictData._rows.length === 24, "there are " + strictData._rows.length + " rows");
+      ok(strictData._columns.length === 4, "there are 4 columns");
+
+      // check column types
+      ok(strictData._columns[0].name === "character", "character is first column");
+      ok(strictData._columns[0].type === "string", "character is string type");
+
+      ok(strictData._columns[1].name === "name", "name is 2nd column");
+      ok(strictData._columns[1].type === "string", "name is string type");
+
+      ok(strictData._columns[2].name === "is_modern", "is_modern is 3rd column");
+      ok(strictData._columns[2].type === "boolean", "is_modern is boolean type");
+
+      ok(strictData._columns[3].name === "numeric_value", "numeric_value is 4th column");
+      ok(strictData._columns[3].type === "number", "numeric_value is number type");
     }
   });
 });
