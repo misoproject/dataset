@@ -104,13 +104,12 @@ test("Basic json url fetch", 36, function() {
       verifyImport({}, strictData);
     }
   });
-
 });
 
 test("Basic jsonp url fetch", 36, function() {
   // This is a random yahoo pipe that just grabs the alphabet_obj.js file and
   // pipes it back as json. Nothing clever happens here.
-  var url = "http://pipes.yahoo.com/pipes/pipe.run?_id=ea8f8a21cf15cb73a884adca0d49e227&_render=json&_callback=?";
+  var url = "http://pipes.yahoo.com/pipes/pipe.run?_id=ea8f8a21cf15cb73a884adca0d49e227&_render=json&_callback=";
   var parser = new DS.Importers.Remote(url, {
     jsonp : true,
     parse : function(data) {
@@ -124,5 +123,4 @@ test("Basic jsonp url fetch", 36, function() {
       verifyImport({}, strictData);
     }
   });
-
 });

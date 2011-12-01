@@ -51,7 +51,7 @@ var // Program References
 				eqnull: true,
 				curly: true,
 				browser: true,
-				predef: [ "_", "$" ]
+				predef: [ "_" ]
 				// onevar: true,
 				// "eqnull": true,
 				// "immed": true,
