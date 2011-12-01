@@ -184,11 +184,7 @@
     }
   });
 
-  // XHR code taken from Popcorn.js
-  // https://github.com/annasob/popcorn-js/blob/0.7/popcorn.js#L1119
-  // http://popcornjs.org
-  // Copyright 2011, Mozilla Foundation
-  // Licensed under the MIT license
+  // this XHR code is from @rwldron.
   var _xhrSetup = {
     url       : "",
     data      : "",
