@@ -280,8 +280,8 @@
 
     if (callback && !isScript) {
       
-      //  If a callback name already exists
-      if ( !!window[callback] ) {
+      // If a callback name already exists
+      if (!window[callback]) {
         callback = callback + (+new Date()) + _.uniqueId();
       }
 

@@ -123,5 +123,4 @@ test("Basic jsonp url fetch", 36, function() {
       verifyImport({}, strictData);
     }
   });
-
 });
