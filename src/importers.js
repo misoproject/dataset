@@ -76,7 +76,6 @@
         ),
         "gi"
       );
-      console.log(this.__delimiterPatterns);
       this._data = this.parse(data);
     };
 
