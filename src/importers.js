@@ -2,10 +2,9 @@
   
   var DS = (global.DS || (global.DS = {}));
 
-  /**
-   * Base importer class.
-   */
-  DS.Importers = function() {};
+  // ------ data parsers ---------
+
+  DS.Parsers = function() {};
 
   /**
    * Creates an internal representation of a column based on
@@ -13,7 +12,7 @@
    * @param {string} name The column name
    * @param {string} type The type of the data in the column
    */
-  DS.Importers.prototype._buildColumn = function(name, type) {
+  DS.Parsers.prototype._buildColumn = function(name, type) {
     return {
       _id : _.uniqueId(),
       name : name,
@@ -25,7 +24,7 @@
    * Used by internal importers to cache the rows and columns
    * in quick lookup tables for any id based operations.
    */
-  DS.Importers.prototype._cache = function(d) {
+  DS.Parsers.prototype._cache = function(d) {
     d._byRowId      = {};
     d._byColumnId   = {};
     d._byColumnName = {};
@@ -44,158 +43,27 @@
   };
 
   /**
-  * By default we are assuming that our data is in
-  * the correct form from the fetching.
-  */
-  DS.Importers.prototype.parse = function(data) {
+   * By default we are assuming that our data is in
+   * the correct form from the fetching.
+   */
+  DS.Parsers.prototype.parse = function(data) {
     return data;
   };
 
-
-  (function() {
-
-    DS.Importers.Delimited = function(data, options) {
-      options = options || {};
-
-      if (options.parse) {
-        this.parse = options.parse;
-      }
-
-      this.delimiter = (options.delimiter || (options.delimiter = ","));
-
-      this.__delimiterPatterns = new RegExp(
-        (
-          // Delimiters.
-          "(\\" + this.delimiter + "|\\r?\\n|\\r|^)" +
-
-          // Quoted fields.
-          "(?:\"([^\"]*(?:\"\"[^\"]*)*)\"|" +
-
-          // Standard fields.
-          "([^\"\\" + this.delimiter + "\\r\\n]*))"
-        ),
-        "gi"
-      );
-      this._data = this.parse(data);
-    };
-
-    _.extend(
-      DS.Importers.Delimited.prototype,
-      DS.Importers.prototype, {
-
-      _buildColumns : function(sample) {
-
-        // How many keys do we have? First row is the keys.
-        var keys  = sample.splice(0,1)[0];
-
-        // Aggregate the types. For each key,
-        // check if the value resolution reduces to a single type.
-        // If it does, call that your type.
-        var i = 0;
-        var types = _.map(keys, function(key) {
-           
-          // Build a reduced array of types for this key.
-          // If we have N values, we are going to hope that at the end we
-          // have an array of length 1 with a single type, like ["string"]
-          var vals =  _.inject(sample, function(memo, row) {
-            if (memo.indexOf(DS.typeOf(row[i])) == -1) {
-              memo.push(DS.typeOf(row[i]));
-            }
-            return memo;
-          }, []);
-
-          i++;
-
-          if (vals.length == 1) {
-            return this._buildColumn(key, vals[0]);
-          } else {
-            return this._buildColumn(key, DS.datatypes.UNKNOWN);
-          }
-        }, this);
-
-        return types;
-      },
-
-      fetch : function(options) {
-        var d = {
-          _columns : [],
-          _rows : []
-        };
-        var rows = [[]],
-            matches = null,
-            i = 0;
-        
-        while (matches = this.__delimiterPatterns.exec(this._data)) {
-          
-          var delimiter = matches[1];
-          
-          // new row
-          if (delimiter.length && delimiter !== this.delimiter) {
-            
-            // create column headers.
-            if (i == 5) {
-              d._columns = this._buildColumns(rows.slice(0, rows.length-2));
-            }
-
-            // add all the rows to the _rows collection.
-            if (i > 0) {
-              //push previous row into the rows array
-              d._rows.push({ data : rows[i], _id : _.uniqueId()});
-            }
-
-            // add a new row for the next one
-            rows.push([]);
-
-            i++;
-          }
-
-          if (matches[2]) {
-            var value = matches[2].replace(new RegExp("\"\"", "g"), "\"");
-          } else {
-            var value = matches[3];
-          }
-
-          rows[rows.length - 1].push(value);
-        }
-
-        // if there was a blank row at the end of the file, remove it.
-        if(_.isEqual(rows[rows.length -1], [""])) {
-          rows.pop();
-        }
-
-        // In case we had less than 5 rows, we may need to generate the cols now.
-        if (d._columns.length === 0) {
-          d._columns = this._buildColumns(rows.slice(0, rows.length-2));
-        }
-
-        // add last row.
-        d._rows.push({ data : rows[i], _id : _.uniqueId()});
-        
-        rows = null;
-        this._cache(d);
-        options.success(d);
-      }
-    });
-  }());
-
-
+  // ------ Strict Parser ---------
   /**
-  * Handles basic import.
-  * TODO: add verify flag to disable auto id assignment for example.
-  */
-  DS.Importers.Strict = function(data, options) {
+   * Handles basic strict data format.
+   * TODO: add verify flag to disable auto id assignment for example.
+   */
+  DS.Parsers.Strict = function(data, options) {
     options = options || {};
-
-    if (options.parse) {
-      this.parse = options.parse;
-    }
 
     this._data = this.parse(data);
   };
 
   _.extend(
-    DS.Importers.Strict.prototype,
-    DS.Importers.prototype, {
+    DS.Parsers.Strict.prototype,
+    DS.Parsers.prototype, {
     _buildColumns : function(n) {
       var columns = this._data.columns;
 
@@ -209,7 +77,7 @@
       return columns;
     },
 
-    fetch : function(options) {
+    build : function(options) {
       var d = {};
 
       // Build columns
@@ -226,28 +94,23 @@
       });
 
       this._cache(d);
-      options.success(d);
+      return d;
     }
   });
 
-
+  // -------- Object Parser -----------
   /**
    * Converts an array of objects to strict format.
    * @params {Object} obj = [{},{}...]
    */
-  DS.Importers.Obj = function(data, options) {
+  DS.Parsers.Obj = function(data, options) {
     options = options || {};
-
-    if (options.parse) {
-      this.parse = options.parse;
-    }
-
-    this._data = this.parse(data);
+    this._data = data;
   };
 
   _.extend(
-    DS.Importers.Obj.prototype,
-    DS.Importers.prototype, {
+    DS.Parsers.Obj.prototype,
+    DS.Parsers.prototype, {
 
     _buildColumns : function(n) {
 
@@ -284,7 +147,7 @@
       return types;
     },
 
-    fetch : function(options) {
+    build : function(options) {
 
       var d = {};
 
@@ -308,9 +171,140 @@
       });
 
       this._cache(d);
-      options.success(d);
+      return d;
     }
   });
+
+
+  // -------- Delimited Parser ----------
+
+  /**
+   * Handles CSV and other delimited data. Takes in a data string
+   * and options that can contain: {
+   *   delimiter : "someString" <default is comma> 
+   * }
+   */
+  DS.Parsers.Delimited = function(data, options) {
+    options = options || {};
+
+    this.delimiter = options.delimiter || ",";
+    this._data = data;
+
+    this.__delimiterPatterns = new RegExp(
+    (
+      // Delimiters.
+      "(\\" + this.delimiter + "|\\r?\\n|\\r|^)" +
+
+      // Quoted fields.
+      "(?:\"([^\"]*(?:\"\"[^\"]*)*)\"|" +
+
+      // Standard fields.
+      "([^\"\\" + this.delimiter + "\\r\\n]*))"
+    ),
+    "gi"
+  );
+  };
+
+  _.extend(
+    DS.Parsers.Delimited.prototype,
+    DS.Parsers.prototype, {
+
+    _buildColumns : function(sample) {
+
+      // How many keys do we have? First row is the keys.
+      var keys  = sample.splice(0,1)[0];
+
+      // Aggregate the types. For each key,
+      // check if the value resolution reduces to a single type.
+      // If it does, call that your type.
+      var i = 0;
+      var types = _.map(keys, function(key) {
+         
+        // Build a reduced array of types for this key.
+        // If we have N values, we are going to hope that at the end we
+        // have an array of length 1 with a single type, like ["string"]
+        var vals =  _.inject(sample, function(memo, row) {
+          if (memo.indexOf(DS.typeOf(row[i])) == -1) {
+            memo.push(DS.typeOf(row[i]));
+          }
+          return memo;
+        }, []);
+
+        i++;
+
+        if (vals.length == 1) {
+          return this._buildColumn(key, vals[0]);
+        } else {
+          return this._buildColumn(key, DS.datatypes.UNKNOWN);
+        }
+      }, this);
+
+      return types;
+    },
+
+    build : function(options) {
+      var d = {
+        _columns : [],
+        _rows : []
+      };
+      var rows = [[]],
+          matches = null,
+          i = 0;
+      
+      while (matches = this.__delimiterPatterns.exec(this._data)) {
+        
+        var delimiter = matches[1];
+        
+        // new row
+        if (delimiter.length && delimiter !== this.delimiter) {
+          
+          // create column headers.
+          if (i == 5) {
+            d._columns = this._buildColumns(rows.slice(0, rows.length-2));
+          }
+
+          // add all the rows to the _rows collection.
+          if (i > 0) {
+            //push previous row into the rows array
+            d._rows.push({ data : rows[i], _id : _.uniqueId()});
+          }
+
+          // add a new row for the next one
+          rows.push([]);
+
+          i++;
+        }
+
+        if (matches[2]) {
+          var value = matches[2].replace(new RegExp("\"\"", "g"), "\"");
+        } else {
+          var value = matches[3];
+        }
+
+        rows[rows.length - 1].push(value);
+      }
+
+      // if there was a blank row at the end of the file, remove it.
+      if(_.isEqual(rows[rows.length -1], [""])) {
+        rows.pop();
+      }
+
+      // In case we had less than 5 rows, we may need to generate the cols now.
+      if (d._columns.length === 0) {
+        d._columns = this._buildColumns(rows.slice(0, rows.length-2));
+      }
+
+      // add last row.
+      d._rows.push({ data : rows[i], _id : _.uniqueId()});
+      
+      rows = null;
+      this._cache(d);
+      return d;
+    }
+  });
+
+
+  // ---------- Data Importers -------------
 
   // this XHR code is from @rwldron.
   var _xhrSetup = {
@@ -482,33 +476,72 @@
     return data;
   };
 
+  DS.Importers = function(data, options) {};
+
   /**
-   * Fetches a remote url of json data and then parses it.
-   * @param {string} url The url to fetch
-   * @param {object} options An object containing options specfic to this
-   * importer, such as { jsonp : true|false }
+   * Simple base parse method, passing data through
+   */
+  DS.Importers.prototype.extract = function(data) {
+    return data;
+  };
+
+  /**
+   * Local data importer is responsible for just using 
+   * a data object and passing it appropriatly.
+   */
+  DS.Importers.Local = function(data, options) {
+    this.options = options || (options = {});
+
+    if (this.options.extract) {
+      this.extract = this.options.extract;
+    }
+    this.data = data;
+    this.parser = this.options.parser || DS.Importer.Obj;
+  };
+
+  _.extend(
+    DS.Importers.Local.prototype,
+    DS.Importers.prototype, {
+      fetch : function(options) {
+        // since this is the local importer, it just
+        // passes the data through, parsed.
+        this.data = this.extract(this.data);
+
+        // create a new parser and pass the parsed data in
+        this.parser = new this.parser(this.data, _.extend({},
+          this.options,
+          options));
+        
+        var parsedData = this.parser.build();
+        options.success(parsedData);     
+      }
+    });
+
+  /**
+   * A remote importer is responsible for fetching data from a url
+   * and passing it through the right parser.
    */
   DS.Importers.Remote = function(url, options) {
     options = options || {};
     this._url = url;
-    this.importer = options.importer || DS.Importers.Obj;
 
-    if (options.parse) {
-      this.parse = options.parse;
+    if (options.extract) {
+      this.extract = options.extract;
     }
+
+    this.parser = options.parser || DS.Parsers.Obj;
 
     // Default ajax request parameters
     this.params = {
       type : "GET",
       url : this._url,
-      dataType : options.jsonp ? "jsonp" : "json"
+      dataType : options.dataType ? options.dataType : (options.jsonp ? "jsonp" : "json")
     };
-
   };
 
-  _.extend(DS.Importers.Remote.prototype,
+  _.extend(
+    DS.Importers.Remote.prototype,
     DS.Importers.prototype,
-    DS.Importers.Obj.prototype,
     {
       fetch : function(options) {
 
@@ -516,13 +549,20 @@
         // we are assuming the parsed version of the data will
         // be an array of objects.
         var callback = _.bind(function(data) {
-          this._data = this.parse(data);
-          this.importer.prototype.fetch.apply(this, [options]);
+          data = this.extract(data);
+          
+          // create a new parser and pass the parsed data in
+          this.parser = new this.parser(data, options);
+          
+          var parsedData = this.parser.build();
+          options.success(parsedData);  
+          
         }, this);
 
         // make ajax call to fetch remote url.
         DS.Xhr(_.extend(this.params, { success : callback }));
+      }
     }
-  });
+  );
 
 }(this, _));

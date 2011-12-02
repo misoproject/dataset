@@ -14,7 +14,9 @@
 *  format : "String - optional file format specification, otherwise we'll try to guess",
 *  recursive : "Boolean - if true build nested arrays of objects as datasets",
 *  strict : "Whether to expect the json in our format or whether to interpret as raw array of objects, default false",
-*  parse : "function to apply to JSON before internal interpretation, optional"
+*  extract : "function to apply to JSON before internal interpretation, optional"
+*  ready : the callback function to act on once the data is fetched. Isn't reuired for local imports
+*          but is required for remote url fetching.
 * }
 */
 
@@ -51,6 +53,8 @@
       */
 
       this._buildData();
+
+      return this;
     };
 
     return global.DS;
@@ -73,32 +77,32 @@
     _buildData : function() {
 
       var importer = null;
+      this.parser = DS.Parsers.Obj;
 
+      // Sort out parser type. Default is Object.
       if (this._options.strict) {
-
-       // If this is a strict format import, use the Strict importer.
-        importer = new DS.Importers.Strict(this._options.data);
-
-      } else if (typeof this._options.data !== "undefined") {
-
-        // If data was set, we've recieved an array of objects?
-        importer = new DS.Importers.Obj(this._options.data);
-      } else if (typeof this._options.data === "undefined" && 
-                 typeof this._options.url !== "undefined") {
-        
-        var parserSettings = {};
-
-        if (typeof this._options.delimiter !== "undefined") {
-          
-          // This is a delimited data file, needs parsing.
-          parserSettings.importer = DS.Importers.Delimited;
-           
-        }
-        
-        // if this is a remote importer, pass a url and the rest of the options along.
-        importer = new DS.Importers.Remote(this._options.url, _.extend(parserSettings, this._options));
+        this.parser = DS.Parsers.Strict;
+      } else if (this._options.delimiter) {
+        this.parser = DS.Parsers.Delimited;
       }
 
+      // Sort out importer type:
+      // local imporer or remote?
+      var opts = _.extend({},
+        this._options,
+        { parser : this.parser }
+      );
+      if (this._options.url) {
+        // If this is a delimited set of data, then set the dataType 
+        // correctly.
+        if (this._options.delimiter) {
+          opts.dataType = "text";
+        }
+        importer = new DS.Importers.Remote(this._options.url, opts);
+      } else {
+        importer = new DS.Importers.Local(this._options.data, opts);
+      } 
+      
       // remove temporary data holder.
       delete this._options.data;
 
@@ -108,6 +112,9 @@
         importer.fetch({
           success : _.bind(function(d) {
             _.extend(this, d);
+            if (this._options.ready) {
+              this._options.ready.call(this);
+            }
           }, this)
         });
       }
