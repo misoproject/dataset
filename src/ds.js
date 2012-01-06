@@ -14,7 +14,9 @@
 *  format : "String - optional file format specification, otherwise we'll try to guess",
 *  recursive : "Boolean - if true build nested arrays of objects as datasets",
 *  strict : "Whether to expect the json in our format or whether to interpret as raw array of objects, default false",
-*  parse : "function to apply to JSON before internal interpretation, optional"
+*  extract : "function to apply to JSON before internal interpretation, optional"
+*  ready : the callback function to act on once the data is fetched. Isn't reuired for local imports
+*          but is required for remote url fetching.
 * }
 */
 
@@ -51,6 +53,8 @@
       */
 
       this._buildData();
+
+      return this;
     };
 
     return global.DS;
@@ -73,18 +77,32 @@
     _buildData : function() {
 
       var importer = null;
+      this.parser = DS.Parsers.Obj;
 
+      // Sort out parser type. Default is Object.
       if (this._options.strict) {
-
-       // If this is a strict format import, use the Strict importer.
-        importer = new DS.Importers.Strict(this._options.data);
-
-      } else if (typeof this._options.data !== "undefined") {
-
-        // If data was set, we've recieved an array of objects?
-        importer = new DS.Importers.Obj(this._options.data);
+        this.parser = DS.Parsers.Strict;
+      } else if (this._options.delimiter) {
+        this.parser = DS.Parsers.Delimited;
       }
 
+      // Sort out importer type:
+      // local imporer or remote?
+      var opts = _.extend({},
+        this._options,
+        { parser : this.parser }
+      );
+      if (this._options.url) {
+        // If this is a delimited set of data, then set the dataType 
+        // correctly.
+        if (this._options.delimiter) {
+          opts.dataType = "text";
+        }
+        importer = new DS.Importers.Remote(this._options.url, opts);
+      } else {
+        importer = new DS.Importers.Local(this._options.data, opts);
+      } 
+      
       // remove temporary data holder.
       delete this._options.data;
 
@@ -94,6 +112,9 @@
         importer.fetch({
           success : _.bind(function(d) {
             _.extend(this, d);
+            if (this._options.ready) {
+              this._options.ready.call(this);
+            }
           }, this)
         });
       }
@@ -460,13 +481,19 @@
 
 
   (function() {
+
     var classType = {},
       types = "Boolean Number String Function Array Date RegExp Object".split(" "),
       length = types.length,
-      i = 0;
+      i = 0,
+      patterns = {
+        "number" : /^\d+$/,
+        "boolean" : /^(true|false)$/
+      };
     for ( ; i < length; i++ ) {
       classType[ "[object " + types[ i ] + "]" ] = types[ i ].toLowerCase();
     }
+    
     /**
      * Returns the type of an input object.
      * Stolen from jQuery via @rwaldron (http://pastie.org/2849690)
@@ -474,9 +501,21 @@
      */
     DS.typeOf = function(obj) {
       
-      return obj == null ?
+      var type = obj == null ?
         String( obj ) :
         classType[ {}.toString.call(obj) ] || "object";
+
+      // if the resulting object is a string, test to see if it's
+      // a string of numbers or a boolean. We want those cast
+      // properly.
+      if (type === "string") {
+        _.each(patterns, function(regex, name) {
+          if (regex.test(obj)) {
+            type = name;
+          }
+        });
+      }
+      return type;
     };
   })();
 
