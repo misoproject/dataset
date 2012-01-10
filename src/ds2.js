@@ -28,10 +28,15 @@
 
 (function(global, _) {
 
-  var DS = (global.DS || function(options) {
-    options = options || (options = {});
-    this._options = options;
-  });
+ var DS = (global.DS || function() {
+
+    global.DS = function(options) {
+      options = options || (options = {});
+      return this;
+    };
+
+    return global.DS;
+  }());
 
   DS.datatypes = {
     UNKNOWN: "Unknown",
@@ -120,14 +125,35 @@
     * @param {callback} callback function
     * @param {context} context for the callback, optional
     */
-    bind : function(eventName, callback, context) {},
+    bind : function(ev, callback, context) {
+      var calls = this._callbacks || (this._callbacks = {});
+      var list  = calls[ev] || (calls[ev] = {});
+      var tail = list.tail || (list.tail = list.next = {});
+      tail.callback = callback;
+      tail.context = context;
+      list.tail = tail.next = {};
+      return this;
+    }, 
 
     /**
     * trigger a given event
     * @param {eventName} name of event
-    * @param {eventData} data to be passed with the event
     */
-    trigger : function(eventName, eventData) {}
+    trigger : function(eventName) {
+      var node, calls, callback, args, ev, events = ['all', eventName];
+      if (!(calls = this._callbacks)) return this;
+      while (ev = events.pop()) {
+        if (!(node = calls[ev])) continue;
+        args = ev == 'all' ? arguments : Array.prototype.slice.call(arguments, 1);
+        while (node = node.next) {
+          if (callback = node.callback) {
+            callback.apply(node.context || this, args);
+          }
+        }
+      }
+      return this;
+    }
+
   });
 
 }(this, _));
