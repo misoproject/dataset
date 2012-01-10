@@ -28,7 +28,7 @@
 
 (function(global, _) {
 
-  var DS = (global.DS || function() {
+  var DS = (global.DS || function(options) {
     options = options || (options = {});
     this._options = options;
   });
@@ -45,149 +45,90 @@
 
   _.extend(DS.prototype, {
 
+    /**
+    * Returns a dataset view based on the filtration parameters 
+    * @param {filter} object with optional columns array and filter object/function 
+    * @param {options} options object
+    */
+    where : function(filter, options) {},
+
+    /**
+    * Returns a dataset view of the given column name
+    * @param {name} name of the column to be selected
+    */
+    column : function(name) {},
+
+
+    /**
+    * Returns a dataset view of the given columns 
+    * @param {filter} either an array of column names or a function 
+    * that returns a boolean for each column object
+    */    
+    columns : function(filter) {},
+
+
+    /**
+    * Returns a dataset view of filtered rows
+    * @param {filter} a filter function or object, the same as where
+    */    
+    rows : function(filter) {},
+
+    /**
+    * Iterates over all rows in the dataset
+    * @param {iterator} function that is passed each row
+    * @param {options} options object
+    * TODO: signature for iterator
+    */    
+    each : function(iterator) {},
+
+    /**
+    * Add a row to the dataset
+    * TODO: multiple rows?
+    * @param {row} object {columnName: value}
+    * @param {options} options
+    *   silent: boolean, do not trigger an add (and thus view updates) event
+    */    
+    add : function(row, options) {},
+
+    /**
+    * Remove all rows that match the filter
+    * TODO: single row by id?
+    * @param {filter} function applied to each row
+    * @param {options} options
+    */    
+    remove : function(filter, options) {},
+
+    /**
+    * Update all rows that match the filter
+    * TODO: dynamic values
+    * @param {filter} filter rows to be updated
+    * @param {newProperties} options
+    * @param {options} options
+    */    
+    update : function(filter, newProperties, options) {},
+
+    /**
+    * Sort rows
+    * @param {column} column by which rows are filtered
+    * @param {comparator} optional comparator function, returns -1, 0 or 1 
+    */    
+    sort : function(column, comparator) {},
+
+    /**
+    * Bind callbacks to dataset events
+    * @param {eventName} name of the event
+    * @param {callback} callback function
+    * @param {context} context for the callback, optional
+    */
+    bind : function(eventName, callback, context) {},
+
+    /**
+    * trigger a given event
+    * @param {eventName} name of event
+    * @param {eventData} data to be passed with the event
+    */
+    trigger : function(eventName, eventData) {}
   });
 
-});
-
-
-// CONSTS
-
-/*
-
-get dataset
-options:
-  success - callback
-  error   - callback
-
-*/
-ds.fetch(options);
-
-
-/*
-  
-filtering/selection mechanism
-filter:
-  columns: [ array of col names]
-  filter: {
-    columnName : string (equivalency)  
-    OR
-    columnName : function(value) {}
-  }
-
-  filter can also be a function:
-    function(row) {
-      return row.a === 4 && row.b === 5
-    }
-
-*/
-ds.where(filter);
-
-ds.where({
-  columns : ['a', 'b'],
-  filter : {
-    'a' : 4
-  }
-})
-
-/*
-Returns a subset of columns
-columns is an array of column names
-*/
-ds.column(name);
-ds.columns(columns);
-
-
-/* 
-returns a subset of rows (all column!)
-filter is the same as the "conditions" 
-*/
-ds.rows(filter);
-
-
-/*
-Allows iterating through rows...
-*/
-ds.each(iterator);
-ds.each(function(row) {
-  // a row is a key:val object where
-  // each key is a column name, and each
-  // val is a value for that row.
-});
-
-/*
-adds a row to the dataset. Format is:
-{
-  columnName : value
-}
-If there's a missing value, we'll set that 
-column to null. We have to have a value.
-
-When we add a row we'll need to check against all 
-internal filsters to see if any views need updating.
-
-options can take silent:true to not trigger add event.
-*/
-ds.add(rowObject, options);
-
-/*
-
-Removes all rows that match a filter. Also removes
-them from the views they might be in (by looking up
-row indices in the other views.)
-
-remove triggers a remove event unless options.silent : true.
-*/
-ds.remove(filter, options);
-
-
-/*
-Updates values on a specific set of rows. We'll use the
-returned row ids to find them in the available views and
-update those rows too.
-
-update triggers 
-*/
-ds.update(filter, newProperties, options);
-
-
-/*
- takes an optional comparator:
- function(row, row2) {
-   // return -1, 0 or 1 depending on whether row should come before
-   // row 2.
- }
-
- this needs to percolate to children??
-*/
-ds.sort(byColumn, comparator);
-
-
-// math functions that return a single value
-// all math functions take a column name.
-
-ds.max
-ds.min
-ds.freq
-ds.mode
-
-// all math functions return an object that has two methods:
-ds.max(column).val()
-ds.max(column).change(function(event) {
-  // do something when the value changes.
-});
-
-// all math functions that return multi-values, return a 
-// new dataset
-
-// moving average
-ds.movingAverage(column, width)
-
-// group by: the by-column, then which columns will be grouped, and optionally
-// what function should be applied. By default, it's addition.
-ds.groupBy(byColumn, [whichColumns], how)
-
-
-// ---- events ---
-ds.bind(eventName, function, context);
-ds.trigger(eventName, eventData);
+}(this, _));
 
