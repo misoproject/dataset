@@ -7,11 +7,19 @@ module("Events");
         by = (by || 1);
         result += by;
       };
+  ds.bind('ping', increment);
 
   test("binding and firing an event", function() {
-    ds.bind('ping', increment);
+    result = 0;
+    ds.trigger('ping', 1);
+    equal(result, 1);
+  });
+
+  test("unbinding and firing an event", function() {
+    result = 0;
     ds.trigger('ping');
-    equal(1, result);
+    ds.unbind('ping', increment)
+    equal(result, 1);
   });
 
 }());
