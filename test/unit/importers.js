@@ -26,6 +26,11 @@ function verifyImport(obj, strictData) {
 };
 
 function checkColumnTypes(strictData) {
+
+  // check data size
+  ok(strictData.length === 24, "there are 24 rows");
+  ok(strictData.columns.length === 5, "there are 5 columns");
+
   // check column types
   ok(strictData.columns[0].name === "_id", "_id is 1 column");
   ok(strictData.columns[0].type === "number", "_id is number type");
@@ -43,16 +48,13 @@ module("Strict Importer")
 test("Basic Strict Import", 29, function() {
 
   
-  var importer = new DS.Importers.Local(DS.alphabet_strict, {
-    parser : DS.Parsers.Strict
+  var importer = new DS.Importers.Local({
+    parser : DS.Parsers.Strict,
+    data : DS.alphabet_strict
   });
   importer.fetch({
     success : function(strictData) {
       verifyImport(DS.alphabet_strict, strictData);
-
-      // check data size
-      ok(strictData.length === 24, "there are 24 rows");
-      ok(strictData.columns.length === 5, "there are 5 columns");
 
       // check column types
       checkColumnTypes(strictData);
@@ -60,33 +62,29 @@ test("Basic Strict Import", 29, function() {
   });
 });
 
-// test("Basic Strict Import through Dataset API", 29, function() {
-//   var ds = new DS({ data : DS.alphabet_strict, strict: true });
+test("Basic Strict Import through Dataset API", 29, function() {
+  var ds = new DS({ 
+    data : DS.alphabet_strict, 
+    strict: true 
+  });
+  console.log(ds);
+  verifyImport(DS.alphabet_strict, ds);
 
-//   verifyImport(DS.alphabet_strict, ds);
-
-//   // check data size
-//   ok(ds._rows.length === 24, "there are 5 rows");
-//   ok(ds._columns.length === 4, "there are 4 columns");
-
-//   // check column types
-//   checkColumnTypes(strictData);
-// });
+  // check column types
+  checkColumnTypes(ds);
+});
 
 module("Obj Importer");
 test("Convert object to dataset", 33, function() {
 
-  var importer = new DS.Importers.Local(DS.alphabet_obj, {
-    parser : DS.Parsers.Obj
+  var importer = new DS.Importers.Local({
+    parser : DS.Parsers.Obj,
+    data : DS.alphabet_obj
   });
 
   importer.fetch({
     success : function(strictData) {
       verifyImport(DS.alphabet_obj, strictData);
-
-      // check data size
-      ok(strictData.length === 24, "there are 24 rows");
-      ok(strictData.columns.length === 5, "there are 5 columns");
 
        // check all data
        var keys = _.keys(DS.alphabet_obj[0]);
@@ -106,36 +104,22 @@ test("Convert object to dataset", 33, function() {
   });
 });
 
-// test("Convert object to dataset through dataset API", 33, function() {
-//   var ds = new DS({ data : DS.alphabet_obj });
-//   verifyImport(DS.alphabet_obj, ds);
+test("Convert object to dataset through dataset API", 29, function() {
+  var ds = new DS({ data : DS.alphabet_obj });
+  verifyImport(DS.alphabet_obj, ds);
 
-//   // check data size
-//   ok(ds._rows.length === 24, "there are 5 rows");
-//   ok(ds._columns.length === 4, "there are 4 columns");
+  // check column types
+  checkColumnTypes(ds);
 
-//    // check first row
-//   _.each(DS.alphabet_obj, function(row, i){
-//     ok(_.isEqual(_.values(row), ds._rows[i].data), "row " + i + " is equal");
-//     ok(typeof ds._rows[i].data !== "undefined", "row " + i + " has an id");
-//   });
-
-// // check column types
-// checkColumnTypes(strictData);
-
-// });
-
-
-
-
-
+});
 
 module("Remote Importer");
-test("Basic json url fetch", 27, function() {
+test("Basic json url fetch", 29, function() {
   // This is a random yahoo pipe that just grabs the alphabet_obj.js file and
   // pipes it back as json. Nothing clever happens here.
   var url = "http://pipes.yahoo.com/pipes/pipe.run?_id=ea8f8a21cf15cb73a884adca0d49e227&_render=json";
-  var importer = new DS.Importers.Remote(url, {
+  var importer = new DS.Importers.Remote({
+    url : url,
     parser : DS.Parsers.Obj,
     jsonp : false,
     extract : function(data) {
@@ -152,28 +136,29 @@ test("Basic json url fetch", 27, function() {
   });
 });
 
-// test("Basic json url fetch through Dataset API", 27, function() {
-//   var url = "http://pipes.yahoo.com/pipes/pipe.run?_id=ea8f8a21cf15cb73a884adca0d49e227&_render=json";
-//   var ds = new DS({ 
-//     url : url, 
-//     jsonp : false, 
-//     extract: function(data) {
-//       return data.value.items[0].json;
-//     },
-//     ready : function() {
-//       verifyImport({}, this);   
-//       checkColumnTypes(strictData); 
-//       start();
-//     }
-//   });
-//   stop();
-// });
+test("Basic json url fetch through Dataset API", 29, function() {
+  var url = "http://pipes.yahoo.com/pipes/pipe.run?_id=ea8f8a21cf15cb73a884adca0d49e227&_render=json";
+  var ds = new DS({ 
+    url : url, 
+    jsonp : false, 
+    extract: function(data) {
+      return data.value.items[0].json;
+    },
+    ready : function() {
+      verifyImport({}, this);   
+      checkColumnTypes(ds); 
+      start();
+    }
+  });
+  stop();
+});
 
-test("Basic jsonp url fetch", 27, function() {
+test("Basic jsonp url fetch", 29, function() {
   // This is a random yahoo pipe that just grabs the alphabet_obj.js file and
   // pipes it back as json. Nothing clever happens here.
   var url = "http://pipes.yahoo.com/pipes/pipe.run?_id=ea8f8a21cf15cb73a884adca0d49e227&_render=json&_callback=";
-  var importer = new DS.Importers.Remote(url, {
+  var importer = new DS.Importers.Remote({
+    url : url,
     parser : DS.Parsers.Obj,
     jsonp : true,
     extract : function(data) {
@@ -190,29 +175,30 @@ test("Basic jsonp url fetch", 27, function() {
   });
 });
 
-// test("Basic jsonp url fetch with Dataset API", 27, function() {
-//   // This is a random yahoo pipe that just grabs the alphabet_obj.js file and
-//   // pipes it back as json. Nothing clever happens here.
-//   var url = "http://pipes.yahoo.com/pipes/pipe.run?_id=ea8f8a21cf15cb73a884adca0d49e227&_render=json&_callback=";
-//   var ds = new DS({ 
-//     url : url, 
-//     jsonp : true, 
-//     extract: function(data) {
-//       return data.value.items[0].json;
-//     },
-//     ready : function() {
-//       verifyImport({}, this); 
-//       checkColumnTypes(strictData);   
-//       start();
-//     }
-//   });
-//   stop();
-// });
+test("Basic jsonp url fetch with Dataset API", 29, function() {
+  // This is a random yahoo pipe that just grabs the alphabet_obj.js file and
+  // pipes it back as json. Nothing clever happens here.
+  var url = "http://pipes.yahoo.com/pipes/pipe.run?_id=ea8f8a21cf15cb73a884adca0d49e227&_render=json&_callback=";
+  var ds = new DS({ 
+    url : url, 
+    jsonp : true, 
+    extract: function(data) {
+      return data.value.items[0].json;
+    },
+    ready : function() {
+      verifyImport({}, this); 
+      checkColumnTypes(ds);   
+      start();
+    }
+  });
+  stop();
+});
   
 module("Delimiter Importer");
 test("Remote delimiter parsing test", function() {
   var url = "data/alphabet.csv";
-  var importer = new DS.Importers.Remote(url, {
+  var importer = new DS.Importers.Remote({
+    url : url, 
     jsonp : false,
     parser : DS.Parsers.Delimited,
     dataType: "text"
@@ -231,18 +217,14 @@ test("Remote delimiter parsing test", function() {
 
 test("Basic delimiter parsing test", 29, function() {
 
-  var importer = new DS.Importers.Local(window.DS.alphabet_csv, {
-    parser : DS.Parsers.Delimited
+  var importer = new DS.Importers.Local({
+    parser : DS.Parsers.Delimited,
+    data : window.DS.alphabet_csv
   });
   
   importer.fetch({
     success : function(strictData) {
       verifyImport(DS.alphabet_strict, strictData);
-
-      // check data size
-      console.log(strictData);
-      ok(strictData.length === 24, "there are 24 rows");
-      ok(strictData.columns.length === 5, "there are 5 columns");
 
       // check column types
       checkColumnTypes(strictData);
@@ -250,35 +232,22 @@ test("Basic delimiter parsing test", 29, function() {
   });
 });
 
-// test("Basic delimiter parsing test with Dataset API", 46, function() {
+test("Basic delimiter parsing test with Dataset API", 29, function() {
 
-//   var ds = new DS({ 
-//     data : window.DS.alphabet_csv,
-//     delimiter : ","
-//   });
+  var ds = new DS({ 
+    data : window.DS.alphabet_csv,
+    delimiter : ","
+  });
   
-//   verifyImport(DS.alphabet_strict, ds);
+  verifyImport(DS.alphabet_strict, ds);
 
-//   // check data size
-//   ok(ds.length === 24, "there are 24 rows");
-//   ok(ds.columns.length === 5, "there are 5 columns");
-
-//   // check column types
-//   ok(ds.columns[0].name === "character", "character is first column");
-//   ok(ds.columns[0].type === "string", "character is string type");
-
-//   ok(ds.columns[1].name === "name", "name is 2nd column");
-//   ok(ds.columns[1].type === "string", "name is string type");
-
-//   ok(ds.columns[2].name === "is_modern", "is_modern is 3rd column");
-//   ok(ds.columns[2].type === "boolean", "is_modern is boolean type");
-
-//   ok(ds.columns[3].name === "numeric_value", "numeric_value is 4th column");
-//   ok(ds.columns[3].type === "number", "numeric_value is number type");
-// });
+  // check column types
+    checkColumnTypes(ds);
+});
 
 test("Basic delimiter parsing test with custom separator", 29, function() {
-  var importer = new DS.Importers.Local(window.DS.alphabet_customseparator, {
+  var importer = new DS.Importers.Local({
+    data : window.DS.alphabet_customseparator,
     delimiter : "###",
     parser : DS.Parsers.Delimited
   });
@@ -286,29 +255,21 @@ test("Basic delimiter parsing test with custom separator", 29, function() {
     success : function(strictData) {
       verifyImport(DS.alphabet_strict, strictData);
 
-      // check data size
-      ok(strictData.length === 24, "there are 24 rows");
-      ok(strictData.columns.length === 5, "there are 5 columns");
-
       // check column types
       checkColumnTypes(strictData);
     }
   });
 });
 
-// test("Basic delimiter parsing test with custom separator with Dataset API", 46, function() {
-//   var ds = new DS({ 
-//     data : window.DS.alphabet_customseparator,
-//     delimiter : "###"
-//   });
+test("Basic delimiter parsing test with custom separator with Dataset API", 29, function() {
+  var ds = new DS({ 
+    data : window.DS.alphabet_customseparator,
+    delimiter : "###"
+  });
   
-//   verifyImport(DS.alphabet_strict, ds);
+  verifyImport(DS.alphabet_strict, ds);
 
-//   // check data size
-//   ok(ds._rows.length === 24, "there are " + ds._rows.length + " rows");
-//   ok(ds._columns.length === 4, "there are 4 columns");
+  // check column types
+  checkColumnTypes(ds);
 
-  // // check column types
-  // checkColumnTypes(strictData);
-
-// });
+});

@@ -32,6 +32,9 @@
 
     global.DS = function(options) {
       options = options || (options = {});
+
+      this._initialize(options);
+
       return this;
     };
 
@@ -49,6 +52,57 @@
   };
 
   _.extend(DS.prototype, {
+
+    _initialize: function(options) {
+      
+      // initialize importer from options or just create a blank
+      // one for now, we'll detect it later.
+      var importer = options.importer || null;
+
+      // default parser is object parser, unless otherwise specified.
+      var parser  = options.parser || DS.Parsers.Obj;
+
+      // figure out out if we need another parser.
+      if (_.isUndefined(options.parser)) {
+        if (options.strict) {
+          parser = DS.Parsers.Strict;
+        } else if (options.delimiter) {
+          parser = DS.Parsers.Delimited;
+        }
+      }
+
+      // set up some base options for importer.
+      var importerOptions = _.extend({}, 
+        options,
+        { parser : parser });
+      
+      if (options.delimiter) {
+        importerOptions.dataType = "text";
+      }
+
+      // initialize the proper importer
+      if (importer === null) {
+        if (options.url) {
+          importer = DS.Importers.Remote;
+        } else {
+          importer = DS.Importers.Local;
+        }
+      }
+
+      // initialize actual new importer.
+      importer = new importer(importerOptions);
+
+      if (importer !== null) {
+        importer.fetch({
+          success: _.bind(function(d) {
+            _.extend(this, d);
+            if (options.ready) {
+              options.ready.call(this);
+            }
+          }, this)
+        });
+      }
+    },
 
     /**
     * Returns a dataset view based on the filtration parameters 

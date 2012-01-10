@@ -608,13 +608,13 @@
    * Local data importer is responsible for just using 
    * a data object and passing it appropriatly.
    */
-  DS.Importers.Local = function(data, options) {
+  DS.Importers.Local = function(options) {
     this.options = options || (options = {});
 
     if (this.options.extract) {
       this.extract = this.options.extract;
     }
-    this.data = data;
+    this.data = options.data;
     this.parser = this.options.parser || DS.Importer.Obj;
   };
 
@@ -640,9 +640,9 @@
    * A remote importer is responsible for fetching data from a url
    * and passing it through the right parser.
    */
-  DS.Importers.Remote = function(url, options) {
+  DS.Importers.Remote = function(options) {
     options = options || {};
-    this._url = url;
+    this._url = options.url;
 
     if (options.extract) {
       this.extract = options.extract;
