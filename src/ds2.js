@@ -1,6 +1,9 @@
-// new dataset
-/*
-{
+/**
+* Library Deets go here
+* USE OUR CODES
+*
+* Version 0.0.1.2
+*{
  url : "String - url to fetch data from",
  jsonp : "boolean - true if this is a jsonp request",
  delimiter : "String - a delimiter string that is used in a tabular datafile",
@@ -22,19 +25,32 @@
  }
 }
 */
-var ds = new Dataset(options);
+
+(function(global, _) {
+
+  var DS = (global.DS || function() {
+    options = options || (options = {});
+    this._options = options;
+  });
+
+  DS.datatypes = {
+    UNKNOWN: "Unknown",
+    NUMBER : 0,
+    STRING : 1,
+    BOOLEAN: 2,
+    ARRAY  : 3,
+    OBJECT : 4,
+    TIMESTAMP : 5
+  };
+
+  _.extend(DS.prototype, {
+
+  });
+
+});
 
 
 // CONSTS
-Dataset.datatypes = {
-  UNKNOWN: "Unknown",
-  NUMBER : 0,
-  STRING : 1,
-  BOOLEAN: 2,
-  ARRAY  : 3,
-  OBJECT : 4,
-  TIMESTAMP : 5
-};
 
 /*
 
