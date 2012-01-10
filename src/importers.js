@@ -12,36 +12,99 @@
    * @param {string} name The column name
    * @param {string} type The type of the data in the column
    */
-  DS.Parsers.prototype._buildColumn = function(name, type) {
+  DS.Parsers.prototype._buildColumn = function(name, type, data) {
     return {
       _id : _.uniqueId(),
       name : name,
-      type : type
+      type : type,
+      data : (data || [])
     };
+  };
+
+  DS.Parsers.prototype._addValue = function(d, columnName, value) {
+    var colPos = d._columnPositionByName[columnName];
+    d.columns[colPos].data.push(value);
+  }
+
+  DS.Parsers.prototype._cacheColumns = function(d) {
+    d._columnPositionByName = {};
+    
+    // cache columns by their column names
+    // TODO: should we cache by _id?
+    _.each(d.columns, function(column, index) {
+      d._columnPositionByName[column.name] = index;
+    });
+  };
+
+  DS.Parsers.prototype._detectTypes = function(d, n) {
+    _.each(d.columns, function(column) {
+      var type = _.inject(column.data.slice(0, (n || 5)), function(memo, value) {
+        if (memo.indexOf(DS.typeOf(value)) == -1) {
+          memo.push(DS.typeOf(value));
+        }
+        return memo;
+      }, []);
+
+      // if we only have one type in our sample, save it as the type
+      if (type.length === 1) {
+        column.type = type[0];
+      } else {
+        throw new Error("This column seems to have mixed types");
+      }
+    });
+    
+    return d;
   };
 
   /**
    * Used by internal importers to cache the rows and columns
    * in quick lookup tables for any id based operations.
    */
-  DS.Parsers.prototype._cache = function(d) {
-    d._byRowId      = {};
-    d._byColumnId   = {};
-    d._byColumnName = {};
+  DS.Parsers.prototype._cacheRows = function(d) {
+    
+    d._rowPositionById = {};
+    d._rowIdByPosition = [];
+  
+    // cache the row id positions in both directions.
+    // iterate over the _id column and grab the row ids
+    _.each(d.columns[d._columnPositionByName[_.id]], function(id, index) {
+      d._rowPositionById[id] = index;
+      d_.rowIdByPosition.push(id);
+    });  
 
-    // cache rows by their _ids.
-    _.each(d._rows, function(row) {
-      d._byRowId[row._id] = row;
-    });
+    // cache the total number of rows. There should be same 
+    // number in each column's data type
+    var rowLengths = _.uniq(
+      _.map(
+        d.columns, 
+        function(column) { 
+          return column.data.length;
+        }
+      )
+    );
 
-    // cache columns by their column _ids, also cache their position by name.
-    _.each(d._columns, function(column, index) {
-      column.position = index;
-      d._byColumnId[column._id] = column;
-      d._byColumnName[column.name] = column;
-    });
+    if (rowLengths.length > 1) {
+      throw new Error("Row lengths need to be the same. Empty values should be set to null.");
+    } else {
+      d.length = rowLengths[0];
+    }
+
   };
 
+  DS.Parsers.prototype._addIdColumn = function(d, count) {
+      // if we have any data, generate actual ids.
+      var ids = [];
+      if (count > 0) {
+        _.times(count, function() {
+          ids.push(_.uniqueId());
+        });
+      }
+      d.columns.unshift(
+        this._buildColumn("_id", "number", ids)
+      );
+    },
+
+  
   /**
    * By default we are assuming that our data is in
    * the correct form from the fetching.
@@ -57,22 +120,29 @@
    */
   DS.Parsers.Strict = function(data, options) {
     options = options || {};
-
     this._data = this.parse(data);
   };
 
   _.extend(
     DS.Parsers.Strict.prototype,
     DS.Parsers.prototype, {
+
     _buildColumns : function(n) {
       var columns = this._data.columns;
 
-      // verify columns have ids
+      // add unique ids to columns
+      // TODO do we still need this??
       _.each(columns, function(column) {
         if (typeof column._id === "undefined") {
           column._id = _.uniqueId();
         }
       });
+
+      // add row _id column. Generate auto ids if there
+      // isn't already a unique id column.
+      if (_.pluck(columns, "name").indexOf("_id") === -1) {
+        this._addIdColumn(this._data, columns[0].data.length);
+      }
 
       return columns;
     },
@@ -81,19 +151,10 @@
       var d = {};
 
       // Build columns
-      d._columns = this._buildColumns();
+      d.columns = this._buildColumns();
 
-      // Build rows
-      d._rows = this._data.rows;
-
-      // verify rows have ids
-      _.each(d._rows, function(row) {
-        if (typeof row._id === "undefined") {
-          row._id = _.uniqueId();
-        }
-      });
-
-      this._cache(d);
+      this._cacheColumns(d);
+      this._cacheRows(d);
       return d;
     }
   });
@@ -101,6 +162,7 @@
   // -------- Object Parser -----------
   /**
    * Converts an array of objects to strict format.
+   * Each object is a flat json object of properties.
    * @params {Object} obj = [{},{}...]
    */
   DS.Parsers.Obj = function(data, options) {
@@ -144,6 +206,11 @@
         }
       }, this);
 
+      // add id column if we need to
+      if (_.pluck(types, "name").indexOf("_id") === -1) {
+        types.unshift(this._buildColumn("_id", "number"));
+      }
+
       return types;
     },
 
@@ -152,25 +219,23 @@
       var d = {};
 
       // Build columns
-      d._columns = this._buildColumns();
+      d.columns = this._buildColumns();
+      this._cacheColumns(d);
 
       // Build rows
-      d._rows = _.map(this._data, function(row) {
+      _.map(this._data, function(row) {
+        
+        // iterate over properties in each row and add them
+        // to the appropriate column data.
+        _.each(row, function(value, key) {
+          this._addValue(d, key, value);
+        }, this);
 
-        var r = {};
+        // add a row id
+        this._addValue(d, "_id", _.uniqueId());
+      }, this);
 
-        // Assemble a row by iterating over each column and grabbing
-        // the values in the order we expect.
-        r.data = _.map(d._columns, function(column) {
-          return row[column.name];
-        });
-
-        // TODO: add id plucking out of data, if exists.
-        r._id = _.uniqueId();
-        return r;
-      });
-
-      this._cache(d);
+      this._cacheRows(d);
       return d;
     }
   });
@@ -200,9 +265,9 @@
 
       // Standard fields.
       "([^\"\\" + this.delimiter + "\\r\\n]*))"
-    ),
-    "gi"
-  );
+      ),
+      "gi"
+    );
   };
 
   _.extend(
@@ -243,62 +308,120 @@
     },
 
     build : function(options) {
-      var d = {
-        _columns : [],
-        _rows : []
-      };
-      var rows = [[]],
-          matches = null,
-          i = 0;
-      
-      while (matches = this.__delimiterPatterns.exec(this._data)) {
-        
-        var delimiter = matches[1];
-        
-        // new row
-        if (delimiter.length && delimiter !== this.delimiter) {
+
+      // convert the csv string into the beginnings of a strict
+      // format. The only thing missing is type detection.
+      // That happens after all data is parsed.
+      var parseCSV = function(delimiterPattern, strData, strDelimiter) {
           
-          // create column headers.
-          if (i == 5) {
-            d._columns = this._buildColumns(rows.slice(0, rows.length-2));
+        // Check to see if the delimiter is defined. If not,
+        // then default to comma.
+        strDelimiter = (strDelimiter || ",");
+
+        // Create an array to hold our data. Give the array
+        // a default empty first row.
+        var d = {
+          columns : []
+        };
+
+        // Create an array to hold our individual pattern
+        // matching groups.
+        var arrMatches = null;
+
+        // track how many columns we have. Once we reach a new line
+        // mark a flag that we're done calculating that.
+        var columnCount = 0;
+        var columnCountComputed = false;
+
+        // track which column we're on. Start with -1 because we increment it before
+        // we actually save the value.
+        var columnIndex = -1;
+
+        // Keep looping over the regular expression matches
+        // until we can no longer find a match.
+        while (arrMatches = delimiterPattern.exec(strData)){
+
+          // Get the delimiter that was found.
+          var strMatchedDelimiter = arrMatches[ 1 ];
+          console.log(arrMatches);
+
+          // Check to see if the given delimiter has a length
+          // (is not the start of string) and if it matches
+          // field delimiter. If id does not, then we know
+          // that this delimiter is a row delimiter.
+          if ( strMatchedDelimiter.length &&
+             ( strMatchedDelimiter !== strDelimiter )){
+            console.log("strMatchedDelimiter", 
+              strMatchedDelimiter, strDelimiter);
+            // we have reached a new row.
+
+            // We are clearly done computing columns.
+            columnCountComputed = true;
+
+            // when we're done with a row, reset the row index to 0
+            columnIndex = 0;
+            console.log("NEW ROW");
+          } else {
+            
+            // Find the number of columns we're fetching and
+            // create placeholders for them.
+            if (!columnCountComputed) {
+              columnCount++;
+            }
+
+            columnIndex++;
           }
 
-          // add all the rows to the _rows collection.
-          if (i > 0) {
-            //push previous row into the rows array
-            d._rows.push({ data : rows[i], _id : _.uniqueId()});
+
+          // Now that we have our delimiter out of the way,
+          // let's check to see which kind of value we
+          // captured (quoted or unquoted).
+          if (arrMatches[ 2 ]){
+
+            // We found a quoted value. When we capture
+            // this value, unescape any double quotes.
+            var strMatchedValue = arrMatches[ 2 ].replace(
+              new RegExp( "\"\"", "g" ),
+              "\""
+            );
+
+          } else {
+
+            // We found a non-quoted value.
+            var strMatchedValue = arrMatches[ 3 ];
           }
 
-          // add a new row for the next one
-          rows.push([]);
+          // Now that we have our value string, let's add
+          // it to the data array.
+          if (columnCountComputed) {
+            
+            d.columns[columnIndex].data.push(strMatchedValue); 
 
-          i++;
+          } else {
+
+            // we are building the column names here
+            d.columns.push({
+              name : strMatchedValue,
+              data : [],
+              _id  : _.uniqueId()
+            });
+          }
         }
 
-        if (matches[2]) {
-          var value = matches[2].replace(new RegExp("\"\"", "g"), "\"");
-        } else {
-          var value = matches[3];
-        }
-
-        rows[rows.length - 1].push(value);
+        // Return the parsed data.
+        return d;
       }
 
-      // if there was a blank row at the end of the file, remove it.
-      if(_.isEqual(rows[rows.length -1], [""])) {
-        rows.pop();
-      }
-
-      // In case we had less than 5 rows, we may need to generate the cols now.
-      if (d._columns.length === 0) {
-        d._columns = this._buildColumns(rows.slice(0, rows.length-2));
-      }
-
-      // add last row.
-      d._rows.push({ data : rows[i], _id : _.uniqueId()});
+      var d = parseCSV(
+        this.__delimiterPatterns, 
+        this._data, 
+        this.delimiter);
       
-      rows = null;
-      this._cache(d);
+      this._detectTypes(d);
+      this._addIdColumn(d, d.columns[0].data.length);
+      this._cacheColumns(d);
+      this._cacheRows(d);
+      
       return d;
     }
   });
