@@ -343,7 +343,6 @@
 
           // Get the delimiter that was found.
           var strMatchedDelimiter = arrMatches[ 1 ];
-          console.log(arrMatches);
 
           // Check to see if the given delimiter has a length
           // (is not the start of string) and if it matches
@@ -351,8 +350,6 @@
           // that this delimiter is a row delimiter.
           if ( strMatchedDelimiter.length &&
              ( strMatchedDelimiter !== strDelimiter )){
-            console.log("strMatchedDelimiter", 
-              strMatchedDelimiter, strDelimiter);
             // we have reached a new row.
 
             // We are clearly done computing columns.
@@ -360,7 +357,6 @@
 
             // when we're done with a row, reset the row index to 0
             columnIndex = 0;
-            console.log("NEW ROW");
           } else {
             
             // Find the number of columns we're fetching and
