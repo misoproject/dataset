@@ -3,19 +3,28 @@ module("Extracting Data");
 (function() {
   var data = {
     "columns" : [
-      { "name" : "one", "type" : "integer" },
-      { "name" : "two", "type" : "integer" }
-    ],
-    "rows" : [
-      {"data" : [1,10] },
-      {"data" : [2,20] }
+      { 
+        "name" : "one", 
+        "type" : "integer",
+        "data" : [1, 2] 
+      },
+      { 
+        "name" : "two", 
+        "type" : "integer"
+        "data" : [10, 20] 
+      }
     ]
   };
-  var ds = new DS({ data : data, strict : true }),
-      pos1 = 0,
-      pos2 = 1,
-      rid1 = ds._rows[0]._id,
-      rid2 = ds._rows[1]._id;
+
+  // rewrite parsing then come back here
+  var ds = new DS({ 
+      data : data, 
+      strict : true 
+    }),
+    pos1 = 0,
+    pos2 = 1,
+    rid1 = ds._rows[0]._id,
+    rid2 = ds._rows[1]._id;
 
   test("getting values by position", 2, function() {
     equal(1, ds.get(pos1, "one"), "Can get the first value in the one column" )

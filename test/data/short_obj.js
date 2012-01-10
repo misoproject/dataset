@@ -1,16 +1,24 @@
-var shortObj = {
-  "metadata" : {"name" : "Greek Alphabet" },
+window.DS.shortObj = { "metadata" : {"name" : "Greek Alphabet" },
   "columns" : [
-    {"name" : "character", "type" : "string"},
-    {"name" : "is_modern", "type" : "boolean"},
-    {"name" : "name", "type" : "string"},
-    {"name" : "numeric_value", "type" : "number"}
-  ],
-  "rows" : [
-    { data : ["α","alpha",true,1] },
-    { data : ["β","beta",true,2] },
-    { data : ["γ","gamma",true,3] },
-    { data : ["δ","delta",true,4] },
-    { data : ["ε","epsilon",false,5] }
+    {
+        "name" : "character", 
+        "type" : "string",
+        "data" : ["α", "β", "γ", "δ", "ε"]
+    },
+    {   
+        "name" : "name", 
+        "type" : "string",
+        "data" : ["alpha","beta","gamma","delta","epsilon"]
+    },
+    {
+        "name" : "is_modern", 
+        "type" : "boolean",
+        "data" : [true,true,true,true,false]
+    },
+    {
+        "name" : "numeric_value", 
+        "type" : "number",
+        "data" : [1, 2, 3, 4, 5]
+    }
   ]
 };
