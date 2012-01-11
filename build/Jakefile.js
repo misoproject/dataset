@@ -12,7 +12,7 @@ var // Dependency References
 		exec = cp.exec,
 		spawn = cp.spawn,
 		assert = require( "assert" ),
-		child;
+		sys = require( "sys" );
 
 var // Shortcut References
 		slice = Array.prototype.slice,
@@ -51,6 +51,7 @@ var // Program References
 				eqnull: true,
 				curly: true,
 				browser: true,
+				boss: true,
 				predef: [ "_" ]
 				// onevar: true,
 				// "eqnull": true,
@@ -210,11 +211,34 @@ function gzip( src ) {
 	}
 }
 
+function doc() {
+	var exec = require('child_process').exec,
+			proc;
+
+	// executes build
+	proc = exec("jsdoc/jsdoc --destination ../dist/doc ../dist/ds.js", 
+		function (error, stdout, stderr) {
+	  	if ( error !== null ) {
+	    	fail( error );
+	  	}
+		}
+	);
+	
+	proc;
+		
+}
+
 // Jake Tasks
 
 desc( "Hint & Minify" );
-task( "default", [ "hint", "min" ], function() {
+task( "default", [ "hint", "min", "doc" ], function() {
 	// Nothing
+});
+
+desc( "Documentation" );
+task( "doc", function() {
+	header( "Generating Documentation" );
+	doc();
 });
 
 desc( "Validate with JSHint." );

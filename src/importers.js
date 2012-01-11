@@ -3,7 +3,6 @@
   var DS = (global.DS || (global.DS = {}));
 
   // ------ data parsers ---------
-
   DS.Parsers = function() {};
 
   /**
@@ -24,8 +23,43 @@
   DS.Parsers.prototype._addValue = function(d, columnName, value) {
     var colPos = d._columnPositionByName[columnName];
     d.columns[colPos].data.push(value);
-  }
+  };
 
+  DS.Parsers.prototype._detectTypes = function(d, n) {
+
+    _.each(d.columns, function(column) {
+
+      // check if the column already has a type defined. If so, skip
+      // this auth detection phase.
+      if (_.isUndefined(column.type) || column.type === null) {
+        
+        // compute the type by assembling a sample of computed types
+        // and then squashing it to create a unique subset.
+        var type = _.inject(column.data.slice(0, (n || 5)), function(memo, value) {
+          if (memo.indexOf(DS.typeOf(value)) == -1) {
+            memo.push(DS.typeOf(value));
+          }
+          return memo;
+        }, []);
+
+        // if we only have one type in our sample, save it as the type
+        if (type.length === 1) {
+          column.type = type[0];
+        } else {
+          throw new Error("This column seems to have mixed types");
+        }
+      }
+      
+    });
+    
+    return d;
+  };
+
+  /**
+  * Used by internal importers to cache the columns and their
+  * positions in a fast hash lookup.
+  * @param d {object} the data object to append cache to.
+  */
   DS.Parsers.prototype._cacheColumns = function(d) {
     d._columnPositionByName = {};
     
@@ -36,29 +70,10 @@
     });
   };
 
-  DS.Parsers.prototype._detectTypes = function(d, n) {
-    _.each(d.columns, function(column) {
-      var type = _.inject(column.data.slice(0, (n || 5)), function(memo, value) {
-        if (memo.indexOf(DS.typeOf(value)) == -1) {
-          memo.push(DS.typeOf(value));
-        }
-        return memo;
-      }, []);
-
-      // if we only have one type in our sample, save it as the type
-      if (type.length === 1) {
-        column.type = type[0];
-      } else {
-        throw new Error("This column seems to have mixed types");
-      }
-    });
-    
-    return d;
-  };
-
   /**
-   * Used by internal importers to cache the rows and columns
+   * Used by internal importers to cache the rows 
    * in quick lookup tables for any id based operations.
+   * @param d {object} the data object to append cache to.
    */
   DS.Parsers.prototype._cacheRows = function(d) {
     
@@ -67,9 +82,9 @@
   
     // cache the row id positions in both directions.
     // iterate over the _id column and grab the row ids
-    _.each(d.columns[d._columnPositionByName[_.id]], function(id, index) {
+    _.each(d.columns[d._columnPositionByName._id].data, function(id, index) {
       d._rowPositionById[id] = index;
-      d_.rowIdByPosition.push(id);
+      d._rowIdByPosition.push(id);
     });  
 
     // cache the total number of rows. There should be same 
@@ -91,18 +106,24 @@
 
   };
 
+  /**
+  * Adds an id column to the column definition. If a count
+  * is provided, also generates unique ids.
+  * @param d {object} the data object to modify
+  * @param count {number} the number of ids to generate.
+  */
   DS.Parsers.prototype._addIdColumn = function(d, count) {
-      // if we have any data, generate actual ids.
-      var ids = [];
-      if (count > 0) {
-        _.times(count, function() {
-          ids.push(_.uniqueId());
-        });
-      }
-      d.columns.unshift(
-        this._buildColumn("_id", "number", ids)
-      );
-    },
+    // if we have any data, generate actual ids.
+    var ids = [];
+    if (count && count > 0) {
+      _.times(count, function() {
+        ids.push(_.uniqueId());
+      });
+    }
+    d.columns.unshift(
+      this._buildColumn("_id", "number", ids)
+    );
+  };
 
   
   /**
@@ -127,12 +148,12 @@
     DS.Parsers.Strict.prototype,
     DS.Parsers.prototype, {
 
-    _buildColumns : function(n) {
-      var columns = this._data.columns;
+    _buildColumns : function(d) {
+      d.columns = this._data.columns;
 
       // add unique ids to columns
       // TODO do we still need this??
-      _.each(columns, function(column) {
+      _.each(d.columns, function(column) {
         if (typeof column._id === "undefined") {
           column._id = _.uniqueId();
         }
@@ -140,21 +161,21 @@
 
       // add row _id column. Generate auto ids if there
       // isn't already a unique id column.
-      if (_.pluck(columns, "name").indexOf("_id") === -1) {
-        this._addIdColumn(this._data, columns[0].data.length);
+      if (_.pluck(d.columns, "name").indexOf("_id") === -1) {
+        this._addIdColumn(this._data, d.columns[0].data.length);
       }
 
-      return columns;
+      return d;
     },
 
     build : function(options) {
       var d = {};
 
-      // Build columns
-      d.columns = this._buildColumns();
-
+      this._buildColumns(d);
+      this._detectTypes(d);
       this._cacheColumns(d);
       this._cacheRows(d);
+
       return d;
     }
   });
@@ -174,52 +195,20 @@
     DS.Parsers.Obj.prototype,
     DS.Parsers.prototype, {
 
-    _buildColumns : function(n) {
+    _buildColumns : function(d, n) {
 
-      // Pick a sample of n (default is 5) rows
-      n = n || 5;
+      d.columns = [];
 
-      var sample = this._data.slice(0, n);
-
-      // How many keys do we have?
-      var keys  = _.keys(this._data[0]);
-
-      // Aggregate the types. For each key,
-      // check if the value resolution reduces to a single type.
-      // If it does, call that your type.
-      var types = _.map(keys, function(key) {
-
-        // Build a reduced array of types for this key.
-        // If we have N values, we are going to hope that at the end we
-        // have an array of length 1 with a single type, like ["string"]
-        var vals =  _.inject(this._data, function(memo, row) {
-          if (memo.indexOf(DS.typeOf(row[key])) == -1) {
-            memo.push(DS.typeOf(row[key]));
-          }
-          return memo;
-        }, []);
-
-        if (vals.length == 1) {
-          return this._buildColumn(key, vals[0]);
-        } else {
-          return this._buildColumn(key, DS.datatypes.UNKNOWN);
-        }
+      // create column container objects
+      var columnNames  = _.keys(this._data[0]);
+      _.each(columnNames, function(columnName) {
+        d.columns.push(this._buildColumn(columnName, null));
       }, this);
+      
+      // add id column
+      this._addIdColumn(d);
 
-      // add id column if we need to
-      if (_.pluck(types, "name").indexOf("_id") === -1) {
-        types.unshift(this._buildColumn("_id", "number"));
-      }
-
-      return types;
-    },
-
-    build : function(options) {
-
-      var d = {};
-
-      // Build columns
-      d.columns = this._buildColumns();
+      // cache them so we have a lookup
       this._cacheColumns(d);
 
       // Build rows
@@ -235,6 +224,18 @@
         this._addValue(d, "_id", _.uniqueId());
       }, this);
 
+      return d;
+    },
+
+    build : function(options) {
+
+      var d = {};
+
+      this._buildColumns(d);
+      // column caching happens inside of build columns this time
+      // so that rows know which column their values belong to
+      // before we build the data.
+      this._detectTypes(d);
       this._cacheRows(d);
       return d;
     }
@@ -274,40 +275,9 @@
     DS.Parsers.Delimited.prototype,
     DS.Parsers.prototype, {
 
-    _buildColumns : function(sample) {
+    _buildColumns : function(d, sample) {
 
-      // How many keys do we have? First row is the keys.
-      var keys  = sample.splice(0,1)[0];
-
-      // Aggregate the types. For each key,
-      // check if the value resolution reduces to a single type.
-      // If it does, call that your type.
-      var i = 0;
-      var types = _.map(keys, function(key) {
-         
-        // Build a reduced array of types for this key.
-        // If we have N values, we are going to hope that at the end we
-        // have an array of length 1 with a single type, like ["string"]
-        var vals =  _.inject(sample, function(memo, row) {
-          if (memo.indexOf(DS.typeOf(row[i])) == -1) {
-            memo.push(DS.typeOf(row[i]));
-          }
-          return memo;
-        }, []);
-
-        i++;
-
-        if (vals.length == 1) {
-          return this._buildColumn(key, vals[0]);
-        } else {
-          return this._buildColumn(key, DS.datatypes.UNKNOWN);
-        }
-      }, this);
-
-      return types;
-    },
-
-    build : function(options) {
+      d.columns = [];
 
       // convert the csv string into the beginnings of a strict
       // format. The only thing missing is type detection.
@@ -320,9 +290,7 @@
 
         // Create an array to hold our data. Give the array
         // a default empty first row.
-        var d = {
-          columns : []
-        };
+        
 
         // Create an array to hold our individual pattern
         // matching groups.
@@ -372,11 +340,12 @@
           // Now that we have our delimiter out of the way,
           // let's check to see which kind of value we
           // captured (quoted or unquoted).
+          var strMatchedValue = null;
           if (arrMatches[ 2 ]){
 
             // We found a quoted value. When we capture
             // this value, unescape any double quotes.
-            var strMatchedValue = arrMatches[ 2 ].replace(
+            strMatchedValue = arrMatches[ 2 ].replace(
               new RegExp( "\"\"", "g" ),
               "\""
             );
@@ -384,7 +353,7 @@
           } else {
 
             // We found a non-quoted value.
-            var strMatchedValue = arrMatches[ 3 ];
+            strMatchedValue = arrMatches[ 3 ];
           }
 
           // Now that we have our value string, let's add
@@ -406,15 +375,24 @@
 
         // Return the parsed data.
         return d;
-      }
+      };
 
-      var d = parseCSV(
+      parseCSV(
         this.__delimiterPatterns, 
         this._data, 
         this.delimiter);
-      
-      this._detectTypes(d);
+
       this._addIdColumn(d, d.columns[0].data.length);
+      
+      return d;
+    },
+
+    build : function(options) {
+
+      var d = {};
+
+      this._buildColumns(d);
+      this._detectTypes(d);
       this._cacheColumns(d);
       this._cacheRows(d);
       
