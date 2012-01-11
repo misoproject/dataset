@@ -124,14 +124,14 @@
 
       } else { //array
         rowSelector = function(column) {
-          _.indexOf(rowFilter, column) === -1 ? true : false;
-        }
+          return _.indexOf(rowFilter, column) === -1 ? true : false;
+        };
       }
 
       this.each(function(row) {
-        if (!rowSelector(row)) { return }
+        if (!rowSelector(row)) { return; }
 
-        for (i=0; i<=selectedColumns.length; i++) {
+        for (var i=0; i<=selectedColumns.length; i++) {
           selectedColumns[i].data.push( row[selectedColumns[i]] );
         }
 
@@ -153,8 +153,8 @@
         };
       } else { //array
         columnSelector = function(column) {
-          _.indexOf(columnFilter, column) === -1 ? true : false;
-        }
+          return _.indexOf(columnFilter, column) === -1 ? true : false;
+        };
       }
 
       _.each(this.columns, function(column) {
