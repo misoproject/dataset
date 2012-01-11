@@ -2,14 +2,49 @@
 
   var DS = global.DS;
 
+  /**
+  * @constructor
+  *
+  * Creates a new view.
+  * @param {object} options - initialization parameters:
+  *   parent : parent dataset
+  *   filter : filter specification TODO: document better
+  */
   DS.View = function(options) {
     //rowFilter, columnFilter, parent
     options = options || (options = {});
+
+    if (_.isUndefined(options.parent)) {
+      throw new Error("A view must have a parent specified.");
+    } 
+    this.parent = options.parent;
     this._initialize(options);
     return this;
   };
 
   _.extend(DS.View.prototype, DS.Events, DS.Syncable, {
+
+    _initialize: function(options) {
+      
+      // save filter
+      this.filter = {
+        columns : this._columnFilter(options.filter.columns || undefined),
+        rows    : this._rowFilter(options.filter.rows || undefined)
+      };
+      
+      // initialize columns.
+      this.columns = this._selectData();
+
+      // pass through strict importer
+      // TODO: Need to cache all data here, so.... need to
+      // either pass through importer, or pull that out. Maybe
+      // the data caching can happen elsewhere?
+      // right now just passing through default parser.
+      var tempParser = new DS.Parsers();
+      _.extend(this, 
+        tempParser._cacheColumns(this),
+        tempParser._cacheRows(this));
+    },
 
     /**
     * Returns a dataset view based on the filtration parameters 
@@ -17,18 +52,81 @@
     * @param {options} options object
     */
     where : function(filter, options) {
+      options = options || {};
+      
+      options.parent = this;
+      options.filter = options.filter || {};
 
-      var viewData = this._selectRows( this._selectColumns(filter.columns) );
-      console.log('vd', viewData);
+      return new DS.View(_.extend(
+        options, 
+        filter)
+      );
 
       // return new DS.View({rowFilter: });
     },
 
+    _selectData : function() {
+      var selectedColumns = [];
+
+      _.each(this.parent.columns, function(parentColumn) {
+        
+        // check if this column passes the column filter
+        if (this.filter.columns(parentColumn)) {
+          selectedColumns.push({
+            name : parentColumn.name,
+            data : [], 
+            type : parentColumn.type,
+            _id : parentColumn._id
+          });
+        }
+
+      }, this);
+
+      // get the data that passes the row filter.
+      this.each(function(row) {
+
+        if (!this.filter.rows(row)) { 
+          return; 
+        }
+
+        for(var i = 0; i <= selectedColumns.length; i++) {
+          selectedColumns[i].data.push(row[selectedColumns[i]]);
+        }
+      }, this);
+
+      return selectedColumns;
+    },
+
     /**
-    * Select rows for a view
-    * @param {array/function/undefined} columns
+    * Returns a normalized version of the column filter function
+    * that can be executed.
+    * @param {function|name} columnFilter - function or column name
     */
-    _selectRows: function(selectedColumns, rowFilter) {
+    _columnFilter: function(columnFilter) {
+      var columnSelector;
+
+      // if no column filter is specified, then just
+      // return a passthrough function that will allow
+      // any column through.
+      if (_.isUndefined(columnFilter)) {
+        columnSelector = function() {
+          return true;
+        };
+      } else { //array
+        columnSelector = function(column) {
+          return _.indexOf(columnFilter, column) === -1 ? true : false;
+        };
+      }
+
+      return columnSelector;
+    },
+
+    /**
+    * Returns a normalized row filter function
+    * that can be executed 
+    */
+    _rowFilter: function(rowFilter) {
+      
       var rowSelector;
 
       if (_.isUndefined(rowFilter)) {
@@ -40,52 +138,12 @@
         rowSelector = rowFilter;
 
       } else { //array
-        rowSelector = function(column) {
-          return _.indexOf(rowFilter, column) === -1 ? true : false;
+        rowSelector = function(row) {
+          return _.indexOf(rowFilter, row) === -1 ? true : false;
         };
       }
 
-      this.each(function(row) {
-        if (!rowSelector(row)) { return; }
-
-        for (var i=0; i<=selectedColumns.length; i++) {
-          selectedColumns[i].data.push( row[selectedColumns[i]] );
-        }
-
-      });
-
-      return selectedColumns;
-    },
-
-    /**
-    * Select columns for a view
-    * @param {array/undefined} columns
-    */
-    _selectColumns : function(columnFilter) {
-      var columnSelector, selectedColumns = [];
-
-      if (_.isUndefined(columnFilter)) {
-        columnSelector = function() {
-          return true;
-        };
-      } else { //array
-        columnSelector = function(column) {
-          return _.indexOf(columnFilter, column) === -1 ? true : false;
-        };
-      }
-
-      _.each(this.columns, function(column) {
-        if (columnSelector(column)) {
-          selectedColumns.push( {
-            name : column.name,
-            data : [], 
-            type : column.type,
-            _id : column._id
-          } );
-        }
-      });
-
-      return selectedColumns;
+      return rowSelector;
     },
 
     /**
@@ -115,7 +173,11 @@
     * iterator(rowObject, index, dataset)
     * @param {object} context - options object. Optional.
     */    
-    each : function(iterator, context) {},
+    each : function(iterator, context) {
+      
+      // TODO flesh this out...
+
+    },
 
     /**
     * Sort rows

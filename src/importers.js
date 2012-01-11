@@ -68,6 +68,8 @@
     _.each(d.columns, function(column, index) {
       d._columnPositionByName[column.name] = index;
     });
+
+    return d;
   };
 
   /**
@@ -104,6 +106,7 @@
       d.length = rowLengths[0];
     }
 
+    return d;
   };
 
   /**

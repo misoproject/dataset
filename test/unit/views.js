@@ -12,6 +12,7 @@ module("Dataset Views")
 
   test("Basic View creation", function() {
     var view = ds.where({});
+    console.log(ds.columns[0].data, view.columns[0].data);
     equal(ds.columns[0].data, view.columns[0].data);
   });
 

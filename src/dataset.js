@@ -118,7 +118,7 @@ Version 0.0.1.2
     * @param {object} newProperties - values to be updated.
     * @param {object} options - options. Optional.
     */    
-    update : function(filter, newProperties, options) {},
+    update : function(filter, newProperties, options) {}
 
   });
 }(this, _));
