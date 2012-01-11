@@ -8,7 +8,7 @@
     return this;
   };
 
-  _.extend(DS.View.prototype, DS.Core, {
+  _.extend(DS.View.prototype, DS.Events, DS.Syncable, {
 
   });
   

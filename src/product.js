@@ -17,8 +17,7 @@
     return DS.Product;
   }());
 
-  _.extend(Product.prototype, DS.Core, {
-
+  _.extend(Product.prototype, DS.Events, DS.Syncable, {
 
     /**
     * Internal function to create the function to be run when the

@@ -7,6 +7,8 @@
 
 (function(global, _) {
 
+  var DS = global.DS;
+
   /**
   * @constructor
   *
@@ -32,16 +34,13 @@
   *     }
   *   }
   */
-
-  var DS = global.DS;
-
   DS.Dataset = function(options) {
     options = options || (options = {});
     this._initialize(options);
     return this;
   };
 
-  _.extend(DS.Dataset.prototype, DS.Core, {
+  _.extend(DS.Dataset.prototype, DS.View.prototype, {
 
     _initialize: function(options) {
       

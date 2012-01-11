@@ -19,7 +19,7 @@
   *   events (bind, unbind, trigger)
   *   sync
   */
-  global.DS.Core = {
+  DS.Events = {
 
     /**
     * Bind callbacks to dataset events
@@ -87,6 +87,10 @@
       }
       return this;
     }
+  };
+
+  DS.Syncable = {
+    
   };
 
   (function() {
