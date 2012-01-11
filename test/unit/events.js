@@ -1,7 +1,10 @@
 module("Events");
 
 (function() {
-  var ds = new DS({}),
+  var ds = new DS({
+    data: { columns : [ { name: "one", data: [1,2] } ] },
+    strict: true
+  }),
       result = 0,
       increment = function(by) {
         by = (by || 1);
