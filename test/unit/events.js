@@ -1,7 +1,7 @@
 module("Events");
 
 (function() {
-  var ds = new DS({
+  var ds = new DS.Dataset({
     data: { columns : [ { name: "one", data: [1,2] } ] },
     strict: true
   }),

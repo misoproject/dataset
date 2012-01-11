@@ -1,6 +1,6 @@
 (function(global, _) {
 
-  _.extend(global.DS.prototype, {
+  _.extend(global.DS.Dataset.prototype, {
     /**
     * moving average
     * @param {column} column on which to calculate the average

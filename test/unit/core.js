@@ -17,7 +17,7 @@ module("Extracting Data");
   };
 
   // rewrite parsing then come back here
-  var ds = new DS({ 
+  var ds = new DS.Dataset({ 
       data : data, 
       strict : true 
     }),
@@ -95,7 +95,7 @@ module("Setting values");
       {"character" : "ε", "name" : "epsilon", "is_modern" : false, "numeric_value" : 5}
     ];
 
-    var ds = new DS({ data : obj }),
+    var ds = new DS.Dataset({ data : obj }),
         rid = 0;
 
     ok(ds.get(rid, "character") === "α", "pre set character is correct");
@@ -110,7 +110,7 @@ module("Setting values");
       {"character" : "ε", "name" : "epsilon", "is_modern" : false, "numeric_value" : 5}
     ];
 
-    var ds = new DS({ data : obj }),
+    var ds = new DS.Dataset({ data : obj }),
         rid = ds._rows[0]._id;
 
     ok(ds.getByRowId(rid, "character") === "α", "pre set character is correct");
@@ -125,7 +125,7 @@ module("Setting values");
       {"character" : "ε", "name" : "epsilon", "is_modern" : false, "numeric_value" : 5}
     ];
 
-    var ds = new DS({ data : obj }),
+    var ds = new DS.Dataset({ data : obj }),
         rid = 0;
 
     ok(ds.get(rid, "character") === "α", "pre set character is correct");
@@ -141,7 +141,7 @@ module("Setting values");
       {"character" : "ε", "name" : "epsilon", "is_modern" : false, "numeric_value" : 5}
     ];
 
-    var ds = new DS({ data : obj }),
+    var ds = new DS.Dataset({ data : obj }),
         rid = 0;
 
     ok(ds.get(rid, "character") === "α", "pre set character is correct");
@@ -157,7 +157,7 @@ module("Setting values");
       {"character" : "ε", "name" : "epsilon", "is_modern" : false, "numeric_value" : 5}
     ];
 
-    var ds = new DS({ data : obj }),
+    var ds = new DS.Dataset({ data : obj }),
         rid = 0;
 
     ds.push();

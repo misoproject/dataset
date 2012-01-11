@@ -3,8 +3,10 @@
 		"../dist/ds": {
 			"src": [
 				"../src/lib/underscore.js",
-				"../src/ds2.js",
-				"../src/products.js",
+				"../src/core.js",
+				"../src/dataset.js",
+				"../src/product.js",
+				"../src/view.js",
 				"../src/derived.js",
 				"../src/importers.js"
 			],

@@ -65,7 +65,7 @@ test("Basic Strict Import", 53, function() {
 });
 
 test("Basic Strict Import through Dataset API", 53, function() {
-  var ds = new DS({ 
+  var ds = new DS.Dataset({ 
     data : DS.alphabet_strict, 
     strict: true 
   });
@@ -105,7 +105,7 @@ test("Convert object to dataset", 57, function() {
 });
 
 test("Convert object to dataset through dataset API", 53, function() {
-  var ds = new DS({ data : DS.alphabet_obj });
+  var ds = new DS.Dataset({ data : DS.alphabet_obj });
   verifyImport(DS.alphabet_obj, ds);
 });
 
@@ -128,7 +128,7 @@ test("Basic json url fetch", 53, function() {
 
 test("Basic json url fetch through Dataset API", 53, function() {
   var url = "data/alphabet_strict.json";
-  var ds = new DS({ 
+  var ds = new DS.Dataset({ 
     url : url, 
     jsonp : false, 
     strict: true,
@@ -161,7 +161,7 @@ test("Basic jsonp url fetch", 53, function() {
 
 test("Basic jsonp url fetch with Dataset API", 53, function() {
   var url = "data/alphabet_obj.json?callback=";
-  var ds = new DS({ 
+  var ds = new DS.Dataset({ 
     url : url, 
     jsonp : true, 
     extract: function(raw) {
@@ -211,7 +211,7 @@ test("Basic delimiter parsing test", 53, function() {
 
 test("Basic delimiter parsing test with Dataset API", 53, function() {
 
-  var ds = new DS({ 
+  var ds = new DS.Dataset({ 
     data : window.DS.alphabet_csv,
     delimiter : ","
   });
@@ -233,7 +233,7 @@ test("Basic delimiter parsing test with custom separator", 53, function() {
 });
 
 test("Basic delimiter parsing test with custom separator with Dataset API", 53, function() {
-  var ds = new DS({ 
+  var ds = new DS.Dataset({ 
     data : window.DS.alphabet_customseparator,
     delimiter : "###"
   });
