@@ -10,6 +10,7 @@ module("Events");
         by = (by || 1);
         result += by;
       };
+
   ds.bind('ping', increment);
 
   test("binding and firing an event", function() {
@@ -18,10 +19,11 @@ module("Events");
     equal(result, 1);
   });
 
-  test("unbinding and firing an event", function() {
+  test("unbinding event", function() {
     result = 0;
     ds.trigger('ping');
     ds.unbind('ping', increment)
+    ds.trigger('ping');
     equal(result, 1);
   });
 
