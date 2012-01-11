@@ -3,7 +3,6 @@
   var DS = (global.DS || (global.DS = {}));
 
   // ------ data parsers ---------
-
   DS.Parsers = function() {};
 
   /**
@@ -24,7 +23,7 @@
   DS.Parsers.prototype._addValue = function(d, columnName, value) {
     var colPos = d._columnPositionByName[columnName];
     d.columns[colPos].data.push(value);
-  }
+  };
 
   DS.Parsers.prototype._detectTypes = function(d, n) {
 
@@ -83,7 +82,7 @@
   
     // cache the row id positions in both directions.
     // iterate over the _id column and grab the row ids
-    _.each(d.columns[d._columnPositionByName["_id"]].data, function(id, index) {
+    _.each(d.columns[d._columnPositionByName._id].data, function(id, index) {
       d._rowPositionById[id] = index;
       d._rowIdByPosition.push(id);
     });  
@@ -114,17 +113,17 @@
   * @param count {number} the number of ids to generate.
   */
   DS.Parsers.prototype._addIdColumn = function(d, count) {
-      // if we have any data, generate actual ids.
-      var ids = [];
-      if (count && count > 0) {
-        _.times(count, function() {
-          ids.push(_.uniqueId());
-        });
-      }
-      d.columns.unshift(
-        this._buildColumn("_id", "number", ids)
-      );
-    },
+    // if we have any data, generate actual ids.
+    var ids = [];
+    if (count && count > 0) {
+      _.times(count, function() {
+        ids.push(_.uniqueId());
+      });
+    }
+    d.columns.unshift(
+      this._buildColumn("_id", "number", ids)
+    );
+  };
 
   
   /**
@@ -341,11 +340,12 @@
           // Now that we have our delimiter out of the way,
           // let's check to see which kind of value we
           // captured (quoted or unquoted).
+          var strMatchedValue = null;
           if (arrMatches[ 2 ]){
 
             // We found a quoted value. When we capture
             // this value, unescape any double quotes.
-            var strMatchedValue = arrMatches[ 2 ].replace(
+            strMatchedValue = arrMatches[ 2 ].replace(
               new RegExp( "\"\"", "g" ),
               "\""
             );
@@ -353,7 +353,7 @@
           } else {
 
             // We found a non-quoted value.
-            var strMatchedValue = arrMatches[ 3 ];
+            strMatchedValue = arrMatches[ 3 ];
           }
 
           // Now that we have our value string, let's add
@@ -375,7 +375,7 @@
 
         // Return the parsed data.
         return d;
-      }
+      };
 
       parseCSV(
         this.__delimiterPatterns, 

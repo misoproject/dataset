@@ -7,16 +7,16 @@
       options = options || (options = {});
       this.data = options.data;
 
-      this._buildUpdate(option.func);
+      this._buildUpdate(options.func);
 
-      this.value = this.func()
+      this.value = this.func();
       return this;
     };
 
     return global.DS.Product;
   }());
 
-  _.extend(Product.prototype, DS.Events, {
+  _.extend(Product.prototype, global.DS.Events, {
 
 
     /**
@@ -25,11 +25,11 @@
     * @param {func} raw function to be fun
     */
     _buildUpdate: function(func) {
-      func = _.bind(options.func, this);
+      func = _.bind(func, this);
       this.func = function() {
         func();
         this.trigger('change');
-      }
+      };
       this.data.bind('change', this.func);
     },
 
@@ -38,7 +38,7 @@
     */
     val : function() {
       return this.value;
-    },
+    }
 
   });
 
