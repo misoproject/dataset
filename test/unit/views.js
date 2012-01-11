@@ -12,8 +12,9 @@ module("Dataset Views")
 
   test("Basic View creation", function() {
     var view = ds.where({});
-    console.log(ds.columns[0].data, view.columns[0].data);
-    equal(ds.columns[0].data, view.columns[0].data);
+    _.each(ds.columns, function(column, i) {
+      ok(_.isEqual(ds.columns[i].data, view.columns[i].data), "data has been copied");  
+    });
   });
 
   test("View from row ID array", function() {});

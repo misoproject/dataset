@@ -31,7 +31,7 @@
         columns : this._columnFilter(options.filter.columns || undefined),
         rows    : this._rowFilter(options.filter.rows || undefined)
       };
-      
+
       // initialize columns.
       this.columns = this._selectData();
 
@@ -42,7 +42,9 @@
       // right now just passing through default parser.
       var tempParser = new DS.Parsers();
       _.extend(this, 
-        tempParser._cacheColumns(this),
+        tempParser._cacheColumns(this));
+      
+      _.extend(this, 
         tempParser._cacheRows(this));
     },
 
@@ -83,14 +85,14 @@
       }, this);
 
       // get the data that passes the row filter.
-      this.each(function(row) {
+      this.parent.each(function(row) {
 
         if (!this.filter.rows(row)) { 
           return; 
         }
 
-        for(var i = 0; i <= selectedColumns.length; i++) {
-          selectedColumns[i].data.push(row[selectedColumns[i]]);
+        for(var i = 0; i < selectedColumns.length; i++) {
+          selectedColumns[i].data.push(row[selectedColumns[i].name]);
         }
       }, this);
 
@@ -157,8 +159,9 @@
     * Returns a dataset view of the given columns 
     * @param {object} filter - either an array of column names or a function 
     * that returns a boolean for each column object
+    * TODO: we can't call this columns!!! we have a columns data property...
     */    
-    columns : function(filter) {},
+    //columns : function(filter) {},
 
 
     /**
@@ -176,7 +179,18 @@
     each : function(iterator, context) {
       
       // TODO flesh this out...
+      for(var i = 0; i < this.length; i++) {
+        iterator.apply(context || this, [this._buildRow(i)]);
+      }
 
+    },
+
+    _buildRow : function(i) {
+      var row = {};
+      _.each(this.columns, function(column) {
+        row[column.name] = column.data[i];
+      });
+      return row; 
     },
 
     /**
