@@ -57,11 +57,10 @@
       options = options || {};
       
       options.parent = this;
-      options.filter = options.filter || {};
+      options.filter = filter || {};
 
       return new DS.View(_.extend(
-        options, 
-        filter)
+        options)
       );
 
       // return new DS.View({rowFilter: });
@@ -141,7 +140,7 @@
 
       } else { //array
         rowSelector = function(row) {
-          return _.indexOf(rowFilter, row) === -1 ? true : false;
+          return _.indexOf(rowFilter, row._id) === -1 ? false : true;
         };
       }
 
