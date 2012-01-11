@@ -1,5 +1,4 @@
 function verifyImport(obj, strictData) {
-  console.log(strictData);
 
   // check properties exist
   ok(typeof strictData.columns !== "undefined", "columns property exists");
@@ -9,6 +8,12 @@ function verifyImport(obj, strictData) {
   ok(typeof strictData._rowIdByPosition !== "undefined", "row id by position cache exists");
   ok(typeof strictData._columnPositionByName !== "undefined", "column position by name cache exists");
   ok(typeof strictData.length !== "undefined", "row count exists");
+
+  // check row cache ids
+  for (var i = 0; i < strictData.length; i++) {
+    var id = strictData._rowIdByPosition[i];
+    ok(i === strictData._rowPositionById[id], "row " + i + " id correctly cached");
+  }
 
   // check unique id column is first
   ok(strictData.columns[0].name === "_id", "first column is _id.");
@@ -23,6 +28,8 @@ function verifyImport(obj, strictData) {
   _.each(strictData.columns, function(column, i) {
     ok(strictData._columnPositionByName[column.name] === i, "proper column position has been set");
   });
+
+  checkColumnTypes(strictData);
 };
 
 function checkColumnTypes(strictData) {
@@ -45,9 +52,7 @@ function checkColumnTypes(strictData) {
 }
 
 module("Strict Importer")
-test("Basic Strict Import", 29, function() {
-
-  
+test("Basic Strict Import", 53, function() {
   var importer = new DS.Importers.Local({
     parser : DS.Parsers.Strict,
     data : DS.alphabet_strict
@@ -55,27 +60,21 @@ test("Basic Strict Import", 29, function() {
   importer.fetch({
     success : function(strictData) {
       verifyImport(DS.alphabet_strict, strictData);
-
-      // check column types
-      checkColumnTypes(strictData);
     }
   });
 });
 
-test("Basic Strict Import through Dataset API", 29, function() {
+test("Basic Strict Import through Dataset API", 53, function() {
   var ds = new DS({ 
     data : DS.alphabet_strict, 
     strict: true 
   });
-  console.log(ds);
-  verifyImport(DS.alphabet_strict, ds);
 
-  // check column types
-  checkColumnTypes(ds);
+  verifyImport(DS.alphabet_strict, ds);
 });
 
 module("Obj Importer");
-test("Convert object to dataset", 33, function() {
+test("Convert object to dataset", 57, function() {
 
   var importer = new DS.Importers.Local({
     parser : DS.Parsers.Obj,
@@ -94,100 +93,82 @@ test("Convert object to dataset", 33, function() {
         var values = _.pluck(DS.alphabet_obj, key);
 
         // get column values
-        var colVals = strictData.columns[strictData._columnPositionByName[key]].data;
-        ok(_.isEqual(values, colVals), "data is correct for column " + strictData._columnPositionByName[key].name);
+        var pos = strictData._columnPositionByName[key];
+        var colVals = strictData.columns[pos].data;
+        ok(_.isEqual(values, colVals), 
+          "data is correct for column " + 
+          strictData._columnPositionByName[key].name
+        );
       });
-
-      // check column types
-      checkColumnTypes(strictData);
     }
   });
 });
 
-test("Convert object to dataset through dataset API", 29, function() {
+test("Convert object to dataset through dataset API", 53, function() {
   var ds = new DS({ data : DS.alphabet_obj });
   verifyImport(DS.alphabet_obj, ds);
-
-  // check column types
-  checkColumnTypes(ds);
-
 });
 
 module("Remote Importer");
-test("Basic json url fetch", 29, function() {
-  // This is a random yahoo pipe that just grabs the alphabet_obj.js file and
-  // pipes it back as json. Nothing clever happens here.
-  var url = "http://pipes.yahoo.com/pipes/pipe.run?_id=ea8f8a21cf15cb73a884adca0d49e227&_render=json";
+test("Basic json url fetch", 53, function() {
+  var url = "data/alphabet_strict.json";
   var importer = new DS.Importers.Remote({
     url : url,
-    parser : DS.Parsers.Obj,
-    jsonp : false,
-    extract : function(data) {
-      return data.value.items[0].json;
-    }
+    parser : DS.Parsers.Strict,
+    jsonp : false
   });
   stop();
   var data = importer.fetch({
     success: function(strictData) {
       verifyImport({}, strictData);
-      checkColumnTypes(strictData);
       start();
     }
   });
 });
 
-test("Basic json url fetch through Dataset API", 29, function() {
-  var url = "http://pipes.yahoo.com/pipes/pipe.run?_id=ea8f8a21cf15cb73a884adca0d49e227&_render=json";
+test("Basic json url fetch through Dataset API", 53, function() {
+  var url = "data/alphabet_strict.json";
   var ds = new DS({ 
     url : url, 
     jsonp : false, 
-    extract: function(data) {
-      return data.value.items[0].json;
-    },
+    strict: true,
     ready : function() {
       verifyImport({}, this);   
-      checkColumnTypes(ds); 
       start();
     }
   });
   stop();
 });
 
-test("Basic jsonp url fetch", 29, function() {
-  // This is a random yahoo pipe that just grabs the alphabet_obj.js file and
-  // pipes it back as json. Nothing clever happens here.
-  var url = "http://pipes.yahoo.com/pipes/pipe.run?_id=ea8f8a21cf15cb73a884adca0d49e227&_render=json&_callback=";
+test("Basic jsonp url fetch", 53, function() {
+  var url = "data/alphabet_obj.json?callback=";
   var importer = new DS.Importers.Remote({
     url : url,
     parser : DS.Parsers.Obj,
     jsonp : true,
-    extract : function(data) {
-      return data.value.items[0].json;
+    extract : function(raw) {
+      return raw.data;
     }
   });
   stop();
   var data = importer.fetch({
     success: function(strictData) {
       verifyImport({}, strictData);
-      checkColumnTypes(strictData);
       start();
     }
   });
 });
 
-test("Basic jsonp url fetch with Dataset API", 29, function() {
-  // This is a random yahoo pipe that just grabs the alphabet_obj.js file and
-  // pipes it back as json. Nothing clever happens here.
-  var url = "http://pipes.yahoo.com/pipes/pipe.run?_id=ea8f8a21cf15cb73a884adca0d49e227&_render=json&_callback=";
+test("Basic jsonp url fetch with Dataset API", 53, function() {
+  var url = "data/alphabet_obj.json?callback=";
   var ds = new DS({ 
     url : url, 
     jsonp : true, 
-    extract: function(data) {
-      return data.value.items[0].json;
+    extract: function(raw) {
+      return raw.data;
     },
     ready : function() {
       verifyImport({}, this); 
-      checkColumnTypes(ds);   
       start();
     }
   });
@@ -207,7 +188,6 @@ test("Remote delimiter parsing test", function() {
   var data = importer.fetch({
     success: function(strictData) {
       verifyImport({}, strictData);
-      checkColumnTypes(strictData);
       start();
     }
   });
@@ -215,7 +195,7 @@ test("Remote delimiter parsing test", function() {
 
 // TODO: add remote delimiter parsing test through dataset API
 
-test("Basic delimiter parsing test", 29, function() {
+test("Basic delimiter parsing test", 53, function() {
 
   var importer = new DS.Importers.Local({
     parser : DS.Parsers.Delimited,
@@ -225,14 +205,11 @@ test("Basic delimiter parsing test", 29, function() {
   importer.fetch({
     success : function(strictData) {
       verifyImport(DS.alphabet_strict, strictData);
-
-      // check column types
-      checkColumnTypes(strictData);
     }
   });
 });
 
-test("Basic delimiter parsing test with Dataset API", 29, function() {
+test("Basic delimiter parsing test with Dataset API", 53, function() {
 
   var ds = new DS({ 
     data : window.DS.alphabet_csv,
@@ -240,12 +217,9 @@ test("Basic delimiter parsing test with Dataset API", 29, function() {
   });
   
   verifyImport(DS.alphabet_strict, ds);
-
-  // check column types
-    checkColumnTypes(ds);
 });
 
-test("Basic delimiter parsing test with custom separator", 29, function() {
+test("Basic delimiter parsing test with custom separator", 53, function() {
   var importer = new DS.Importers.Local({
     data : window.DS.alphabet_customseparator,
     delimiter : "###",
@@ -254,22 +228,15 @@ test("Basic delimiter parsing test with custom separator", 29, function() {
   importer.fetch({
     success : function(strictData) {
       verifyImport(DS.alphabet_strict, strictData);
-
-      // check column types
-      checkColumnTypes(strictData);
     }
   });
 });
 
-test("Basic delimiter parsing test with custom separator with Dataset API", 29, function() {
+test("Basic delimiter parsing test with custom separator with Dataset API", 53, function() {
   var ds = new DS({ 
     data : window.DS.alphabet_customseparator,
     delimiter : "###"
   });
   
   verifyImport(DS.alphabet_strict, ds);
-
-  // check column types
-  checkColumnTypes(ds);
-
 });
