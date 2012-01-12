@@ -19,7 +19,7 @@ test("Basic Max Product", function() {
   var ds = baseSample();
 
   // check each column
-  _.each(ds.columns, function(column) {
+  _.each(ds._columns, function(column) {
     var max = ds.max(column.name);
     ok(max.val() === Math.max.apply(null, column.data), "Max is correct");  
   });
@@ -33,13 +33,14 @@ test("Basic Sync Recomputation", function() {
   var ds = baseSample();
 
   var max = ds.max("one");
+
   ok(max.val() === 3, "old max correct");
 
   // make a change in ds - NOT THROUGH API
-  ds.columns[1].data[1] = 5;
+  ds._columns[1].data[1] = 5;
 
   var delta = {
-    _id : ds.columns[0].data[1],
+    _id : ds._columns[0].data[1],
     old : { "one" : 2 },
     changed : { "one" : 5 }
   };
@@ -58,10 +59,10 @@ test("Basic Sync Recomputation - Not Affected Column", function() {
   ok(max.val() === 6, "old max correct");
 
   // make a change in ds - NOT THROUGH API
-  ds.columns[1].data[1] = 5;
+  ds._columns[1].data[1] = 5;
 
   var delta = {
-    _id : ds.columns[0].data[1],
+    _id : ds._columns[0].data[1],
     old : { "one" : 2 },
     changed : { "one" : 5 }
   };
@@ -75,7 +76,7 @@ test("Basic Sync Recomputation - Not Affected Column", function() {
 test("Basic subscription to product changes", function() {
   var ds = baseSample();
 
-  _.each(ds.columns.slice(1, 4), function(column, i) {
+  _.each(ds._columns.slice(1, 4), function(column, i) {
     var testobj = { prop : 1 },
         callback = function() {
           this.prop = 2;
@@ -88,14 +89,14 @@ test("Basic subscription to product changes", function() {
     // bump up the 1st value to a really high number so
     // that we know the value will need to recompute.
     var delta = {
-      _id : ds.columns[0].data[1],
+      _id : ds._columns[0].data[1],
       old : { },
       changed : { }
     };
 
-    delta.old[column.name] = ds.columns[i+1].data[1];
+    delta.old[column.name] = ds._columns[i+1].data[1];
     delta.changed[column.name] = 10;
-    ds.columns[i+1].data[1] = 10;
+    ds._columns[i+1].data[1] = 10;
 
     max.sync(delta);
     ok(testobj.prop === 2, "callback was called!"); 
@@ -106,7 +107,7 @@ test("Basic subscription to product changes", function() {
 test("Subscription doesn't trigger when value doesn't change", function() {
   var ds = baseSample();
 
-  _.each(ds.columns.slice(1, 4), function(column, i) {
+  _.each(ds._columns.slice(1, 4), function(column, i) {
     var testobj = { prop : 1 },
         callback = function() {
           this.prop = 2;
@@ -119,19 +120,18 @@ test("Subscription doesn't trigger when value doesn't change", function() {
     // bump down the new value in the col to a really low value
     // so that we know the product won't be any different.
     var delta = {
-      _id : ds.columns[0].data[1],
+      _id : ds._columns[0].data[1],
       old : { },
       changed : { }
     };
 
-    delta.old[column.name] = ds.columns[i+1].data[1];
+    delta.old[column.name] = ds._columns[i+1].data[1];
     delta.changed[column.name] = 0;
-    ds.columns[i+1].data[1] = 0;
+    ds._columns[i+1].data[1] = 0;
 
     max.sync(delta);
     ok(testobj.prop === 1, "callback was not called!");  
     ok(oldMax === max.val(), "max hasn't changed");
   });
 });
-
 

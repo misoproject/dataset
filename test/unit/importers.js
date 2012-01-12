@@ -1,7 +1,7 @@
 function verifyImport(obj, strictData) {
 
   // check properties exist
-  ok(typeof strictData.columns !== "undefined", "columns property exists");
+  ok(typeof strictData._columns !== "undefined", "columns property exists");
 
   // check all caches exist
   ok(typeof strictData._rowPositionById !== "undefined", "row position by id cache exists");
@@ -16,16 +16,16 @@ function verifyImport(obj, strictData) {
   }
 
   // check unique id column is first
-  ok(strictData.columns[0].name === "_id", "first column is _id.");
+  ok(strictData._columns[0].name === "_id", "first column is _id.");
   ok(strictData._columnPositionByName["_id"] === 0, "first column cached _id as 0");
 
   // verify all rows have the proper amount of data
-  _.each(strictData.columns, function(column) {
+  _.each(strictData._columns, function(column) {
     ok(column.data.length === strictData.length, "row count for column " + column.name + " is correct.");
   });
 
   // Verify all column position have been set.
-  _.each(strictData.columns, function(column, i) {
+  _.each(strictData._columns, function(column, i) {
     ok(strictData._columnPositionByName[column.name] === i, "proper column position has been set");
   });
 
@@ -36,19 +36,19 @@ function checkColumnTypes(strictData) {
 
   // check data size
   ok(strictData.length === 24, "there are 24 rows");
-  ok(strictData.columns.length === 5, "there are 5 columns");
+  ok(strictData._columns.length === 5, "there are 5 columns");
 
   // check column types
-  ok(strictData.columns[0].name === "_id", "_id is 1 column");
-  ok(strictData.columns[0].type === "number", "_id is number type");
-  ok(strictData.columns[1].name === "character", "character is 2 column");
-  ok(strictData.columns[1].type === "string", "character is string type");
-  ok(strictData.columns[2].name === "name", "name is 3 column");
-  ok(strictData.columns[2].type === "string", "name is string type");
-  ok(strictData.columns[3].name === "is_modern", "is_modern is 4 column");
-  ok(strictData.columns[3].type === "boolean", "is_modern is boolean type");
-  ok(strictData.columns[4].name === "numeric_value", "numeric_value is 5 column");
-  ok(strictData.columns[4].type === "number", "numeric_value is boolean type");
+  ok(strictData._columns[0].name === "_id", "_id is 1 column");
+  ok(strictData._columns[0].type === "number", "_id is number type");
+  ok(strictData._columns[1].name === "character", "character is 2 column");
+  ok(strictData._columns[1].type === "string", "character is string type");
+  ok(strictData._columns[2].name === "name", "name is 3 column");
+  ok(strictData._columns[2].type === "string", "name is string type");
+  ok(strictData._columns[3].name === "is_modern", "is_modern is 4 column");
+  ok(strictData._columns[3].type === "boolean", "is_modern is boolean type");
+  ok(strictData._columns[4].name === "numeric_value", "numeric_value is 5 column");
+  ok(strictData._columns[4].type === "number", "numeric_value is boolean type");
 }
 
 module("Strict Importer")
@@ -64,13 +64,14 @@ test("Basic Strict Import", 53, function() {
   });
 });
 
-test("Basic Strict Import through Dataset API", 53, function() {
+test("Basic Strict Import through Dataset API", 54, function() {
   var ds = new DS.Dataset({ 
     data : DS.alphabet_strict, 
     strict: true 
   });
 
   verifyImport(DS.alphabet_strict, ds);
+  equals(typeof ds.columns, "function", "columns is the function, not the columns obj");
 });
 
 module("Obj Importer");
@@ -94,7 +95,7 @@ test("Convert object to dataset", 57, function() {
 
         // get column values
         var pos = strictData._columnPositionByName[key];
-        var colVals = strictData.columns[pos].data;
+        var colVals = strictData._columns[pos].data;
         ok(_.isEqual(values, colVals), 
           "data is correct for column " + 
           strictData._columnPositionByName[key].name

@@ -22,12 +22,12 @@
 
   DS.Parsers.prototype._addValue = function(d, columnName, value) {
     var colPos = d._columnPositionByName[columnName];
-    d.columns[colPos].data.push(value);
+    d._columns[colPos].data.push(value);
   };
 
   DS.Parsers.prototype._detectTypes = function(d, n) {
 
-    _.each(d.columns, function(column) {
+    _.each(d._columns, function(column) {
 
       // check if the column already has a type defined. If so, skip
       // this auth detection phase.
@@ -65,7 +65,7 @@
     
     // cache columns by their column names
     // TODO: should we cache by _id?
-    _.each(d.columns, function(column, index) {
+    _.each(d._columns, function(column, index) {
       d._columnPositionByName[column.name] = index;
     });
 
@@ -84,7 +84,7 @@
   
     // cache the row id positions in both directions.
     // iterate over the _id column and grab the row ids
-    _.each(d.columns[d._columnPositionByName._id].data, function(id, index) {
+    _.each(d._columns[d._columnPositionByName._id].data, function(id, index) {
       d._rowPositionById[id] = index;
       d._rowIdByPosition.push(id);
     });  
@@ -93,7 +93,7 @@
     // number in each column's data type
     var rowLengths = _.uniq(
       _.map(
-        d.columns, 
+        d._columns,
         function(column) { 
           return column.data.length;
         }
@@ -123,7 +123,7 @@
         ids.push(_.uniqueId());
       });
     }
-    d.columns.unshift(
+    d._columns.unshift(
       this._buildColumn("_id", "number", ids)
     );
   };
@@ -152,11 +152,11 @@
     DS.Parsers.prototype, {
 
     _buildColumns : function(d) {
-      d.columns = this._data.columns;
+      d._columns = this._data._columns;
 
       // add unique ids to columns
       // TODO do we still need this??
-      _.each(d.columns, function(column) {
+      _.each(d._columns, function(column) {
         if (typeof column._id === "undefined") {
           column._id = _.uniqueId();
         }
@@ -164,8 +164,8 @@
 
       // add row _id column. Generate auto ids if there
       // isn't already a unique id column.
-      if (_.pluck(d.columns, "name").indexOf("_id") === -1) {
-        this._addIdColumn(this._data, d.columns[0].data.length);
+      if (_.pluck(d._columns, "name").indexOf("_id") === -1) {
+        this._addIdColumn(this._data, d._columns[0].data.length);
       }
 
       return d;
@@ -200,12 +200,12 @@
 
     _buildColumns : function(d, n) {
 
-      d.columns = [];
+      d._columns = [];
 
       // create column container objects
       var columnNames  = _.keys(this._data[0]);
       _.each(columnNames, function(columnName) {
-        d.columns.push(this._buildColumn(columnName, null));
+        d._columns.push(this._buildColumn(columnName, null));
       }, this);
       
       // add id column
@@ -280,7 +280,7 @@
 
     _buildColumns : function(d, sample) {
 
-      d.columns = [];
+      d._columns = [];
 
       // convert the csv string into the beginnings of a strict
       // format. The only thing missing is type detection.
@@ -363,12 +363,12 @@
           // it to the data array.
           if (columnCountComputed) {
             
-            d.columns[columnIndex].data.push(strMatchedValue); 
+            d._columns[columnIndex].data.push(strMatchedValue); 
 
           } else {
 
             // we are building the column names here
-            d.columns.push({
+            d._columns.push({
               name : strMatchedValue,
               data : [],
               _id  : _.uniqueId()
@@ -385,7 +385,7 @@
         this._data, 
         this.delimiter);
 
-      this._addIdColumn(d, d.columns[0].data.length);
+      this._addIdColumn(d, d._columns[0].data.length);
       
       return d;
     },
@@ -582,6 +582,9 @@
    * Simple base parse method, passing data through
    */
   DS.Importers.prototype.extract = function(data) {
+    data = _.clone(data);
+    data._columns = data.columns;
+    delete data.columns
     return data;
   };
 
