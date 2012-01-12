@@ -20,9 +20,6 @@
   *   sync
   */
   DS.Events = {
-
-    _callbacks : {},
-
     /**
     * Bind callbacks to dataset events
     * @param {string} ev - name of the event
