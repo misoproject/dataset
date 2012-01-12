@@ -6,9 +6,9 @@
 
     DS.Product = function(options) {
       options = options || (options = {});
-      this.data = options.data;
-
-      this._buildUpdate(options.func);
+      
+      this.func = options.func;
+      //this._buildUpdate(options.func);
 
       this.value = this.func();
       return this;
@@ -50,14 +50,18 @@
     * @param {column} column on which the value is calculated 
     */    
     max : function(column) {
-      this.calculated(column, function() {
+      
+      var prod = this.calculated(column, function(column) {
         var max = -Infinity;
-        this.data.each(function(row) {
-          if (row[column] > max) {
-            max = row[column];
+        _.each(column.data, function(value) {
+          if (value > max) {
+            max = value;
           }
         });
+        return max;
       });
+
+      return prod;
     },
 
     /**
@@ -88,7 +92,13 @@
     * being passed each row. TODO: producer signature
     */    
     calculated : function(column, producer) {
-      return new Product({data: this.column(column), func: producer });
+      
+      var column = this._column(column);
+      return new Product({
+        func : function() {
+          return producer(column);
+        }
+      });
     }
 
   });
