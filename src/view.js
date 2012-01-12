@@ -145,11 +145,28 @@
     },
 
     /**
+    * @public
     * Returns a dataset view of the given column name
     * @param {string} name - name of the column to be selected
     */
-    column : function(name) {},
+    column : function(name) {
+      return new DS.View({
+        filter : { columns : [name] },
+        parent : this
+      });
+    },
 
+    /**
+    * @private
+    * Column accessor that just returns column object
+    * witout creating a view of it. Used for Products.
+    * @param {string} name - Column name.
+    * @returns {object} column 
+    */
+    _column : function(name) {
+      var pos = this._columnPositionByName[name];
+      return this.columns[pos];
+    },
 
     /**
     * Returns a dataset view of the given columns 
@@ -160,6 +177,7 @@
     //columns : function(filter) {},
 
     /**
+    * @public
     * Iterates over all rows in the dataset
     * @param {function} iterator - function that is passed each row
     * iterator(rowObject, index, dataset)
