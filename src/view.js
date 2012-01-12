@@ -23,7 +23,7 @@
     return this;
   };
 
-  _.extend(DS.View.prototype, DS.Events, DS.Syncable, {
+  _.extend(DS.View.prototype, DS.Events, {
 
     _initialize: function(options) {
       
@@ -45,6 +45,79 @@
       _.extend(this, 
         tempParser._cacheColumns(this), 
         tempParser._cacheRows(this));
+
+      // bind to parent
+      this.parent.bind("change", this.sync, this);
+    },
+
+    /**
+    * @public
+    * Syncs up the current view based on a passed delta.
+    */
+    sync : function(event) {
+    
+      var deltas = event.deltas;
+ 
+      // iterate over deltas and update rows that are affected.
+      _.each(deltas, function(d, deltaIndex) {
+        
+        // find row position based on delta _id
+        var rowPos = this._rowPositionById[d._id];
+
+        // ===== ADD NEW ROW
+
+        if (typeof rowPos === "undefined" && DS.Event.isAdd(d)) {
+          // this is an add event, since we couldn't find an
+          // existing row to update and now need to just add a new
+          // one. Use the delta's changed properties as the new row.
+          this._add(d.changed);
+
+        } else {
+
+          //===== UPDATE EXISTING ROW
+          
+          // iterate over each changed property and update the value
+          _.each(d.changed, function(newValue, columnName) {
+            
+            // find col position based on column name
+            var colPos = this._columnPositionByName[columnName];
+            this._columns[colPos].data[rowPos] = newValue;
+
+          }, this);
+        }
+
+
+        // ====== DELETE ROW (either by event or by filter.)
+        // TODO check if the row still passes filter, if not
+        // delete it.
+        var row = this.rowByPosition(rowPos);
+    
+        // if this is a delete event OR the row no longer
+        // passes the filter, remove it.
+        if (DS.Event.isDelete(d) || 
+            (this.filter.row && !this.filter.row(row))) {
+
+          // Since this is now a delete event, we need to convert it
+          // to such so that any child views, know how to interpet it.
+
+          var newDelta = {
+            _id : d._id,
+            old : this.rowByPosition(rowPos),
+            changed : {}
+          };
+
+          // replace the old delta with this delta
+          event.deltas.splice(deltaIndex, 1, newDelta);
+
+          // remove row since it doesn't match the filter.
+          this._delete(rowPos);
+        }
+
+      }, this);
+
+      // trigger any subscribers 
+      this.trigger("change", event);
+     
     },
 
     /**
@@ -96,7 +169,7 @@
     /**
     * Returns a normalized version of the column filter function
     * that can be executed.
-    * @param {function|name} columnFilter - function or column name
+    * @param {name\array of names} columnFilter - function or column name
     */
     _columnFilter: function(columnFilter) {
       var columnSelector;
@@ -223,6 +296,52 @@
         row[column.name] = column.data[pos];
       });
       return row;   
+    },
+
+    /**
+    * @private
+    * Deletes a row from all columns and caches.
+    * Never manually call this. Views are immutable. This is used
+    * by the auto syncing capability. Using this against your view
+    * will result in dataloss. Only datasets can have rows be removed.
+    * @param {number} rowPos - the row to delete at any position
+    */
+    _delete : function(rowPos) {
+
+      var rowId = this._rowIdByPosition[rowPos];
+
+      // remove all values
+      _.each(this._columns, function(column) {
+        column.data.splice(rowPos, 1);
+      });
+      
+      // update caches
+      delete this._rowPositionById[rowId];
+      this._rowIdByPosition.splice(rowPos, 1);
+      this.length--;
+
+      return this;
+    },
+
+    /**
+    * @private
+    * Adds a row to the appropriate column positions
+    * and updates caches.
+    * @param {object} row - A row representation.
+    */
+    _add : function(row) {
+      
+      // add all data
+      _.each(this._columns, function(column) {
+        column.data.push(row[column.name]);
+      });
+
+      // add row indeces to the cache
+      this.length++;
+      this._rowIdByPosition.push(rowId);
+      this._rowPositionById[rowId] = this._rowIdByPosition.length;
+
+      return this;
     },
 
     /**
