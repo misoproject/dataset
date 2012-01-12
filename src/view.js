@@ -59,8 +59,6 @@
       options.filter = filter || {};
 
       return new DS.View(options);
-
-      // return new DS.View({rowFilter: });
     },
 
     _selectData : function() {
@@ -111,8 +109,9 @@
           return true;
         };
       } else { //array
+        columnFilter.push('_id');
         columnSelector = function(column) {
-          return _.indexOf(columnFilter, column) === -1 ? true : false;
+          return _.indexOf(columnFilter, column.name) === -1 ? false : true;
         };
       }
 
@@ -170,10 +169,14 @@
 
     /**
     * Returns a dataset view of the given columns 
-    * @param {object} filter - either an array of column names or a function 
-    * that returns a boolean for each column object
+    * @param {array} filter - an array of column names
     */    
-    columns : function(filter) {},
+    columns : function(columnsArray) {
+     return new DS.View({
+        filter : { columns : columnsArray },
+        parent : this
+      });
+    },
 
     /**
     * @public
