@@ -34,7 +34,7 @@
       };
 
       // initialize columns.
-      this.columns = this._selectData();
+      this._columns = this._selectData();
 
       // pass through strict importer
       // TODO: Need to cache all data here, so.... need to
@@ -66,7 +66,7 @@
     _selectData : function() {
       var selectedColumns = [];
 
-      _.each(this.parent.columns, function(parentColumn) {
+      _.each(this.parent._columns, function(parentColumn) {
         
         // check if this column passes the column filter
         if (this.filter.columns(parentColumn)) {
@@ -165,16 +165,15 @@
     */
     _column : function(name) {
       var pos = this._columnPositionByName[name];
-      return this.columns[pos];
+      return this._columns[pos];
     },
 
     /**
     * Returns a dataset view of the given columns 
     * @param {object} filter - either an array of column names or a function 
     * that returns a boolean for each column object
-    * TODO: we can't call this columns!!! we have a columns data property...
     */    
-    //columns : function(filter) {},
+    columns : function(filter) {},
 
     /**
     * @public
@@ -217,7 +216,7 @@
     */
     _row : function(pos) {
       var row = {};
-      _.each(this.columns, function(column) {
+      _.each(this._columns, function(column) {
         row[column.name] = column.data[pos];
       });
       return row;   

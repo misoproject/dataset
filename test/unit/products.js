@@ -11,6 +11,5 @@ var ds = new DS.Dataset({
 
 test("Basic Max Product", function() {
   var max = ds.max("one");
-  console.log(max);
   ok(max.val() === 3, "Max is correct");
 })
