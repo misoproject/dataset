@@ -179,7 +179,7 @@ module("Views :: Syncing");
     ok(superdeepview._columns[1].data[0] === 100, "third view updated");
   });
 
-  test("Removing Row", function() {
+  test("Basic row removal propagation", function() {
     var ds = baseSample();
     var colname = ds._columns[1].name;
     var rowPos = 0;
@@ -188,4 +188,88 @@ module("Views :: Syncing");
     var view = ds.where({
       rows : [ds._columns[0].data[0], ds._columns[0].data[1]]
     });
+
+    // create delta for row deletion
+    var delta = {
+      _id : ds._columns[0].data[0],
+      old : ds.rowByPosition(0),
+      changed : {}
+    };
+
+    // create event representing deletion
+    var event = DS.Events.buildEvent("change", delta);
+
+    // delete actual row
+    ds._delete(0);
+    ds.trigger("change", event);
+
+    // verify view row was deleted as well
+    ok(view.length === 1, "view is one element shorter");
+    ok(view._columns[0].data[0] === ds._columns[0].data[0], "first row was delete");
   });
+
+  test("Basic row adding propagation", function() {
+    var ds = baseSample();
+
+    // create view with a function filter
+    var view = ds.where({ rows : function(row) {
+      return row.three > 5
+    }});
+
+    ok(view.length === 3, "all rows initially copied");
+
+    // now add another row
+    var newRow = {
+      _id : 200, one : 4, two : 6, three : 20
+    };
+
+    var delta = {
+      _id : 200,
+      old : {},
+      changed : newRow
+    };
+
+    // create event representing addition
+    var event = DS.Events.buildEvent("change", delta);
+
+    // for now, we aren't adding the actual data to the original dataset
+    // just simulating that addition. Eventually when we ammend the api
+    // with .add support, this can be refactored. better yet, added to.
+    ds.trigger("change", event);
+
+    ok(view.length === 4, "row was added");
+    ok(_.isEqual(view.rowByPosition(3), newRow), "rows are equal");
+  });
+
+  test("Basic row adding propagation - Not added when out of filter range", function() {
+    var ds = baseSample();
+
+    // create view with a function filter
+    var view = ds.where({ rows : function(row) {
+      return row.three > 5
+    }});
+
+    ok(view.length === 3, "all rows initially copied");
+
+    // now add another row
+    var newRow = {
+      _id : 200, one : 4, two : 6, three : 1
+    };
+
+    var delta = {
+      _id : 200,
+      old : {},
+      changed : newRow
+    };
+
+    // create event representing addition
+    var event = DS.Events.buildEvent("change", delta);
+
+    // for now, we aren't adding the actual data to the original dataset
+    // just simulating that addition. Eventually when we ammend the api
+    // with .add support, this can be refactored. better yet, added to.
+    ds.trigger("change", event);
+
+    ok(view.length === 3, "row was NOT added");
+    ok(_.isEqual(view.rowByPosition(2), ds.rowByPosition(2)), "last row in view hasn't changed.");
+  })

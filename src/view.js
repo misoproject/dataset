@@ -69,9 +69,11 @@
         if (typeof rowPos === "undefined" && DS.Event.isAdd(d)) {
           // this is an add event, since we couldn't find an
           // existing row to update and now need to just add a new
-          // one. Use the delta's changed properties as the new row.
-          this._add(d.changed);
-
+          // one. Use the delta's changed properties as the new row
+          // if it passes the filter.
+          if (this.filter.rows && this.filter.rows(d.changed)) {
+            this._add(d.changed);  
+          }
         } else {
 
           //===== UPDATE EXISTING ROW
@@ -326,7 +328,7 @@
     /**
     * @private
     * Adds a row to the appropriate column positions
-    * and updates caches.
+    * and updates caches. This should never be called directly!
     * @param {object} row - A row representation.
     */
     _add : function(row) {
@@ -338,8 +340,8 @@
 
       // add row indeces to the cache
       this.length++;
-      this._rowIdByPosition.push(rowId);
-      this._rowPositionById[rowId] = this._rowIdByPosition.length;
+      this._rowIdByPosition.push(row._id);
+      this._rowPositionById[row._id] = this._rowIdByPosition.length;
 
       return this;
     },
