@@ -21,7 +21,7 @@
     return DS.Product;
   }());
 
-  _.extend(Product.prototype, DS.Events, DS.Syncable, {
+  _.extend(Product.prototype, DS.Events, {
 
     /**
     * @public
@@ -107,7 +107,7 @@
     * being passed each row. TODO: producer signature
     */    
     calculated : function(column, producer) {
-      
+
       var column = this._column(column);
       var prod = new Product({
         column : column,
@@ -131,9 +131,8 @@
         }
       });
 
-      // auto bind to parent dataset.... not sure why this ain't working...!
-      // this.bind("change", prod.sync);
-
+      // auto bind to parent dataset
+      this.bind("change", prod.sync, prod);
       return prod;
     }
 
