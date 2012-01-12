@@ -87,10 +87,20 @@ module("Dataset Views");
 
   test("Column View creation", function() {
     var view = ds.column("one");
-    console.log(ds, view);
 
     equals(view._columns.length, 2, "there is only one data column"); //one column + _id
     _.each(view._columns[0].data, function(d,i) {
       equals(d, ds._columns[0].data[i], "data matches parent");
+    });
+  });
+
+  test("Columns View creation", function() {
+    var view = ds.columns( [ 'one', 'two' ] );
+
+    equals(view._columns.length, 3, "two data columns + _id"); //one column + _id
+    _.each(view._columns, function(column, columnIndex) {
+      _.each(column.data, function(d, rowIndex) {
+        equals(d, ds._columns[columnIndex].data[rowIndex], "data matches parent");
+      });
     });
   });
