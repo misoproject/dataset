@@ -58,9 +58,7 @@
       options.parent = this;
       options.filter = filter || {};
 
-      return new DS.View(_.extend(
-        options)
-      );
+      return new DS.View(options);
 
       // return new DS.View({rowFilter: });
     },
