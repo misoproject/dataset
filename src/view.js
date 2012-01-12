@@ -207,9 +207,15 @@
 
     /**
     * Returns a dataset view of filtered rows
-    * @param {object} filter - a filter function or object, the same as where
+    * @param {function|array} filter - a filter function or object, 
+    * the same as where
     */    
-    rows : function(filter) {},
+    rows : function(filter) {
+      return new DS.View({
+        filter : { rows : filter },
+        parent : this
+      });
+    },
 
     /**
     * Sort rows
