@@ -80,7 +80,7 @@ module("Dataset Views");
     });
 
     _.each(ds._columns, function(column, i) {
-      ok(_.isEqual(ds._columns[i].data.slice(0, 1), view._columns[i].data), "data has been copied");  
+      ok(_.isEqual(ds._columns[i].data.slice(0, 1), view._columns[i].data), "data has been copied");
     });
   });
 
