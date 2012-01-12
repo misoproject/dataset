@@ -79,8 +79,6 @@ module("Dataset Views");
       }
     });
 
-    console.log(view);
-
     _.each(ds.columns, function(column, i) {
       ok(_.isEqual(ds.columns[i].data.slice(0, 1), view.columns[i].data), "data has been copied");  
     });

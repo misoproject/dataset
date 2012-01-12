@@ -7,10 +7,14 @@
     DS.Product = function(options) {
       options = options || (options = {});
       
-      this.func = options.func;
-      //this._buildUpdate(options.func);
+      // save column name. This will be necessary later
+      // when we decide whether we need to update the column
+      // when sync is called.
+      this._column = options.column.name;
 
-      this.value = this.func();
+      this.func = options.func;
+
+      this.value = this.func({ silent : true });
       return this;
     };
 
@@ -20,26 +24,37 @@
   _.extend(Product.prototype, DS.Events, DS.Syncable, {
 
     /**
-    * Internal function to create the function to be run when the
-    * parent dataset changes
-    * @param {func} raw function to be fun
+    * @public
+    * This is a callback method that is responsible for recomputing
+    * the value based on the column its closed on.
     */
-    _buildUpdate: function(func) {
-      func = _.bind(func, this);
-      this.func = function() {
-        func();
-        this.trigger('change');
-      };
-      this.data.bind('change', this.func);
+    sync : function(delta) {
+      var affectedColumns = _.keys(delta.changed);
+      if (_.indexOf(affectedColumns, this._column) > -1) {
+        this.value = this.func();
+      }
     },
 
     /**
+    * @public
     * return the raw value of the product
+    * @returns {?} value - The value of the product. Most likely a number.
     */
     val : function() {
       return this.value;
-    }
+    },
 
+    _buildDelta : function(old, changed) {
+      var delta = {
+        old : { },
+        changed : { }
+      };
+
+      delta.old[this._column] = old;
+      delta.changed[this._column] = changed;
+
+      return delta;
+    }
   });
 
   _.extend(DS.Dataset.prototype, {
@@ -94,11 +109,32 @@
     calculated : function(column, producer) {
       
       var column = this._column(column);
-      return new Product({
-        func : function() {
-          return producer(column);
+      var prod = new Product({
+        column : column,
+        func   : function(options) {
+
+          options = options || {};
+          
+          // build a diff delta. We're using the column name
+          // so that any subscribers know whether they need to 
+          // update if they are sharing a column.
+          var delta = this._buildDelta(this.value, producer(column));
+          
+          // trigger any subscribers this might have if the values are diff
+          if (!options.silent && 
+              delta.old[this._column] !== delta.changed[this._column]) {
+            this.trigger("change", delta);  
+          }
+
+          // return updated value
+          return delta.changed[this._column];
         }
       });
+
+      // auto bind to parent dataset.... not sure why this ain't working...!
+      // this.bind("change", prod.sync);
+
+      return prod;
     }
 
   });
