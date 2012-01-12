@@ -19,6 +19,7 @@
     } 
     this.parent = options.parent;
     this._initialize(options);
+
     return this;
   };
 
@@ -42,9 +43,7 @@
       // right now just passing through default parser.
       var tempParser = new DS.Parsers();
       _.extend(this, 
-        tempParser._cacheColumns(this));
-      
-      _.extend(this, 
+        tempParser._cacheColumns(this), 
         tempParser._cacheRows(this));
     },
 
@@ -162,13 +161,6 @@
     */    
     //columns : function(filter) {},
 
-
-    /**
-    * Returns a dataset view of filtered rows
-    * @param {object} filter - a filter function or object, the same as where
-    */    
-    rows : function(filter) {},
-
     /**
     * Iterates over all rows in the dataset
     * @param {function} iterator - function that is passed each row
@@ -176,21 +168,50 @@
     * @param {object} context - options object. Optional.
     */    
     each : function(iterator, context) {
-      
-      // TODO flesh this out...
       for(var i = 0; i < this.length; i++) {
-        iterator.apply(context || this, [this._buildRow(i)]);
+        iterator.apply(context || this, [this.rowByPosition(i)]);
       }
-
     },
 
-    _buildRow : function(i) {
+    /**
+    * @public
+    * Returns a single row based on its position (NOT ID.)
+    * @param {number} i - position index
+    * @returns {object} row
+    */
+    rowByPosition : function(i) {
+      return this._row(i);
+    },
+
+    /** 
+    * @public
+    * Returns a single row based on its id (NOT Position.)
+    * @param {number} id - unique id
+    * @returns {object} row
+    */
+    rowById : function(id) {
+      return this._row(this._rowPositionById[id]);
+    },
+
+    /**
+    * @private
+    * A row retriever based on index position in column data.
+    * @param {number} i - position index
+    * @returns {object} row
+    */
+    _row : function(pos) {
       var row = {};
       _.each(this.columns, function(column) {
-        row[column.name] = column.data[i];
+        row[column.name] = column.data[pos];
       });
-      return row; 
+      return row;   
     },
+
+    /**
+    * Returns a dataset view of filtered rows
+    * @param {object} filter - a filter function or object, the same as where
+    */    
+    rows : function(filter) {},
 
     /**
     * Sort rows
