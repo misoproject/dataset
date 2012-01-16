@@ -214,7 +214,7 @@ module("Views :: Syncing");
     var event = DS.Events._buildEvent(delta);
 
     // delete actual row
-    ds._delete(0);
+    ds._remove( ds._rowIdByPosition[0] );
     ds.trigger("change", event);
 
     // verify view row was deleted as well

@@ -119,7 +119,13 @@ Version 0.0.1.2
     * @param {function} filter - function applied to each row
     * @param {object} options - options. Optional.
     */    
-    remove : function(filter, options) {},
+    remove : function(filter, options) {
+      this.each(function(row, rowIndex) {
+        if (filter(row)) {
+          this._remove(row._id);
+        }
+      });
+    },
 
     /**
     * Update all rows that match the filter
