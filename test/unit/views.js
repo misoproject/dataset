@@ -1,15 +1,3 @@
-function baseSample() {
-  var ds = new DS.Dataset({
-    data: { columns : [ 
-      { name : "one",   data : [1, 2, 3] },
-      { name : "two",   data : [4, 5, 6] },
-      { name : "three", data : [7, 8, 9] } 
-    ] },
-    strict: true
-  });
-  return ds;
-}
-
 module("Views");
 
   test("Basic View creation", function() {
@@ -157,7 +145,7 @@ module("Views :: Syncing");
         delta.old[col] = oldVal;
         delta.changed[col] = 100;
         
-        var event = DS.Events.buildEvent("change", delta);
+        var event = DS.Events._buildEvent(delta);
 
         // trigger view sync with delta
         // view.sync(delta);
@@ -194,7 +182,7 @@ module("Views :: Syncing");
     delta.old[colname] = oldVal;
     delta.changed[colname] = 100;
 
-    var event = DS.Events.buildEvent("change", delta);
+    var event = DS.Events._buildEvent(delta);
 
     // trigger dataset change
     ds.trigger("change", event);
@@ -223,7 +211,7 @@ module("Views :: Syncing");
     };
 
     // create event representing deletion
-    var event = DS.Events.buildEvent("change", delta);
+    var event = DS.Events._buildEvent(delta);
 
     // delete actual row
     ds._delete(0);
@@ -256,7 +244,7 @@ module("Views :: Syncing");
     };
 
     // create event representing addition
-    var event = DS.Events.buildEvent("change", delta);
+    var event = DS.Events._buildEvent(delta);
 
     // for now, we aren't adding the actual data to the original dataset
     // just simulating that addition. Eventually when we ammend the api
@@ -265,6 +253,14 @@ module("Views :: Syncing");
 
     ok(view.length === 4, "row was added");
     ok(_.isEqual(view.rowByPosition(3), newRow), "rows are equal");
+  });
+
+  test("Propagating row adding via external API", function() {
+    var ds = baseSample();
+    var view = ds.column('one');
+
+    ds.add( { one: 10, two: 22 } );
+    ok(view.length === 4, "row was added to view");
   });
 
   test("Basic row adding propagation - Not added when out of filter range", function() {
@@ -289,7 +285,7 @@ module("Views :: Syncing");
     };
 
     // create event representing addition
-    var event = DS.Events.buildEvent("change", delta);
+    var event = DS.Events._buildEvent(delta);
 
     // for now, we aren't adding the actual data to the original dataset
     // just simulating that addition. Eventually when we ammend the api

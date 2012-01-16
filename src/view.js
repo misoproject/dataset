@@ -55,7 +55,6 @@
     * Syncs up the current view based on a passed delta.
     */
     sync : function(event) {
-    
       var deltas = event.deltas;
  
       // iterate over deltas and update rows that are affected.
@@ -335,7 +334,7 @@
       
       // add all data
       _.each(this._columns, function(column) {
-        column.data.push(row[column.name]);
+        column.data.push(row[column.name] ? row[column.name] : null);
       });
 
       // add row indeces to the cache
