@@ -46,7 +46,7 @@ test("Basic Sync Recomputation", function() {
   };
 
   var max = ds.max("one");
-  var event = DS.Events.buildEvent("change", delta);
+  var event = DS.Events._buildEvent(delta);
   max.sync(event);
   ok(max.val() === 5, "max was updated");
 
@@ -69,7 +69,7 @@ test("Basic Sync Recomputation - Not Affected Column", function() {
   };
 
   var max = ds.max("two");
-  var event = DS.Events.buildEvent("change", delta);
+  var event = DS.Events._buildEvent(delta);
   max.sync(event);
   ok(max.val() === 6, "max was not updated");
 
@@ -100,7 +100,7 @@ test("Basic subscription to product changes", function() {
     delta.changed[column.name] = 10;
     ds._columns[i+1].data[1] = 10;
 
-    var event = DS.Events.buildEvent("change", delta);
+    var event = DS.Events._buildEvent(delta);
     max.sync(event);
     ok(testobj.prop === 2, "callback was called!"); 
     ok(max.val() === 10, "max was updated"); 
@@ -132,7 +132,7 @@ test("Subscription doesn't trigger when value doesn't change", function() {
     delta.changed[column.name] = 0;
     ds._columns[i+1].data[1] = 0;
 
-    var event = DS.Events.buildEvent("change", delta);
+    var event = DS.Events._buildEvent(delta);
     max.sync(event);
     
     ok(testobj.prop === 1, "callback was not called!");  

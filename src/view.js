@@ -55,7 +55,6 @@
     * Syncs up the current view based on a passed delta.
     */
     sync : function(event) {
-    
       var deltas = event.deltas;
  
       // iterate over deltas and update rows that are affected.
@@ -112,7 +111,7 @@
           event.deltas.splice(deltaIndex, 1, newDelta);
 
           // remove row since it doesn't match the filter.
-          this._delete(rowPos);
+          this._remove(rowPos);
         }
 
       }, this);
@@ -308,9 +307,8 @@
     * will result in dataloss. Only datasets can have rows be removed.
     * @param {number} rowPos - the row to delete at any position
     */
-    _delete : function(rowPos) {
-
-      var rowId = this._rowIdByPosition[rowPos];
+    _remove : function(rowId) {
+      var rowPos = this._rowPositionById[rowId];
 
       // remove all values
       _.each(this._columns, function(column) {
@@ -335,7 +333,7 @@
       
       // add all data
       _.each(this._columns, function(column) {
-        column.data.push(row[column.name]);
+        column.data.push(row[column.name] ? row[column.name] : null);
       });
 
       // add row indeces to the cache

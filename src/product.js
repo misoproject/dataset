@@ -119,7 +119,7 @@
           // so that any subscribers know whether they need to 
           // update if they are sharing a column.
           var delta = this._buildDelta(this.value, producer(column));
-          var event = this.buildEvent("change", delta);
+          var event = this._buildEvent("change", delta);
 
           // trigger any subscribers this might have if the values are diff
           if (!options.silent && 

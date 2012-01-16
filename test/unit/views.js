@@ -1,15 +1,3 @@
-function baseSample() {
-  var ds = new DS.Dataset({
-    data: { columns : [ 
-      { name : "one",   data : [1, 2, 3] },
-      { name : "two",   data : [4, 5, 6] },
-      { name : "three", data : [7, 8, 9] } 
-    ] },
-    strict: true
-  });
-  return ds;
-}
-
 module("Views");
 
   test("Basic View creation", function() {
@@ -64,6 +52,33 @@ module("Views");
       equals(d, ds._columns[0].data[i], "data matches parent");
     });
   });
+
+  test("Columns View creation", function() {
+    var ds = baseSample();
+    var view = ds.columns( [ 'one', 'two' ] );
+
+    equals(view._columns.length, 3, "two data columns + _id"); //one column + _id
+    _.each(view._columns, function(column, columnIndex) {
+      _.each(column.data, function(d, rowIndex) {
+        equals(d, ds._columns[columnIndex].data[rowIndex], "data matches parent");
+      });
+    });
+  });
+
+  test("Select by columns and rows", function() {
+    var ds = baseSample();
+    var view = ds.where({
+      rows : [ds._columns[0].data[0], ds._columns[0].data[1]],
+      columns : [ 'one' ]
+    });
+
+    equals(view.length, 2, "view has two rows");
+    equals(view._columns.length, 2, "view has one column"); //id column + data column
+    _.each(view._columns[1].data, function(d, rowIndex) {
+      equals(d, ds._columns[1].data[rowIndex], "data matches parent");
+    });
+  });
+
 
 module("Views :: Rows Selection");
 
@@ -130,7 +145,7 @@ module("Views :: Syncing");
         delta.old[col] = oldVal;
         delta.changed[col] = 100;
         
-        var event = DS.Events.buildEvent("change", delta);
+        var event = DS.Events._buildEvent(delta);
 
         // trigger view sync with delta
         // view.sync(delta);
@@ -167,7 +182,7 @@ module("Views :: Syncing");
     delta.old[colname] = oldVal;
     delta.changed[colname] = 100;
 
-    var event = DS.Events.buildEvent("change", delta);
+    var event = DS.Events._buildEvent(delta);
 
     // trigger dataset change
     ds.trigger("change", event);
@@ -196,10 +211,10 @@ module("Views :: Syncing");
     };
 
     // create event representing deletion
-    var event = DS.Events.buildEvent("change", delta);
+    var event = DS.Events._buildEvent(delta);
 
     // delete actual row
-    ds._delete(0);
+    ds._remove( ds._rowIdByPosition[0] );
     ds.trigger("change", event);
 
     // verify view row was deleted as well
@@ -229,7 +244,7 @@ module("Views :: Syncing");
     };
 
     // create event representing addition
-    var event = DS.Events.buildEvent("change", delta);
+    var event = DS.Events._buildEvent(delta);
 
     // for now, we aren't adding the actual data to the original dataset
     // just simulating that addition. Eventually when we ammend the api
@@ -238,6 +253,14 @@ module("Views :: Syncing");
 
     ok(view.length === 4, "row was added");
     ok(_.isEqual(view.rowByPosition(3), newRow), "rows are equal");
+  });
+
+  test("Propagating row adding via external API", function() {
+    var ds = baseSample();
+    var view = ds.column('one');
+
+    ds.add( { one: 10, two: 22 } );
+    ok(view.length === 4, "row was added to view");
   });
 
   test("Basic row adding propagation - Not added when out of filter range", function() {
@@ -262,7 +285,7 @@ module("Views :: Syncing");
     };
 
     // create event representing addition
-    var event = DS.Events.buildEvent("change", delta);
+    var event = DS.Events._buildEvent(delta);
 
     // for now, we aren't adding the actual data to the original dataset
     // just simulating that addition. Eventually when we ammend the api

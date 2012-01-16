@@ -119,7 +119,17 @@ Version 0.0.1.2
     * @param {object} options - options
     *   silent: boolean, do not trigger an add (and thus view updates) event
     */    
-    add : function(row, options) {},
+    add : function(row, options) {
+      if (!row._id) {
+        row._id = _.uniqueId();
+      }
+
+      this._add(row);
+      if (!options || !options.silent) {
+        this.trigger('add', this._buildEvent({ changed : row }) );
+        this.trigger('change', this._buildEvent({ changed : row }) );
+      }
+    },
 
     /**
     * Remove all rows that match the filter
@@ -127,7 +137,13 @@ Version 0.0.1.2
     * @param {function} filter - function applied to each row
     * @param {object} options - options. Optional.
     */    
-    remove : function(filter, options) {},
+    remove : function(filter, options) {
+      this.each(function(row, rowIndex) {
+        if (filter(row)) {
+          this._remove(row._id);
+        }
+      });
+    },
 
     /**
     * Update all rows that match the filter

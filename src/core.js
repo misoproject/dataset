@@ -96,8 +96,8 @@
     * @param {object|array of objects} delta - change delta object.
     * @returns {object} event - Event object.
     */
-    buildEvent : function(ev, delta) {
-      return new DS.Event(ev, delta);
+    _buildEvent : function(delta) {
+      return new DS.Event(delta);
     }
   };
 
@@ -109,8 +109,7 @@
   * @param {string} ev - Name of event
   * @param {object|array of objects} deltas - array of deltas.
   */
-  DS.Event = function(ev, deltas) {
-    this.name = ev;
+  DS.Event = function(deltas) {
     if (!_.isArray(deltas)) {
       deltas = [deltas];
     }
@@ -131,6 +130,7 @@
       return cols;
     }
   });
+
   _.extend(DS.Event, {
     /**
     * @public
@@ -149,7 +149,7 @@
     * Returns true if the event is an add event.
     */
     isAdd : function(delta) {
-      if (_.keys(delta.old).length === 0) {
+      if (_.isUndefined(delta.old) || _.keys(delta.old).length === 0) {
         return true;
       } else {
         return false;
