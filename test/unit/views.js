@@ -222,6 +222,19 @@ module("Views :: Syncing");
     ok(view._columns[0].data[0] === ds._columns[0].data[0], "first row was delete");
   });
 
+  test("row removeal propagation via external API", function() {
+    var ds = baseSample();
+    var view = ds.column('one');
+
+    ds.remove(function(row) {
+      return (row.one === 1);
+    });
+
+    ok(view.length === 2, "row was removed from view");
+    ok(ds.length === 2, "row was removed from dataset");
+
+  });
+
   test("Basic row adding propagation", function() {
     var ds = baseSample();
 

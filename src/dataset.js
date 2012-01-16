@@ -123,6 +123,9 @@ Version 0.0.1.2
       this.each(function(row, rowIndex) {
         if (filter(row)) {
           this._remove(row._id);
+          var ev = this._buildEvent({ old: row, changed : {} })
+          this.trigger('change', ev );
+          this.trigger('remove', ev );
         }
       });
     },
