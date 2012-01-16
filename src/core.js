@@ -137,7 +137,7 @@
     * Returns true if the event is a deletion
     */
     isDelete : function(delta) {
-      if (_.keys(delta.changed).length === 0) {
+      if (_.isUndefined(delta.changed) || _.keys(delta.changed).length === 0) {
         return true;
       } else {
         return false;

@@ -157,6 +157,20 @@ module("Views :: Syncing");
     }, this);
   });
 
+
+  test("Sync of updates via the external API", function() {
+    var ds = baseSample(),
+        view1 = ds.column('one'),
+        view2 = ds.column('two'),
+        firstRowId = ds._rowIdByPosition[0],
+        view3 = ds.where(firstRowId);
+
+    ds.update(firstRowId, { one: 100, two: 200 });
+    equals(view1._columns[1].data[0], 100);
+    equals(view3._columns[1].data[0], 100);
+    equals(view2._columns[1].data[0], 200);
+  });
+
   test("Nested Syncing", function() {
     var ds = baseSample();
     var colname = ds._columns[1].name;
@@ -222,7 +236,7 @@ module("Views :: Syncing");
     ok(view._columns[0].data[0] === ds._columns[0].data[0], "first row was delete");
   });
 
-  test("row removeal propagation via external API", function() {
+  test("row removal propagation via external API", function() {
     var ds = baseSample();
     var view = ds.column('one');
 
