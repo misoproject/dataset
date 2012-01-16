@@ -58,7 +58,6 @@ module("Views");
   test("Column View creation", function() {
     var ds = baseSample();
     var view = ds.column("one");
-    console.log(ds, view);
 
     equals(view._columns.length, 2, "there is only one data column"); //one column + _id
     _.each(view._columns[0].data, function(d,i) {

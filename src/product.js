@@ -107,7 +107,8 @@
     */    
     calculated : function(column, producer) {
 
-      var column = this._column(column);
+      column = this._column(column);
+      
       var prod = new Product({
         column : column,
         func   : function(options) {
