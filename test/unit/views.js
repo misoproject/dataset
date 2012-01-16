@@ -58,13 +58,39 @@ module("Views");
   test("Column View creation", function() {
     var ds = baseSample();
     var view = ds.column("one");
-    console.log(ds, view);
 
     equals(view._columns.length, 2, "there is only one data column"); //one column + _id
     _.each(view._columns[0].data, function(d,i) {
       equals(d, ds._columns[0].data[i], "data matches parent");
     });
   });
+
+  test("Columns View creation", function() {
+    var ds = baseSample();
+    var view = ds.columns( [ 'one', 'two' ] );
+
+    equals(view._columns.length, 3, "two data columns + _id"); //one column + _id
+    _.each(view._columns, function(column, columnIndex) {
+      _.each(column.data, function(d, rowIndex) {
+        equals(d, ds._columns[columnIndex].data[rowIndex], "data matches parent");
+      });
+    });
+  });
+
+  test("Select by columns and rows", function() {
+    var ds = baseSample();
+    var view = ds.where({
+      rows : [ds._columns[0].data[0], ds._columns[0].data[1]],
+      columns : [ 'one' ]
+    });
+
+    equals(view.length, 2, "view has two rows");
+    equals(view._columns.length, 2, "view has one column"); //id column + data column
+    _.each(view._columns[1].data, function(d, rowIndex) {
+      equals(d, ds._columns[1].data[rowIndex], "data matches parent");
+    });
+  });
+
 
 module("Views :: Rows Selection");
 
@@ -239,18 +265,6 @@ module("Views :: Syncing");
 
     ok(view.length === 4, "row was added");
     ok(_.isEqual(view.rowByPosition(3), newRow), "rows are equal");
-  });
-
-  test("Columns View creation", function() {
-    var ds = baseSample();
-    var view = ds.columns( [ 'one', 'two' ] );
-
-    equals(view._columns.length, 3, "two data columns + _id"); //one column + _id
-    _.each(view._columns, function(column, columnIndex) {
-      _.each(column.data, function(d, rowIndex) {
-        equals(d, ds._columns[columnIndex].data[rowIndex], "data matches parent");
-      });
-    });
   });
 
   test("Basic row adding propagation - Not added when out of filter range", function() {
