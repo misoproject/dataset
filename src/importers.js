@@ -36,8 +36,11 @@
         // compute the type by assembling a sample of computed types
         // and then squashing it to create a unique subset.
         var type = _.inject(column.data.slice(0, (n || 5)), function(memo, value) {
-          if (memo.indexOf(DS.typeOf(value)) == -1) {
-            memo.push(DS.typeOf(value));
+
+          var t = DS.typeOf(value);
+
+          if (value !== "" && memo.indexOf(t) == -1 && !_.isNull(value)) {
+            memo.push(t);
           }
           return memo;
         }, []);
@@ -45,6 +48,10 @@
         // if we only have one type in our sample, save it as the type
         if (type.length === 1) {
           column.type = type[0];
+        } else if (type.length === 0) {
+          // we are assuming that this is a number type because we have
+          // no values in the sample. Unfortuante.
+          column.type = "number";
         } else {
           throw new Error("This column seems to have mixed types");
         }
@@ -101,7 +108,7 @@
     );
 
     if (rowLengths.length > 1) {
-      throw new Error("Row lengths need to be the same. Empty values should be set to null.");
+      throw new Error("Row lengths need to be the same. Empty values should be set to null." + _.map(d._columns, function(c) { return c.data + "|||" ; }));
     } else {
       d.length = rowLengths[0];
     }
@@ -386,12 +393,104 @@
         this.delimiter);
 
       this._addIdColumn(d, d._columns[0].data.length);
-      
+            
       return d;
     },
 
     build : function(options) {
 
+      var d = {};
+
+      this._buildColumns(d);
+      this._detectTypes(d);
+      this._cacheColumns(d);
+      this._cacheRows(d);
+      
+      return d;
+    }
+  });
+
+  // --------- Google Spreadsheet Parser -------
+  // This is utilizing the format that can be obtained using this:
+  // http://code.google.com/apis/gdata/samples/spreadsheet_sample.html
+
+  /**
+  * @constructor
+  * Google Spreadsheet Parser. 
+  * Used in conjunction with the Google Spreadsheet Importer.
+  * Requires the following:
+  * @param {object} data - the google spreadsheet data.
+  * @param {object} options - Optional options argument.
+  */
+  DS.Parsers.GoogleSpreadsheet = function(data, options) {
+    options = options || {};
+    this._data = data;
+  };
+
+  _.extend(
+    DS.Parsers.GoogleSpreadsheet.prototype,
+    DS.Parsers.prototype, {
+
+    _buildColumns : function(d, n) {
+      d._columns = [];
+
+      var positionRegex = /([A-Z]+)(\d+)/; 
+      var columnPositions = {};
+
+      _.each(this._data.feed.entry, function(cell, index) {
+    
+        var parts = positionRegex.exec(cell.title.$t),
+          column = parts[1],
+          position = parseInt(parts[2], 10);
+        
+        if (_.isUndefined(columnPositions[column])) {
+          
+          // cache the column position
+          columnPositions[column] = d._columns.length;
+
+          // we found a new column, so build a new column type.
+          d._columns.push(this._buildColumn(cell.content.$t, null, []));
+          
+        } else {
+
+          // find position: 
+          var colpos = columnPositions[column];
+
+          // this is a value for an existing column, so push it.
+          d._columns[colpos].data[position-1] = cell.content.$t; 
+        }
+      }, this);
+
+      // fill whatever empty spaces we might have in the data due to 
+      // empty cells
+      d.length = _.max(d._columns, function(column) { 
+          return column.data.length; 
+        }).data.length - 1; // for column name
+
+      _.each(d._columns, function(column, index) {
+
+        // slice off first space. It was alocated for the column name
+        // and we've moved that off.
+        column.data.splice(0,1);
+
+        for (var i = 0; i < d.length; i++) {
+          if (_.isUndefined(column.data[i]) || column.data[i] === "") {
+            column.data[i] = null;
+          }
+        }
+      });
+
+      // add row _id column. Generate auto ids if there
+      // isn't already a unique id column.
+      if (_.pluck(d._columns, "name").indexOf("_id") === -1) {
+        this._addIdColumn(d, d._columns[0].data.length);
+      }
+
+      return d;
+    }, 
+
+    build : function() {
+      
       var d = {};
 
       this._buildColumns(d);
@@ -584,7 +683,7 @@
   DS.Importers.prototype.extract = function(data) {
     data = _.clone(data);
     data._columns = data.columns;
-    delete data.columns
+    delete data.columns;
     return data;
   };
 
@@ -667,5 +766,50 @@
       }
     }
   );
+
+
+  /**
+  * @constructor
+  * Instantiates a new google spreadsheet importer.
+  * @param {object} options - Options object. Requires at the very least:
+  *     key - the google spreadsheet key
+  *     worksheet - the index of the spreadsheet to be retrieved.
+  *   OR
+  *     url - a more complex url (that may include filtering.) In this case
+  *           make sure it's returning the feed json data.
+  */
+  DS.Importers.GoogleSpreadsheet = function(options) {
+    options = options || {};
+    if (options.url) {
+
+      options.url = options.url;
+
+    } else {
+
+      if (_.isUndefined(options.key)) {
+        
+        throw new Error("Set options.key to point to your google document.");
+      } else {
+
+        options.worksheet = options.worksheet || 1;
+        options.url = "https://spreadsheets.google.com/feeds/cells/" + options.key + "/" + options.worksheet + "/public/basic?alt=json-in-script&callback=";
+        delete options.key;
+        delete options.worksheet;
+      }
+    }
+  
+    this.parser = DS.Parsers.GoogleSpreadsheet;
+    this.params = {
+      type : "GET",
+      url : options.url,
+      dataType : "jsonp"
+    };
+
+    return this;
+  };
+
+  _.extend(
+    DS.Importers.GoogleSpreadsheet.prototype, 
+    DS.Importers.Remote.prototype);
 
 }(this, _));

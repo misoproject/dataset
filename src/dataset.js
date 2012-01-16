@@ -32,7 +32,11 @@ Version 0.0.1.2
   *     name : function(yourParamsHere) {
   *       return a.filtering;
   *     }
+  *   },
+  *   google_spreadsheet: {
+  *     key : "", worksheet(optional) : ""     
   *   }
+  }
   */
   DS.Dataset = function(options) {
     options = options || (options = {});
@@ -42,6 +46,11 @@ Version 0.0.1.2
 
   _.extend(DS.Dataset.prototype, DS.View.prototype, {
 
+    /**
+    * @private
+    * Internal initialization method. Reponsible for data parsing.
+    * @param {object} options - Optional options  
+    */
     _initialize: function(options) {
 
       // initialize importer from options or just create a blank
@@ -57,6 +66,8 @@ Version 0.0.1.2
           parser = DS.Parsers.Strict;
         } else if (options.delimiter) {
           parser = DS.Parsers.Delimited;
+        } else if (options.google_spreadsheet) {
+          parser = DS.Parsers.GoogleSpreadsheet;
         }
       }
 
@@ -69,10 +80,17 @@ Version 0.0.1.2
         importerOptions.dataType = "text";
       }
 
+      if (options.google_spreadsheet) {
+        _.extend(importerOptions, options.google_spreadsheet);
+      }
+
       // initialize the proper importer
       if (importer === null) {
         if (options.url) {
           importer = DS.Importers.Remote;
+        } else if (options.google_spreadsheet) {
+          importer = DS.Importers.GoogleSpreadsheet;
+          delete options.google_spreadsheet;
         } else {
           importer = DS.Importers.Local;
         }

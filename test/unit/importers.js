@@ -1,3 +1,4 @@
+  
 function verifyImport(obj, strictData) {
 
   // check properties exist
@@ -240,4 +241,74 @@ test("Basic delimiter parsing test with custom separator with Dataset API", 53, 
   });
   
   verifyImport(DS.alphabet_strict, ds);
+});
+
+module("Google Spreadsheet Support");
+function verifyGoogleSpreadsheet(d, obj) {
+
+  ok(_.isEqual(
+    _.keys(d._columnPositionByName), 
+    _.keys(obj._columnPositionByName)
+  ));
+  ok(_.isEqual(
+    d._rowIdByPosition.length, 
+    obj._rowIdByPosition.length)
+  );
+
+  // ignoring id column, since that changes.
+  for(var i = 1; i < d.length; i++) {
+    ok(_.isEqual(d._columns[i].data, obj._columns[i].data), d._columns[i].data + "<br>" + window.DS.google_spreadsheet_strict._columns[i].data);
+  }
+}
+
+test("Google spreadsheet parse test", function() {
+  
+  stop();
+  $.ajax({
+    url : "https://spreadsheets.google.com/feeds/cells/0Asnl0xYK7V16dFpFVmZUUy1taXdFbUJGdGtVdFBXbFE/1/public/basic?alt=json-in-script",
+    dataType: "jsonp",
+    success: function(data) {
+      var parser = new DS.Parsers.GoogleSpreadsheet(data);
+      var strictData = parser.build();
+      verifyGoogleSpreadsheet(strictData, window.DS.google_spreadsheet_strict);
+      start();
+    }
+  });
+});
+
+test("Google spreadsheet import test", function() {
+  var key = "0Asnl0xYK7V16dFpFVmZUUy1taXdFbUJGdGtVdFBXbFE";
+  var worksheet = "1";
+  stop();
+  var importer = new DS.Importers.GoogleSpreadsheet({
+    key : key,
+    worksheet : worksheet
+  });
+
+  importer.fetch({
+    success : function(data) {
+      verifyGoogleSpreadsheet(data, window.DS.google_spreadsheet_strict);
+      start();
+    }
+  })
+});
+
+
+test("Google spreadsheet dataset test", function() {
+  
+  var key = "0Asnl0xYK7V16dFpFVmZUUy1taXdFbUJGdGtVdFBXbFE";
+  var worksheet = "1";
+
+  stop();
+
+  var ds = new DS.Dataset({
+    google_spreadsheet : {
+      key : key,
+      worksheet: worksheet
+    },
+    ready : function() {
+      verifyGoogleSpreadsheet(this, window.DS.google_spreadsheet_strict);
+      start();
+    }
+  });
 });

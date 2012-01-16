@@ -176,7 +176,7 @@
       length = types.length,
       i = 0,
       patterns = {
-        "number" : /^\d+$/,
+        "number" : /^[\-]?[0-9]+([\.][0-9]+)?$/,
         "boolean" : /^(true|false)$/
       };
     for ( ; i < length; i++ ) {
