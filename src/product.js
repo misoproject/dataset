@@ -28,9 +28,8 @@
     * This is a callback method that is responsible for recomputing
     * the value based on the column its closed on.
     */
-    sync : function(delta) {
-      var affectedColumns = _.keys(delta.changed);
-      if (_.indexOf(affectedColumns, this._column) > -1) {
+    sync : function(event) {
+      if (_.indexOf(event.affectedColumns(), this._column) > -1) {
         this.value = this.func();
       }
     },
@@ -119,11 +118,12 @@
           // so that any subscribers know whether they need to 
           // update if they are sharing a column.
           var delta = this._buildDelta(this.value, producer(column));
-          
+          var event = this.buildEvent("change", delta);
+
           // trigger any subscribers this might have if the values are diff
           if (!options.silent && 
               delta.old[this._column] !== delta.changed[this._column]) {
-            this.trigger("change", delta);  
+            this.trigger("change", event);  
           }
 
           // return updated value

@@ -15,12 +15,11 @@
   };
 
   /**
-  * Core component containing support for the following:
-  *   events (bind, unbind, trigger)
-  *   sync
+  * Event related methods. To be attached to all other components.
   */
   DS.Events = {
     /**
+    * @public
     * Bind callbacks to dataset events
     * @param {string} ev - name of the event
     * @param {function} callback - callback function
@@ -37,6 +36,7 @@
     }, 
 
     /**
+    * @public
     * Remove one or many callbacks. If `callback` is null, removes all
     * callbacks for the event. If `ev` is null, removes all bound callbacks
     * for all events.
@@ -65,6 +65,7 @@
     },
 
     /**
+    * @public
     * trigger a given event
     * @param {string} eventName - name of event
     */
@@ -85,8 +86,88 @@
         }
       }
       return this;
+    },
+
+
+    /**
+    * @public
+    * Used to build event objects accross the application.
+    * @param {string} ev - event name
+    * @param {object|array of objects} delta - change delta object.
+    * @returns {object} event - Event object.
+    */
+    buildEvent : function(ev, delta) {
+      return new DS.Event(ev, delta);
     }
   };
+
+  /**
+  * @constructor
+  * A representation of an event as it is passed through the
+  * system. Used for view synchronization and other default
+  * CRUD ops.
+  * @param {string} ev - Name of event
+  * @param {object|array of objects} deltas - array of deltas.
+  */
+  DS.Event = function(ev, deltas) {
+    this.name = ev;
+    if (!_.isArray(deltas)) {
+      deltas = [deltas];
+    }
+    this.deltas = deltas;
+  };
+
+  _.extend(DS.Event.prototype, {
+    affectedColumns : function() {
+      var cols = [];
+      
+      _.each(this.deltas, function(delta) {
+        cols = _.union(cols, 
+          _.keys(delta.old),
+          _.keys(delta.changed)
+        );
+      });
+
+      return cols;
+    }
+  });
+  _.extend(DS.Event, {
+    /**
+    * @public
+    * Returns true if the event is a deletion
+    */
+    isDelete : function(delta) {
+      if (_.keys(delta.changed).length === 0) {
+        return true;
+      } else {
+        return false;
+      }
+    },
+
+    /**
+    * @public
+    * Returns true if the event is an add event.
+    */
+    isAdd : function(delta) {
+      if (_.keys(delta.old).length === 0) {
+        return true;
+      } else {
+        return false;
+      }
+    },
+
+    /**
+    * @public
+    * Returns true if the event is an update.
+    */
+    isUpdate : function(delta) {
+      if (!this.isDelete(delta) && !this.isAdd(delta)) {
+        return true;
+      } else {
+        return false;
+      }
+    }
+  });
 
   (function() {
 
@@ -103,10 +184,11 @@
     }
     
     /**
-     * Returns the type of an input object.
-     * Stolen from jQuery via @rwaldron (http://pastie.org/2849690)
-     * @param {?} obj - the object being detected.
-     */
+    * @public
+    * Returns the type of an input object.
+    * Stolen from jQuery via @rwaldron (http://pastie.org/2849690)
+    * @param {?} obj - the object being detected.
+    */
     DS.typeOf = function(obj) {
       
       var type = obj == null ?
