@@ -133,6 +133,8 @@
     d._columns.unshift(
       this._buildColumn("_id", "number", ids)
     );
+    
+    return d;
   };
 
   
