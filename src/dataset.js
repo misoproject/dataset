@@ -136,13 +136,24 @@ Version 0.0.1.2
     * TODO: single row by id?
     * @param {function} filter - function applied to each row
     * @param {object} options - options. Optional.
+    *   silent: boolean, do not trigger an add (and thus view updates) event
     */    
     remove : function(filter, options) {
+      filter = this._rowFilter(filter);
+      var deltas = [];
+
       this.each(function(row, rowIndex) {
         if (filter(row)) {
           this._remove(row._id);
+          deltas.push( { old: row } );
         }
       });
+      if (!options || !options.silent) {
+        var ev = this._buildEvent( deltas );
+        this.trigger('change', ev );
+        this.trigger('remove', ev );
+      }
+
     },
 
     /**
@@ -152,7 +163,29 @@ Version 0.0.1.2
     * @param {object} newProperties - values to be updated.
     * @param {object} options - options. Optional.
     */    
-    update : function(filter, newProperties, options) {}
+    update : function(filter, newProperties, options) {
+      filter = this._rowFilter(filter);
+      var deltas = [];
+
+      this.each(function(row, rowIndex) {
+        if (filter(row)) {
+          var newKeys = _.keys(newProperties);
+          _.each(this._columns, function(c) {
+            if (_.indexOf(newKeys, c.name) !== -1) {
+              c.data[rowIndex] = newProperties[c.name];
+            }
+          }, this);
+          deltas.push( { _id : row._id, old : row, changed : newProperties } );
+        }
+      }, this);
+
+      if (!options || !options.silent) {
+        var ev = this._buildEvent( deltas );
+        this.trigger('change', ev );
+        this.trigger('remove', ev );
+      }
+
+    }
 
   });
 }(this, _));

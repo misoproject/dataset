@@ -76,12 +76,14 @@
         } else {
 
           //===== UPDATE EXISTING ROW
+          if (rowPos === "undefined") { return }
           
           // iterate over each changed property and update the value
           _.each(d.changed, function(newValue, columnName) {
             
             // find col position based on column name
             var colPos = this._columnPositionByName[columnName];
+            if (_.isUndefined(colPos)) { return }
             this._columns[colPos].data[rowPos] = newValue;
 
           }, this);
@@ -200,6 +202,11 @@
       
       var rowSelector;
 
+      //support for a single ID;
+      if (_.isNumber(rowFilter)) {
+        rowFilter = [rowFilter];
+      }
+
       if (_.isUndefined(rowFilter)) {
         rowSelector = function() { 
           return true;
@@ -261,7 +268,7 @@
     */    
     each : function(iterator, context) {
       for(var i = 0; i < this.length; i++) {
-        iterator.apply(context || this, [this.rowByPosition(i)]);
+        iterator.apply(context || this, [this.rowByPosition(i), i]);
       }
     },
 
