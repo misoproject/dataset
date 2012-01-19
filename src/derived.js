@@ -1,5 +1,7 @@
 (function(global, _) {
 
+  var DS = (global.DS = global.DS || {});
+
   _.extend(global.DS.Dataset.prototype, {
     /**
     * moving average

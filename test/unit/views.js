@@ -322,3 +322,133 @@ module("Views :: Syncing");
     ok(view.length === 3, "row was NOT added");
     ok(_.isEqual(view.rowByPosition(2), ds.rowByPosition(2)), "last row in view hasn't changed.");
   })
+
+module("Sort");
+
+test("Sort fail", function() {
+  var ds = baseSample();
+  try {
+    ds.sort();
+    ok(false, "error should have been thrown.");
+  } catch (e) {
+    ok(e.message === "Cannot sort without this.comparator.");
+  }
+});
+
+test("Basic Sort", function() {
+  var ds = new DS.Dataset({
+    data: { columns : [ 
+      { name : "one",   data : [10, 2, 3, 14, 3, 4] },
+      { name : "two",   data : [4,  5, 6, 1,  1, 1] },
+      { name : "three", data : [7,  8, 9, 1,  1, 1] } 
+    ] },
+    strict: true
+  });
+  
+  ds.comparator = function(r1, r2) {
+    if (r1.one > r2.one) return 1;
+    if (r1.one < r2.one) return -1;
+    return 0;
+  }
+
+  ds.sort();
+
+  ok(_.isEqual(ds._columns[1].data, [2,3,3,4,10,14]));
+  ok(_.isEqual(ds._columns[2].data, [5,6,1,1,4,1]));
+  ok(_.isEqual(ds._columns[3].data, [8,9,1,1,7,1]));
+
+});
+
+test("Basic Sort reverse", function() {
+  var ds = new DS.Dataset({
+    data: { columns : [ 
+      { name : "one",   data : [10, 2, 3, 14, 3, 4] },
+      { name : "two",   data : [4,  5, 6, 1,  1, 1] },
+      { name : "three", data : [7,  8, 9, 1,  1, 1] } 
+    ] },
+    strict: true
+  });
+  
+  ds.comparator = function(r1, r2) {
+    if (r1.one > r2.one) return -1;
+    if (r1.one < r2.one) return 1;
+    return 0;
+  }
+
+  ds.sort();
+  
+  ok(_.isEqual(ds._columns[1].data, [2,3,3,4,10,14].reverse()));
+  ok(_.isEqual(ds._columns[2].data, [5,6,1,1,4,1].reverse()));
+  ok(_.isEqual(ds._columns[3].data, [8,9,1,1,7,1].reverse()));
+
+});
+
+test("Sort in init", function() {
+  var ds = new DS.Dataset({
+    data: { columns : [ 
+      { name : "one",   data : [10, 2, 3, 14, 3, 4] },
+      { name : "two",   data : [4,  5, 6, 1,  1, 1] },
+      { name : "three", data : [7,  8, 9, 1,  1, 1] } 
+    ] },
+    comparator : function(r1, r2) {
+      if (r1.one > r2.one) return -1;
+      if (r1.one < r2.one) return 1;
+      return 0;
+    },
+    strict: true
+  });
+  
+  ok(_.isEqual(ds._columns[1].data, [2,3,3,4,10,14].reverse()));
+  ok(_.isEqual(ds._columns[2].data, [5,6,1,1,4,1].reverse()));
+  ok(_.isEqual(ds._columns[3].data, [8,9,1,1,7,1].reverse()));
+});
+
+test("Add row in sorted order", function() {
+  var ds = new DS.Dataset({
+    data: { columns : [ 
+      { name : "one",   data : [10, 2, 3, 14, 3, 4] },
+      { name : "two",   data : [4,  5, 6, 1,  1, 1] },
+      { name : "three", data : [7,  8, 9, 1,  1, 1] } 
+    ] },
+    comparator : function(r1, r2) {
+      if (r1.one > r2.one) return 1;
+      if (r1.one < r2.one) return -1;
+      return 0;
+    },
+    strict: true
+  });
+
+  ds.add({
+    one : 5, two: 5, three: 5
+  });
+
+  ok(_.isEqual(ds._columns[1].data, [2,3,3,4,5,10,14]));
+  ok(_.isEqual(ds._columns[2].data, [5,6,1,1,5,4,1]));
+  ok(_.isEqual(ds._columns[3].data, [8,9,1,1,5,7,1]));
+
+});
+
+test("Add row in reverse sorted order", function() {
+  var ds = new DS.Dataset({
+    data: { columns : [ 
+      { name : "one",   data : [10, 2, 3, 14, 3, 4] },
+      { name : "two",   data : [4,  5, 6, 1,  1, 1] },
+      { name : "three", data : [7,  8, 9, 1,  1, 1] } 
+    ] },
+    comparator : function(r1, r2) {
+      if (r1.one > r2.one) return -1;
+      if (r1.one < r2.one) return 1;
+      return 0;
+    },
+    strict: true
+  });
+
+  ds.add({
+    one : 5, two: 5, three: 5
+  });
+  
+  ok(_.isEqual(ds._columns[1].data, [2,3,3,4,5,10,14].reverse()));
+  ok(_.isEqual(ds._columns[2].data, [5,6,1,1,5,4,1].reverse()));
+  ok(_.isEqual(ds._columns[3].data, [8,9,1,1,5,7,1].reverse()));
+
+});

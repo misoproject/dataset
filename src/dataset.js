@@ -35,7 +35,11 @@ Version 0.0.1.2
   *   },
   *   google_spreadsheet: {
   *     key : "", worksheet(optional) : ""     
-  *   }
+  *   },
+  *   sorted : true (optional) - If the dataset is already sorted, pass true
+  *    so that we don't trigger a sort otherwise.
+  *   comparator : function (optional) - takes two rows and returns 1, 0, or -1  if row1 is
+  *     before, equal or after row2. 
   }
   */
   DS.Dataset = function(options) {
@@ -99,10 +103,22 @@ Version 0.0.1.2
       // initialize actual new importer.
       importer = new importer(importerOptions);
 
+      // save comparator if we have one
+      if (options.comparator) {
+        this.comparator = options.comparator;  
+      }
+
       if (importer !== null) {
         importer.fetch({
           success: _.bind(function(d) {
             _.extend(this, d);
+
+            // if a comparator was defined, sort the data
+            if (this.comparator) {
+              this.sort();
+            }
+
+            // call ready method
             if (options.ready) {
               options.ready.call(this);
             }
@@ -124,7 +140,7 @@ Version 0.0.1.2
         row._id = _.uniqueId();
       }
 
-      this._add(row);
+      this._add(row, options);
       if (!options || !options.silent) {
         this.trigger('add', this._buildEvent({ changed : row }) );
         this.trigger('change', this._buildEvent({ changed : row }) );
@@ -153,7 +169,6 @@ Version 0.0.1.2
         this.trigger('change', ev );
         this.trigger('remove', ev );
       }
-
     },
 
     /**
