@@ -302,11 +302,11 @@ module("Views :: Syncing");
 
     // now add another row
     var newRow = {
-      _id : 200, one : 4, two : 6, three : 1
+      _id : _.uniqueId(), one : 4, two : 6, three : 1
     };
 
     var delta = {
-      _id : 200,
+      _id : newRow._id,
       old : {},
       changed : newRow
     };
@@ -320,5 +320,6 @@ module("Views :: Syncing");
     ds.trigger("change", event);
 
     ok(view.length === 3, "row was NOT added");
+
     ok(_.isEqual(view.rowByPosition(2), ds.rowByPosition(2)), "last row in view hasn't changed.");
   })
