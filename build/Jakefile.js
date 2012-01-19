@@ -52,7 +52,8 @@ var // Program References
 				curly: true,
 				browser: true,
 				boss: true,
-				predef: [ "_" ]
+				predef: [ "_" ],
+				loopfunc: true
 				// onevar: true,
 				// "eqnull": true,
 				// "immed": true,
