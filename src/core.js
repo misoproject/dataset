@@ -3,17 +3,6 @@
   // generic core namespace def.
   var DS = global.DS = {};
 
-  // supported datatypes.
-  DS.datatypes = {
-    UNKNOWN: "Unknown",
-    NUMBER : 0,
-    STRING : 1,
-    BOOLEAN: 2,
-    ARRAY  : 3,
-    OBJECT : 4,
-    TIMESTAMP : 5
-  };
-
   /**
   * Event related methods. To be attached to all other components.
   */

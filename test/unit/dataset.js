@@ -31,11 +31,24 @@ test("removing a row with an id", function() {
   equals(ds.length, 2);
 });
 
+test("upating a row with an incorrect type", function() {
+  var ds = baseSample();
+  _.each(['a', null, undefined, []], function(value) {
+    raises(function() {
+      ds.update(ds._rowIdByPosition[0], { 'one' : value } );
+    });
+  });
+});
+
 test("updating a row", function() {
   var ds = baseSample();
+  ds._columns[1].type = 'untyped';
   var firstRowId = ds._rowIdByPosition[0];
   _.each([100, 'a', null, undefined, []], function(value) {
     ds.update(firstRowId, { 'one': value } );
     equals(ds._columns[1].data[0], value, "value updated to "+value);
   });
 });
+
+
+

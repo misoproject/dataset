@@ -180,16 +180,21 @@ Version 0.0.1.2
     */    
     update : function(filter, newProperties, options) {
       filter = this._rowFilter(filter);
-      var deltas = [];
+
+      var newKeys = _.keys(newProperties),
+          deltas = [];
 
       this.each(function(row, rowIndex) {
         if (filter(row)) {
-          var newKeys = _.keys(newProperties);
           _.each(this._columns, function(c) {
             if (_.indexOf(newKeys, c.name) !== -1) {
+              if ((c.type !== 'untyped') && (c.type !== DS.typeOf(newProperties[c.name]))) {
+                throw("incorrect value '"+newProperties[c.name]+"' of type "+DS.typeOf(newProperties[c.name])+" passed to column with type "+c.type);
+              };
               c.data[rowIndex] = newProperties[c.name];
             }
           }, this);
+
           deltas.push( { _id : row._id, old : row, changed : newProperties } );
         }
       }, this);
