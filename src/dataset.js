@@ -37,7 +37,7 @@ Version 0.0.1.2
   *     key : "", worksheet(optional) : ""     
   *   },
   *   sorted : true (optional) - If the dataset is already sorted, pass true
-  *    so that we don't trigger a sort otherwise.
+  *     so that we don't trigger a sort otherwise.
   *   comparator : function (optional) - takes two rows and returns 1, 0, or -1  if row1 is
   *     before, equal or after row2. 
   }
@@ -190,7 +190,7 @@ Version 0.0.1.2
             if (_.indexOf(newKeys, c.name) !== -1) {
               if ((c.type !== 'untyped') && (c.type !== DS.typeOf(newProperties[c.name]))) {
                 throw("incorrect value '"+newProperties[c.name]+"' of type "+DS.typeOf(newProperties[c.name])+" passed to column with type "+c.type);
-              };
+              }
               c.data[rowIndex] = newProperties[c.name];
             }
           }, this);
