@@ -20,6 +20,17 @@
     };
   };
 
+  DS.Parsers.prototype.build = function(options) {
+    var d = {};
+
+    this._buildColumns(d);
+    this._detectTypes(d);
+    this._cacheColumns(d);
+    this._cacheRows(d);
+
+    return d;
+  }
+
   DS.Parsers.prototype._addValue = function(d, columnName, value) {
     var colPos = d._columnPositionByName[columnName];
     d._columns[colPos].data.push(value);
@@ -180,17 +191,7 @@
       return d;
     },
 
-    build : function(options) {
-      var d = {};
-
-      this._buildColumns(d);
-      this._detectTypes(d);
-      this._cacheColumns(d);
-      this._cacheRows(d);
-
-      return d;
-    }
-  });
+    });
 
   // -------- Object Parser -----------
   /**
@@ -399,18 +400,7 @@
       return d;
     },
 
-    build : function(options) {
-
-      var d = {};
-
-      this._buildColumns(d);
-      this._detectTypes(d);
-      this._cacheColumns(d);
-      this._cacheRows(d);
-      
-      return d;
-    }
-  });
+   });
 
   // --------- Google Spreadsheet Parser -------
   // This is utilizing the format that can be obtained using this:
@@ -491,18 +481,7 @@
       return d;
     }, 
 
-    build : function() {
-      
-      var d = {};
-
-      this._buildColumns(d);
-      this._detectTypes(d);
-      this._cacheColumns(d);
-      this._cacheRows(d);
-      
-      return d;
-    }
-  });
+    });
 
 
   // ---------- Data Importers -------------
