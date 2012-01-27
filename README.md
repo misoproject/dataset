@@ -45,10 +45,38 @@ Fetch > Extract > Parse
 The simplest way to get raw data out of a dataset is to use `ds.each` to iterate over each row as a simple object but dataset has a system by which you can create subselections of data based on dynamic or static criteria which will them be dynamically updated to reflect changes in the dataset.
 
 ## Views 
-Views consistent of configuration for the selection of specific rows and or columns fro the parent dataset. Views are automatically updated to reflect changes in the parent dataset such as additions that may need to become part of the view, deletions that mean rows orcolumns need to be removed from the view or updates that mean a row may or may not be a valid part of a given view. 
+Views consistent of configuration for the selection of specific rows and or columns from the parent dataset. Views are automatically updated to reflect changes in the parent dataset such as additions that may need to become part of the view, deletions that mean rows need to be removed from the view or updates that mean a row may or may not be a valid part of a given view. 
+
+Columns can be selected by a single column name, an array or an columns names. Rows can be selected by an object with specific values for columns or a function which returns true for rows that should be included. The function will be passed the row as an object as well as its index and will have the context of the full dataset.
+```javascript
+var ds = new Miso.DS({ });
+
+ds.where({ columns : ['2008', '2009'], rows : function(row) {
+  row.total > 500;
+} });
+
+ds.where({ rows: { mobile : true } });
+
+ds.columns(['primary', 'secondary']);
+ds.column('RWA');
+
+ds.rows({ capacity : 'large' });
+```
 
 ## Lenses
 Lenses are essentially named view definitions wrapped in functions for reuse that can are stored on the dataset. Lenses can be called and then updated with new parameters. Lens functions are scoped to the dataset. Lenses can also be passed without setting a set of parameters
+
+```javascript
+var ds = new Miso.DS({ });
+
+ds.lens('byState', function(state) {
+  return this.rows(function(row) {
+    row.state === state;
+  });
+});
+
+ds.lens.byState('AK');
+```
 
 # Deriving data from a dataset
 
@@ -89,7 +117,7 @@ var variance = ds.calculated(function() {
 });
 ```
 
-reuseable product
+Reuseable product
 
 ```javascript
 var ds = new Miso.DS({ ... });
