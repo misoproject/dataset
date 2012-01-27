@@ -58,7 +58,7 @@ Lenses are essentially named view definitions wrapped in functions for reuse tha
 ## Products
 Products are operations on views or datasets that produce a single value. Like views products are updated when the parent dataset or view is updated.
 
-'''javascript
+```javascript
 var ds = new Miso.DS({ ... });
 //return a max product for the named column
 var maximum = ds.max('columnName'); 
@@ -70,12 +70,12 @@ maxmium.val();
 maximum.bind('change', function(delta) {
   alert('Max changed from ' + delta.old + ' to ' + delta.changed.');
 });
-'''
+```
 
 There are some simple products such as min/max/mean built into dataset but it is also trivial to create custom products for specific situations with a minimum of boilerplate as both one-offs and reuseable types;
 
 One-off product
-'''javascript
+```javascript
 var ds = new Miso.DS({ ... });
 
 var variance = ds.calculated(function() {
@@ -86,10 +86,10 @@ var variance = ds.calculated(function() {
   });
   return variance / this.length;
 });
-'''
+```
 
 reuseable product
-'''javascript
+```javascript
 var ds = new Miso.DS({ ... });
 ds.variance = function(column) {
   return ds.calculated(function() {
@@ -104,7 +104,7 @@ ds.variance = function(column) {
 
 //Shared between datasets
 Miso.DS.prototype.variance = ...//same as above
-'''
+```
 
 
 # Event binding &amp; realtime datasets
