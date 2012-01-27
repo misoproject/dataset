@@ -44,15 +44,10 @@
     },
 
     _buildDelta : function(old, changed) {
-      var delta = {
-        old : { },
-        changed : { }
+      return {
+        old : old,
+        changed : changed
       };
-
-      delta.old[this._column] = old;
-      delta.changed[this._column] = changed;
-
-      return delta;
     }
   });
 
@@ -123,12 +118,12 @@
 
           // trigger any subscribers this might have if the values are diff
           if (!options.silent && 
-              delta.old[this._column] !== delta.changed[this._column]) {
+              delta.old !== delta.changed) {
             this.trigger("change", event);  
           }
 
           // return updated value
-          return delta.changed[this._column];
+          return delta.changed;
         }
       });
 
