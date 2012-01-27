@@ -31,112 +31,119 @@ module("Products :: Sync");
 test("Basic Sync Recomputation", function() {
   
   var ds = baseSample();
-
   var max = ds.max("one");
 
   ok(max.val() === 3, "old max correct");
 
-  // make a change in ds - NOT THROUGH API
-  ds._columns[1].data[1] = 5;
+  ds.update(ds._rowIdByPosition[0], { one : 22});
 
-  var delta = {
-    _id : ds._columns[0].data[1],
-    old : { "one" : 2 },
-    changed : { "one" : 5 }
-  };
-
-  var max = ds.max("one");
-  var event = DS.Events._buildEvent(delta);
-  max.sync(event);
-  ok(max.val() === 5, "max was updated");
-
-});
-
-test("Basic Sync Recomputation - Not Affected Column", function() {
-  
-  var ds = baseSample();
-
-  var max = ds.max("two");
-  ok(max.val() === 6, "old max correct");
-
-  // make a change in ds - NOT THROUGH API
-  ds._columns[1].data[1] = 5;
-
-  var delta = {
-    _id : ds._columns[0].data[1],
-    old : { "one" : 2 },
-    changed : { "one" : 5 }
-  };
-
-  var max = ds.max("two");
-  var event = DS.Events._buildEvent(delta);
-  max.sync(event);
-  ok(max.val() === 6, "max was not updated");
+  ok(max.val() === 22, "max was updated");
 
 });
 
 test("Basic subscription to product changes", function() {
-  var ds = baseSample();
+  var ds = baseSample(),
+      max = ds.max("one"),
+      counter = 0;
 
-  _.each(ds._columns.slice(1, 4), function(column, i) {
-    var testobj = { prop : 1 },
-        callback = function() {
-          this.prop = 2;
-        };
-    
-    var max = ds.max(column.name);
-
-    max.bind("change", callback, testobj);
-
-    // bump up the 1st value to a really high number so
-    // that we know the value will need to recompute.
-    var delta = {
-      _id : ds._columns[0].data[1],
-      old : { },
-      changed : { }
-    };
-
-    delta.old[column.name] = ds._columns[i+1].data[1];
-    delta.changed[column.name] = 10;
-    ds._columns[i+1].data[1] = 10;
-
-    var event = DS.Events._buildEvent(delta);
-    max.sync(event);
-    ok(testobj.prop === 2, "callback was called!"); 
-    ok(max.val() === 10, "max was updated"); 
+  max.bind('change', function() {
+    counter += 1;
   });
+
+  ds.update(ds._rowIdByPosition[0], { one : 22});
+  ds.update(ds._rowIdByPosition[0], { one : 34});
+
+  equals(counter, 2);
+
 });
+
 
 test("Subscription doesn't trigger when value doesn't change", function() {
   var ds = baseSample();
+      max = ds.max("one"),
+      counter = 0;
 
-  _.each(ds._columns.slice(1, 4), function(column, i) {
-    var testobj = { prop : 1 },
-        callback = function() {
-          this.prop = 2;
-        };
-    
-    var max = ds.max(column.name);
-    var oldMax = max.val();
-    max.bind("change", callback, testobj);
-
-    // bump down the new value in the col to a really low value
-    // so that we know the product won't be any different.
-    var delta = {
-      _id : ds._columns[0].data[1],
-      old : { },
-      changed : { }
-    };
-
-    delta.old[column.name] = ds._columns[i+1].data[1];
-    delta.changed[column.name] = 0;
-    ds._columns[i+1].data[1] = 0;
-
-    var event = DS.Events._buildEvent(delta);
-    max.sync(event);
-    
-    ok(testobj.prop === 1, "callback was not called!");  
-    ok(oldMax === max.val(), "max hasn't changed");
+  max.bind('change', function() {
+    counter += 1;
   });
+
+  ds.update(ds._rowIdByPosition[0], { one : 22});
+  ds.update(ds._rowIdByPosition[1], { one : 2});
+
+  equals(counter, 1);
+
 });
 
+module("Products :: Custom");
+
+test("Defining a custom product", function() {
+
+  var ds = baseSample();
+  var min = ds.calculated(function() {
+    var min = Infinity;
+    _.each(this._column('one').data, function(value) {
+      if (value < min) {
+        min = value;
+      }
+    });
+    return min;
+  });
+
+  equals(min.val(), 1, "custum product calcualted the minimum");
+
+  ds.update(ds._rowIdByPosition[0], { one : 22});
+
+  equals(min.val(), 2, "custum product calculated the updated minimum");
+
+});
+
+
+test("Defining a new product on the DS prototype", function() {
+
+  DS.Dataset.prototype.custom = function() {
+    return this.calculated(function() {
+      var min = Infinity;
+      _.each(this._column('one').data, function(value) {
+        if (value < min) {
+          min = value;
+        }
+      });
+      return min;
+    });
+  };
+
+  var ds = baseSample();
+  var custom = ds.custom();
+
+  equals(custom.val(), 1, "custum product calculated the minimum");
+
+  ds.update(ds._rowIdByPosition[0], { one : 22});
+
+  equals(custom.val(), 2, "custum product calculated the updated minimum");
+
+});
+
+test("Defining a new product a dataset", function() {
+
+  var ds = baseSample();
+  ds.custom = function() {
+    return this.calculated(function() {
+      var min = Infinity;
+      _.each(this._column('one').data, function(value) {
+        if (value < min) {
+          min = value;
+        }
+      });
+      return min;
+    });
+  };
+
+  var custom = ds.custom();
+
+  equals(custom.val(), 1, "custum product calcualted the minimum");
+
+  ds.update(ds._rowIdByPosition[0], { one : 22});
+
+  equals(custom.val(), 2, "custum product calculated the updated minimum");
+
+});

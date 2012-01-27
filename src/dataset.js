@@ -44,7 +44,7 @@ Version 0.0.1.2
   */
 
   DS.types = {
-    string : { 
+    string : {
       coerce : function(v) {
         return v.toString();
       },
@@ -52,8 +52,8 @@ Version 0.0.1.2
         return DS.typeOf(v) === 'string';
       }
     },
-    
-    boolean : { 
+
+    boolean : {
       coerce : function(v) {
         return !!(v);
       },
@@ -62,7 +62,7 @@ Version 0.0.1.2
       }
     },
 
-    number : { 
+    number : {  
       coerce : function(v) {
         v = Number(v);
         return _.isNaN(v) ? null : v;

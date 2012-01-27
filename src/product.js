@@ -10,8 +10,6 @@
       // save column name. This will be necessary later
       // when we decide whether we need to update the column
       // when sync is called.
-      this._column = options.column.name;
-
       this.func = options.func;
 
       this.value = this.func({ silent : true });
@@ -29,9 +27,7 @@
     * the value based on the column its closed on.
     */
     sync : function(event) {
-      if (_.indexOf(event.affectedColumns(), this._column) > -1) {
-        this.value = this.func();
-      }
+      this.value = this.func();
     },
 
     /**
@@ -59,18 +55,15 @@
     * @param {column} column on which the value is calculated 
     */    
     max : function(column) {
-      
-      var prod = this.calculated(column, function(column) {
+      return this.calculated(function() {
         var max = -Infinity;
-        _.each(column.data, function(value) {
+        _.each(this._column(column).data, function(value) {
           if (value > max) {
             max = value;
           }
         });
         return max;
       });
-
-      return prod;
     },
 
     /**
@@ -100,26 +93,25 @@
     * @param {producer} function which derives the product after
     * being passed each row. TODO: producer signature
     */    
-    calculated : function(column, producer) {
+    calculated : function(producer) {
+      var _self = this;
 
-      column = this._column(column);
-      
       var prod = new Product({
-        column : column,
-        func   : function(options) {
-
+        func : function(options) {
           options = options || {};
           
           // build a diff delta. We're using the column name
           // so that any subscribers know whether they need to 
           // update if they are sharing a column.
-          var delta = this._buildDelta(this.value, producer(column));
-          var event = this._buildEvent("change", delta);
+          var delta = this._buildDelta( this.value, producer.apply(_self) );
+          var event = this._buildEvent( "change", delta );
 
           // trigger any subscribers this might have if the values are diff
-          if (!options.silent && 
-              delta.old !== delta.changed) {
-            this.trigger("change", event);  
+          if (!_.isUndefined(delta.old) 
+              && !options.silent 
+              && delta.old !== delta.changed) {
+            console.log(delta);
+            this.trigger("change", event);
           }
 
           // return updated value
