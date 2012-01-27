@@ -26,11 +26,22 @@
       var d = {};
 
       this._buildColumns(d);
+      this._setTypes(d, this.options);
       this._detectTypes(d);
       this._cacheColumns(d);
       this._cacheRows(d);
 
       return d;
+    },
+
+    _setTypes : function(d, options) {
+      options.columnTypes = options.columnTypes || {};
+      _.each(d._columns, function(column) {
+        var type = options.columnTypes[column.name];
+        if (type) {
+          column.type = type;
+        }
+      });
     },
 
     _addValue : function(d, columnName, value) {
@@ -166,7 +177,7 @@
    * TODO: add verify flag to disable auto id assignment for example.
    */
   DS.Parsers.Strict = function(data, options) {
-    options = options || {};
+    this.options = options || {};
     this._data = this.parse(data);
   };
 
@@ -203,7 +214,7 @@
    * @params {Object} obj = [{},{}...]
    */
   DS.Parsers.Obj = function(data, options) {
-    options = options || {};
+    this.options = options || {};
     this._data = data;
   };
 
@@ -251,6 +262,7 @@
       // column caching happens inside of build columns this time
       // so that rows know which column their values belong to
       // before we build the data.
+      this._setTypes(d, this.options);
       this._detectTypes(d);
       this._cacheRows(d);
       return d;
@@ -267,9 +279,9 @@
    * }
    */
   DS.Parsers.Delimited = function(data, options) {
-    options = options || {};
+    this.options = options || {};
 
-    this.delimiter = options.delimiter || ",";
+    this.delimiter = this.options.delimiter || ",";
     this._data = data;
 
     this.__delimiterPatterns = new RegExp(
@@ -418,7 +430,7 @@
   * @param {object} options - Optional options argument.
   */
   DS.Parsers.GoogleSpreadsheet = function(data, options) {
-    options = options || {};
+    this.options = options || {};
     this._data = data;
   };
 

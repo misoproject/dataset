@@ -68,7 +68,7 @@ test("Basic Strict Import", 53, function() {
 test("Basic Strict Import through Dataset API", 54, function() {
   var ds = new DS.Dataset({ 
     data : DS.alphabet_strict, 
-    strict: true 
+    strict: true
   });
 
   verifyImport(DS.alphabet_strict, ds);
@@ -311,4 +311,17 @@ test("Google spreadsheet dataset test", function() {
       start();
     }
   });
+});
+
+test("Manual column type override", function() {
+  var ds = new DS.Dataset({
+    data : DS.alphabet_strict,
+    strict: true,
+    columnTypes : {
+      name : 'float'
+    }
+  });
+
+  ok(ds._columns[2].name === "name", "character is 2 column");
+  ok(ds._columns[2].type === "float", "character is 2 column");
 });

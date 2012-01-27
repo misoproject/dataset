@@ -5,7 +5,7 @@ USE OUR CODES
 Version 0.0.1.2
 */
 
-(function(global, _) {
+(function(global, _, moment) {
 
   var DS = global.DS;
 
@@ -42,6 +42,47 @@ Version 0.0.1.2
   *     before, equal or after row2. 
   }
   */
+
+  DS.types = {
+    string : { 
+      coerce : function(v) {
+        return v.toString();
+      },
+      test : function(v) {
+        return DS.typeOf(v) === 'string';
+      }
+    },
+    
+    boolean : { 
+      coerce : function(v) {
+        return !!(v);
+      },
+      test : function(v) {
+        return DS.typeOf(v) === 'boolean';
+      }
+    },
+
+    number : { 
+      coerce : function(v) {
+        v = Number(v);
+        return _.isNaN(v) ? null : v;
+      },
+      test : function(v) {
+        return DS.typeOf(v) === 'number';
+      }
+    },
+
+    time : { 
+      coerce : function(v) {
+        return moment(v);
+      },
+      test : function(v) {
+        return DS.typeOf(v) === 'number';
+      }
+    }
+
+  };
+
   DS.Dataset = function(options) {
     options = options || (options = {});
     this._initialize(options);
@@ -208,5 +249,5 @@ Version 0.0.1.2
     }
 
   });
-}(this, _));
+}(this, _, moment));
 
