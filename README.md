@@ -53,7 +53,7 @@ Lenses are essentially named view definitions wrapped in functions for reuse tha
 # Deriving data from a dataset
 
 ## Derivations
-/Derivations are essentially new datsets based on and linked to an existing dataset. Derivations can be used to create different forms of data that will be automatically updated when the parent dataset is updated. It is simple to define additional types of derivations. The function wil be passed the value passed in derive.
+Derivations are essentially new datsets based on and linked to an existing dataset. Derivations can be used to create different forms of data that will be automatically updated when the parent dataset is updated. It is simple to define additional types of derivations. The function wil be passed the value passed in derive.
 
 ## Products
 Products are operations on views or datasets that produce a single value. Like views products are updated when the parent dataset or view is updated.
@@ -75,6 +75,7 @@ maximum.bind('change', function(delta) {
 There are some simple products such as min/max/mean built into dataset but it is also trivial to create custom products for specific situations with a minimum of boilerplate as both one-offs and reuseable types;
 
 One-off product
+
 ```javascript
 var ds = new Miso.DS({ ... });
 
@@ -89,6 +90,7 @@ var variance = ds.calculated(function() {
 ```
 
 reuseable product
+
 ```javascript
 var ds = new Miso.DS({ ... });
 ds.variance = function(column) {
