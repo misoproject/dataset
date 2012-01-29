@@ -6,6 +6,7 @@ Dataset is a javascript library for the manipulation and management of datasets 
 
 # Why use Dataset
 As it's designed purely for working with datasets. DS addresses the precise painpoints that make working with datasets challenging. Dataset makes it trivial to:
+
 * load datasets from any format
 * create subselections of data
 * create 'derivative' data based on original values 
