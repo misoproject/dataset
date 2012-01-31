@@ -156,44 +156,21 @@
     return new DS.Event(delta);
   };
 
-  (function() {
 
-    var classType = {},
-      types = "Boolean Number String Function Array Date RegExp Object".split(" "),
-      length = types.length,
-      i = 0,
-      patterns = {
-        "number" : /^[\-]?[0-9]+([\.][0-9]+)?$/,
-        "boolean" : /^(true|false)$/
-      };
-    for ( ; i < length; i++ ) {
-      classType[ "[object " + types[ i ] + "]" ] = types[ i ].toLowerCase();
-    }
-    
-    /**
-    * @public
-    * Returns the type of an input object.
-    * Stolen from jQuery via @rwaldron (http://pastie.org/2849690)
-    * @param {?} obj - the object being detected.
-    */
-    DS.typeOf = function(obj) {
-      
-      var type = obj == null ?
-        String( obj ) :
-        classType[ {}.toString.call(obj) ] || "object";
+  DS.typeOf = function( value ) {
+    var types = _.keys(DS.types),
+        chosenType;
 
-      // if the resulting object is a string, test to see if it's
-      // a string of numbers or a boolean. We want those cast
-      // properly.
-      if (type === "string") {
-        _.each(patterns, function(regex, name) {
-          if (regex.test(obj)) {
-            type = name;
-          }
-        });
-      }
-      return type;
-    };
-  })();
+    //move string to the end
+    types.push(types.splice(_.indexOf(types, 'string'), 1)[0]);
+
+    chosenType = _.find(types, function(type) {
+      return DS.types[type].test( value );
+    });
+
+    chosenType = _.isUndefined(chosenType) ? 'string' : chosenType;
+
+    return chosenType;
+  }
 
 }(this, _));

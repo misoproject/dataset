@@ -28,13 +28,8 @@ Version 0.0.1.2
   *   columnNames : {
   *     oldName : newName
   *   },
-  *   subsets : {
-  *     name : function(yourParamsHere) {
-  *       return a.filtering;
-  *     }
-  *   },
   *   google_spreadsheet: {
-  *     key : "", worksheet(optional) : ""     
+  *     key : "", worksheet(optional) : ""
   *   },
   *   sorted : true (optional) - If the dataset is already sorted, pass true
   *     so that we don't trigger a sort otherwise.
@@ -46,38 +41,56 @@ Version 0.0.1.2
   DS.types = {
     string : {
       coerce : function(v) {
-        return v.toString();
+        return _.isNull(v) ? null : v.toString();
       },
       test : function(v) {
-        return DS.typeOf(v) === 'string';
+        return (typeof v === 'string');
       }
     },
 
     boolean : {
+      regexp : /^(true|false)$/,
       coerce : function(v) {
         return !!(v);
       },
       test : function(v) {
-        return DS.typeOf(v) === 'boolean';
+        if (typeof v === 'boolean' || this.regexp.test( v ) ) {
+          return true;
+        } else {
+          return false;
+        }
       }
     },
 
     number : {  
+      regexp : /^[\-]?[0-9]+([\.][0-9]+)?$/,
       coerce : function(v) {
+        if (_.isNull(v)) {
+          return null;
+        }
         v = Number(v);
         return _.isNaN(v) ? null : v;
       },
       test : function(v) {
-        return DS.typeOf(v) === 'number';
+        if (typeof v === 'number' || this.regexp.test( v ) ) {
+          return true;
+        } else {
+          return false;
+        }
       }
     },
 
-    time : { 
+    time : {
+      regexp : /^\d+\/\d+\/\d+$/,
       coerce : function(v) {
         return moment(v);
       },
       test : function(v) {
-        return DS.typeOf(v) === 'number';
+        if (typeof v === 'number' || this.regexp.test( v ) ) {
+          return true;
+        } else {
+          return false;
+        }
       }
     }
 

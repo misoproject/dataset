@@ -49,7 +49,7 @@ function checkColumnTypes(strictData) {
   ok(strictData._columns[3].name === "is_modern", "is_modern is 4 column");
   ok(strictData._columns[3].type === "boolean", "is_modern is boolean type");
   ok(strictData._columns[4].name === "numeric_value", "numeric_value is 5 column");
-  ok(strictData._columns[4].type === "number", "numeric_value is boolean type");
+  ok(strictData._columns[4].type === "number", "numeric_value is numeric type");
 }
 
 module("Strict Importer")
@@ -73,6 +73,41 @@ test("Basic Strict Import through Dataset API", 54, function() {
 
   verifyImport(DS.alphabet_strict, ds);
   equals(typeof ds.columns, "function", "columns is the function, not the columns obj");
+});
+
+module("Coercion and type setting");
+test("Manual column type override", function() {
+  var ds = new DS.Dataset({
+    data : DS.alphabet_strict,
+    strict: true,
+    columnTypes : {
+      name : 'number'
+    }
+  });
+
+  ok(ds._columns[2].name === "name", "character is 2 column");
+  ok(ds._columns[2].type === "number", "character is 2 column");
+  ok(_.uniq(ds._columns[2].data)[0] === null, "character has been coerced to null");
+});
+
+test("Manual column type override", function() {
+  var data = _.clone(DS.alphabet_strict);
+  data.columns[1].data = [];
+  _(data.columns[0].data.length).times(function() {
+    data.columns[1].data.push( moment() );
+  });
+
+  var ds = new DS.Dataset({
+    data : data,
+    strict: true,
+    columnTypes : {
+      character : 'time'
+    }
+  });
+
+  ok(ds._columns[1].type === "time", "name column has a type of time");
+  //nasty check that it's a moment bject
+  ok(ds._columns[1].data[0].version === moment().version, "is a moment object");
 });
 
 module("Obj Importer");
@@ -257,7 +292,9 @@ function verifyGoogleSpreadsheet(d, obj) {
 
   // ignoring id column, since that changes.
   for(var i = 1; i < d.length; i++) {
-    ok(_.isEqual(d._columns[i].data, obj._columns[i].data), d._columns[i].data + "<br>" + window.DS.google_spreadsheet_strict._columns[i].data);
+    if (!_.isEqual(d._columns[i].data, obj._columns[i].data)) {
+    };
+    ok(_.isEqual(d._columns[i].data, obj._columns[i].data), "Expected: "+d._columns[i].data + " Got: " + window.DS.google_spreadsheet_strict._columns[i].data);
   }
 }
 
@@ -277,12 +314,11 @@ test("Google spreadsheet parse test", function() {
 });
 
 test("Google spreadsheet import test", function() {
-  var key = "0Asnl0xYK7V16dFpFVmZUUy1taXdFbUJGdGtVdFBXbFE";
-  var worksheet = "1";
+
   stop();
   var importer = new DS.Importers.GoogleSpreadsheet({
-    key : key,
-    worksheet : worksheet
+    key : "0Asnl0xYK7V16dFpFVmZUUy1taXdFbUJGdGtVdFBXbFE",
+    worksheet : "1"
   });
 
   importer.fetch({
@@ -313,15 +349,4 @@ test("Google spreadsheet dataset test", function() {
   });
 });
 
-test("Manual column type override", function() {
-  var ds = new DS.Dataset({
-    data : DS.alphabet_strict,
-    strict: true,
-    columnTypes : {
-      name : 'float'
-    }
-  });
 
-  ok(ds._columns[2].name === "name", "character is 2 column");
-  ok(ds._columns[2].type === "float", "character is 2 column");
-});
