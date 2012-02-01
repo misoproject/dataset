@@ -67,6 +67,24 @@
     },
 
     /**
+    * Returns the value of the highest value across all columns
+    */ 
+    totalMax : function() {
+      return this.calculated(function() {
+        var max = -Infinity;
+        //loop over columns, skip the first, it's _id
+        for (var i=1; i < this._columns.length; i++) {
+          for (var j=0; j <= this._columns[i].data.length; j++) {
+            if (this._columns[i].data[j] > max) {
+              max = this._columns[i].data[j];
+            };
+          }
+        };
+        return max;
+      });
+    },
+
+    /**
     * return a Product with the value of the minimum 
     * value of the column
     * @param {column} column on which the value is calculated 

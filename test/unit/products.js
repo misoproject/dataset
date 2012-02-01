@@ -147,3 +147,8 @@ test("Defining a new product a dataset", function() {
   equals(custom.val(), 2, "custum product calculated the updated minimum");
 
 });
+
+test("Totalmax Product", function() {
+  var ds = baseSample();
+  equals(ds.totalMax().val(), 9, "Highest value is 9");
+});

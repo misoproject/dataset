@@ -37,7 +37,6 @@
 
     _coerceTypes : function(d) {
       _.each(d._columns, function(column, index) {
-        console.log('coercing', column);
         d._columns[index].data = _.map(column.data, function(datum) {
           return DS.types[column.type].coerce(datum);
         });
