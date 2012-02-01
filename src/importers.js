@@ -208,7 +208,7 @@
         }
 
         return d;
-      },
+      }
 
     });
 
@@ -419,7 +419,7 @@
             this._addIdColumn(d, d._columns[0].data.length);
 
             return d;
-          },
+          }
 
         });
 

@@ -171,6 +171,6 @@
     chosenType = _.isUndefined(chosenType) ? 'string' : chosenType;
 
     return chosenType;
-  }
+  };
 
 }(this, _));

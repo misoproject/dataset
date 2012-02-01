@@ -3,12 +3,15 @@
 		"../dist/ds": {
 			"src": [
 				"../src/lib/underscore.js",
+				"../src/lib/moment.js",
 				"../src/core.js",
 				"../src/view.js",
 				"../src/dataset.js",
 				"../src/product.js",
 				"../src/derived.js",
-				"../src/importers.js"
+				"../src/importers.js",
+				"../src/importers/google_spreadsheet.js",
+				"../src/importers/delimited.js"
 			],
 			"prehint": true,
 			"posthint": false,

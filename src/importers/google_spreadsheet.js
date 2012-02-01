@@ -2,6 +2,10 @@
 // This is utilizing the format that can be obtained using this:
 // http://code.google.com/apis/gdata/samples/spreadsheet_sample.html
 
+(function(global, _) {
+
+  var DS = (global.DS || (global.DS = {}));
+
 /**
 * @constructor
 * Google Spreadsheet Parser. 
@@ -121,3 +125,4 @@ _.extend(
   DS.Importers.GoogleSpreadsheet.prototype, 
 DS.Importers.Remote.prototype);
 
+}(this, _));

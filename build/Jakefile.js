@@ -52,7 +52,7 @@ var // Program References
 				curly: true,
 				browser: true,
 				boss: true,
-				predef: [ "_" ],
+				predef: [ "_", "moment" ],
 				loopfunc: true
 				// onevar: true,
 				// "eqnull": true,
@@ -66,7 +66,7 @@ var // Program References
 			// Uglify Optional Settings
 			"uglify": {
 				"mangle": {
-					"except": [ "_", "$" ]
+					"except": [ "_", "$", "moment" ]
 				},
 				"squeeze": {},
 				"codegen": {}

@@ -77,9 +77,9 @@
           for (var j=0; j <= this._columns[i].data.length; j++) {
             if (this._columns[i].data[j] > max) {
               max = this._columns[i].data[j];
-            };
+            }
           }
-        };
+        }
         return max;
       });
     },
@@ -125,10 +125,7 @@
           var event = this._buildEvent( "change", delta );
 
           // trigger any subscribers this might have if the values are diff
-          if (!_.isUndefined(delta.old) 
-              && !options.silent 
-              && delta.old !== delta.changed) {
-            console.log(delta);
+          if (!_.isUndefined(delta.old) && !options.silent && delta.old !== delta.changed) {
             this.trigger("change", event);
           }
 
