@@ -52,31 +52,23 @@
     /**
     * return a Product with the value of the maximum 
     * value of the column
-    * @param {column} column on which the value is calculated 
+    * @param {column/columns} column or array of columns on which the value is calculated 
     */    
-    max : function(column) {
-      return this.calculated(function() {
-        var max = -Infinity;
-        _.each(this._column(column).data, function(value) {
-          if (value > max) {
-            max = value;
-          }
+    max : function(columns) {
+      if ( _.isUndefined(columns) ) {
+        columns = _.map(this._columns, function(column) {
+          return column.name;
         });
-        return max;
-      });
-    },
-
-    /**
-    * Returns the value of the highest value across all columns
-    */ 
-    totalMax : function() {
+      }
+      columns = _.isArray(columns) ? columns : [columns];
       return this.calculated(function() {
         var max = -Infinity;
-        //loop over columns, skip the first, it's _id
-        for (var i=1; i < this._columns.length; i++) {
-          for (var j=0; j <= this._columns[i].data.length; j++) {
-            if (this._columns[i].data[j] > max) {
-              max = this._columns[i].data[j];
+        for (var i= 1; i < this._columns.length; i++) {
+          if (_.indexOf(columns, this._columns[i].name) !== -1) {
+            for (var j= 0; j < this._columns[i].data.length; j++) {
+              if (this._columns[i].data[j] > max) {
+                max = this._columns[i].data[j];
+              }
             }
           }
         }
@@ -89,7 +81,27 @@
     * value of the column
     * @param {column} column on which the value is calculated 
     */    
-    min : function(column) {},
+    min : function(columns) {
+      if ( _.isUndefined(columns) ) {
+        columns = _.map(this._columns, function(column) {
+          return column.name;
+        });
+      }
+      columns = _.isArray(columns) ? columns : [columns];
+      return this.calculated(function() {
+        var min = Infinity;
+        for (var i= 1; i < this._columns.length; i++) {
+          if (_.indexOf(columns, this._columns[i].name) !== -1) {
+            for (var j= 0; j < this._columns[i].data.length; j++) {
+              if (this._columns[i].data[j] < min) {
+                min = this._columns[i].data[j];
+              }
+            }
+          }
+        }
+        return min;
+      });
+    },
 
     /**
     * return a Product with the value of the average

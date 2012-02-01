@@ -20,11 +20,39 @@ test("Basic Max Product", function() {
 
   // check each column
   _.each(ds._columns, function(column) {
+    if (column.name === '_id') { return }
     var max = ds.max(column.name);
     ok(max.val() === Math.max.apply(null, column.data), "Max is correct");  
   });
+
+  //empty
+  equals(ds.max().val(), 9);
+  var names = _.map(ds._columns, function(column) {
+    return column.name
+  });
+  equals(ds.max(names).val(), 9);
+
 });
 
+test("Basic Min Product", function() {
+
+  var ds = baseSample();
+
+  // check each column
+  _.each(ds._columns, function(column) {
+    if (column.name === '_id') { return }
+    var min = ds.min(column.name);
+    ok(min.val() === Math.min.apply(null, column.data), "Min is correct");  
+  });
+
+  //empty
+  equals(ds.min().val(), 1);
+  var names = _.map(ds._columns, function(column) {
+    return column.name
+  });
+  equals(ds.min(names).val(), 1);
+
+});
 
 module("Products :: Sync");
 
@@ -146,9 +174,4 @@ test("Defining a new product a dataset", function() {
 
   equals(custom.val(), 2, "custum product calculated the updated minimum");
 
-});
-
-test("Totalmax Product", function() {
-  var ds = baseSample();
-  equals(ds.totalMax().val(), 9, "Highest value is 9");
 });
