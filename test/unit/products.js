@@ -12,6 +12,17 @@ function baseSample() {
 
 module("Products");
 
+module("Products :: Sum");
+test("Basic Sum Product", function() {
+  var ds = baseSample();
+  
+  _.each(ds._columns, function(column){
+    if (column.name === '_id') { return }
+    var sum = ds.sum(column.name);
+    ok(sum.val() === _.sum(column.data), "sum is correct for column "+ column.name);
+  });
+});
+
 module("Products :: Max");
 
 test("Basic Max Product", function() {
@@ -27,10 +38,11 @@ test("Basic Max Product", function() {
 
   //empty
   equals(ds.max().val(), 9);
-  var names = _.map(ds._columns, function(column) {
-    return column.name
-  });
-  equals(ds.max(names).val(), 9);
+  var names = _.compact(_.map(ds._columns, function(column) {
+    if (column.name !== "_id") return column.name;
+  }));
+
+  ok(ds.max(names).val() === 9);
 
 });
 
@@ -47,9 +59,9 @@ test("Basic Min Product", function() {
 
   //empty
   equals(ds.min().val(), 1);
-  var names = _.map(ds._columns, function(column) {
-    return column.name
-  });
+  var names = _.compact(_.map(ds._columns, function(column) {
+    if (column.name !== "_id") return column.name;
+  }));
   equals(ds.min(names).val(), 1);
 
 });

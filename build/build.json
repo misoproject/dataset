@@ -1,30 +1,31 @@
 {
-	"files": {
-		"../dist/ds": {
-			"src": [
-				"../src/lib/underscore.js",
-				"../src/lib/moment.js",
-				"../src/core.js",
-				"../src/view.js",
-				"../src/dataset.js",
-				"../src/product.js",
-				"../src/derived.js",
-				"../src/importers.js",
-				"../src/importers/google_spreadsheet.js",
-				"../src/importers/delimited.js"
-			],
-			"prehint": true,
-			"posthint": false,
-			"debug": true,
+  "files": {
+    "../dist/ds": {
+      "src": [
+        "../src/lib/underscore.js",
+        "../src/lib/underscore.math.js",
+        "../src/lib/moment.js",
+        "../src/core.js",
+        "../src/view.js",
+        "../src/dataset.js",
+        "../src/product.js",
+        "../src/derived.js",
+        "../src/importers.js",
+        "../src/importers/google_spreadsheet.js",
+        "../src/importers/delimited.js"
+      ],
+      "prehint": true,
+      "posthint": false,
+      "debug": true,
 
-			"meta": {
-				"label": "Dataset",
-				"author": "Alex Graul, Irene Ros",
-				"version": "0.0.1",
-				"homeurl": "",
-				"license": [],
-				"copyright": "Dataset (c) Alex Graul, Irene Ros; Underscore.js 1.2.2 (c) 2011 Jeremy Ashkenas, DocumentCloud Inc.;"
-			}
-		}
-	}
+      "meta": {
+        "label": "Dataset",
+        "author": "Alex Graul, Irene Ros",
+        "version": "0.0.1",
+        "homeurl": "",
+        "license": [],
+        "copyright": "Dataset (c) Alex Graul, Irene Ros; Underscore.js 1.2.2 (c) 2011 Jeremy Ashkenas, DocumentCloud Inc.;"
+      }
+    }
+  }
 }

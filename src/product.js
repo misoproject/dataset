@@ -49,6 +49,25 @@
 
   _.extend(DS.Dataset.prototype, {
 
+    sum : function(columns) {
+      if (_.isUndefined(columns)) {
+        columns = _.map(this._columns, function(column) {
+          return column.name;
+        });
+      }
+      columns = _.isArray(columns) ? columns : [columns];
+      return this.calculated(function(columns){
+        return function() {
+          var sum = 0;
+          for (var i= 0; i < columns.length; i++) {
+            var columnObject = this._columns[this._columnPositionByName[columns[i]]];
+            sum += _.sum(columnObject.data);
+          }
+          return sum;
+        };
+      }(columns));
+    },
+    
     /**
     * return a Product with the value of the maximum 
     * value of the column
@@ -61,19 +80,20 @@
         });
       }
       columns = _.isArray(columns) ? columns : [columns];
-      return this.calculated(function() {
-        var max = -Infinity;
-        for (var i= 1; i < this._columns.length; i++) {
-          if (_.indexOf(columns, this._columns[i].name) !== -1) {
-            for (var j= 0; j < this._columns[i].data.length; j++) {
-              if (this._columns[i].data[j] > max) {
-                max = this._columns[i].data[j];
+      return this.calculated(function(columns) {
+        return function() {
+          var max = -Infinity;
+          for (var i= 0; i < columns.length; i++) {
+            var columnObject = this._columns[this._columnPositionByName[columns[i]]];
+            for (var j= 0; j < columnObject.data.length; j++) {
+              if (columnObject.data[j] > max) {
+                max = columnObject.data[j];
               }
             }
           }
-        }
-        return max;
-      });
+          return max;
+        };
+      }(columns));
     },
 
     /**
@@ -88,19 +108,20 @@
         });
       }
       columns = _.isArray(columns) ? columns : [columns];
-      return this.calculated(function() {
-        var min = Infinity;
-        for (var i= 1; i < this._columns.length; i++) {
-          if (_.indexOf(columns, this._columns[i].name) !== -1) {
-            for (var j= 0; j < this._columns[i].data.length; j++) {
-              if (this._columns[i].data[j] < min) {
-                min = this._columns[i].data[j];
+      return this.calculated(function(columns) {
+        return function() {
+          var min = Infinity;
+          for (var i= 0; i < columns.length; i++) {
+            var columnObject = this._columns[this._columnPositionByName[columns[i]]];
+            for (var j= 0; j < columnObject.data.length; j++) {
+              if (columnObject.data[j] < min) {
+                min = columnObject.data[j];
               }
             }
           }
-        }
-        return min;
-      });
+          return min;
+        };
+      }(columns));
     },
 
     /**
