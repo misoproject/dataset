@@ -28,12 +28,12 @@ module("Products :: Max");
 test("Basic Max Product", function() {
 
   var ds = baseSample();
-
+  
   // check each column
-  _.each(ds._columns, function(column) {
-    if (column.name === '_id') { return }
-    var max = ds.max(column.name);
-    ok(max.val() === Math.max.apply(null, column.data), "Max is correct");  
+  ds.eachColumn(function(columnName) {
+    var max     = ds.max(columnName),
+        column  = ds._columns[ds._columnPositionByName[columnName]];
+    ok(max.val() === Math.max.apply(null, column.data), "Max is correct for col " + columnName);  
   });
 
   //empty
@@ -42,7 +42,7 @@ test("Basic Max Product", function() {
     if (column.name !== "_id") return column.name;
   }));
 
-  ok(ds.max(names).val() === 9);
+  ok(ds.max(ds.columnNames()).val() === 9);
 
 });
 

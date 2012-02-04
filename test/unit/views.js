@@ -79,6 +79,10 @@ module("Views");
     });
   });
 
+  test("get all column names minus the id col", function() {
+    var ds = baseSample();
+    ok(_.isEqual(ds.columnNames(), ["one", "two", "three"]), "All column names fetched");  
+  });
 
 module("Views :: Rows Selection");
 

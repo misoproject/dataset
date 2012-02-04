@@ -51,12 +51,8 @@
 
     sum : function(columns) {
       if (_.isUndefined(columns)) {
-        columns = _.map(this._columns, function(column) {
-          if (column.type === DS.types.number.name) {
-            return column.name;  
-          }
-        });
-      } 
+        columns = this.columnNames();
+      }
 
       columns = _.isArray(columns) ? columns : [columns];
       
@@ -91,14 +87,8 @@
     * @param {column/columns} column or array of columns on which the value is calculated 
     */    
     max : function(columns) {
-      if ( _.isUndefined(columns) ) {
-        columns = _.map(this._columns, function(column) {
-          if (column.type === DS.types.number.name || 
-              column.type === DS.types.time.name) {
-            return column.name;      
-          }
-          
-        });
+      if (_.isUndefined(columns)) {
+        columns = this.columnNames();
       }
 
       columns = _.isArray(columns) ? columns : [columns];
@@ -138,10 +128,8 @@
     * @param {column} column on which the value is calculated 
     */    
     min : function(columns) {
-      if ( _.isUndefined(columns) ) {
-        columns = _.map(this._columns, function(column) {
-          return column.name;
-        });
+      if (_.isUndefined(columns)) {
+        columns = this.columnNames();
       }
       columns = _.isArray(columns) ? columns : [columns];
 
