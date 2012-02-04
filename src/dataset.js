@@ -45,6 +45,11 @@ Version 0.0.1.2
       },
       test : function(v) {
         return (typeof v === 'string');
+      },
+      compare : function(s1, s2) {
+        if (s1 < s2) return -1;
+        if (s1 > s2) return 1;
+        return 0;
       }
     },
 
@@ -59,6 +64,9 @@ Version 0.0.1.2
         } else {
           return false;
         }
+      },
+      compare : function() {
+        // what should this really look like?
       }
     },
 
@@ -77,6 +85,11 @@ Version 0.0.1.2
         } else {
           return false;
         }
+      },
+      compare : function(n1, n2) {
+        if (n1 < n2) return -1;
+        if (n1 > n2) return 1;
+        return 0;
       }
     },
 
@@ -91,6 +104,14 @@ Version 0.0.1.2
         } else {
           return false;
         }
+      },
+      compare : function(d1, d2) {
+        var d1v = d1.valueOf(),
+            d2v = d2.valueOf();
+
+        if (d1v < d2v) return -1;
+        if (d1v > d2v) return 1;
+        return 0;
       }
     }
 
