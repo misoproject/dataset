@@ -217,8 +217,10 @@
     time : {
       name : "time",
       regexp : /^\d+\/\d+\/\d+$/,
-      coerce : function(v) {
-        return moment(v);
+      defaultFormat : "YYYY/MM/DD",
+      coerce : function(v, options) {
+        options = options || {};
+        return moment(v, options.format || this.defaultFormat);
       },
       test : function(v) {
         if (typeof v === 'number' || this.regexp.test( v ) ) {
