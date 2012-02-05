@@ -110,6 +110,24 @@ test("Manual column type override", function() {
   ok(ds._columns[1].data[0].version === moment().version, "is a moment object");
 });
 
+test("Manual column type override with extra properties", function() {
+
+  var ds = new DS.Dataset({
+    data : [
+      { 'character' : '12/31 2012' },
+      { 'character' : '01/31 2011' }
+    ],
+    columnTypes : {
+      character : { type : 'time', format : 'MM/DD YYYY' }
+    }
+  });
+
+  ok(ds._columns[1].type === "time", "character column has a type of time");
+  // verify format was properly coerced
+  equals(ds._columns[1].data[0].valueOf(), moment("12/31 2012", "MM/DD YYYY"));
+
+});
+
 module("Obj Importer");
 test("Convert object to dataset", 57, function() {
 

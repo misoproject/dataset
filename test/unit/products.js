@@ -23,6 +23,27 @@ test("Basic Sum Product", function() {
   });
 });
 
+test("Time Sum Should Fail", function() {
+  var ds = new DS.Dataset({
+    data : [
+      { "one" : 1, "t" : "2010/01/13" },
+      { "one" : 5, "t" : "2010/05/15" },
+      { "one" : 10, "t" : "2010/01/23" }
+    ],
+    columnTypes : {
+      "t" : "time"
+    }
+  });
+
+  equals(ds._columns[2].type, "time");
+  try {
+    ds.sum("t").val()
+  } catch(e) {
+    ok(true, "can't sum up time.");
+  }
+  
+});
+
 module("Products :: Max");
 
 test("Basic Max Product", function() {
@@ -46,6 +67,22 @@ test("Basic Max Product", function() {
 
 });
 
+test("Time Max Product", function() {
+  var ds = new DS.Dataset({
+    data : [
+      { "one" : 1, "t" : "2010/01/13" },
+      { "one" : 5, "t" : "2010/05/15" },
+      { "one" : 10, "t" : "2010/01/23" }
+    ],
+    columnTypes : {
+      "t" : "time"
+    }
+  });
+
+  equals(ds._columns[2].type, "time");
+  equals(ds.max("t").val(), ds._columns[2].data[1]);
+})
+
 test("Basic Min Product", function() {
 
   var ds = baseSample();
@@ -64,6 +101,22 @@ test("Basic Min Product", function() {
   }));
   equals(ds.min(names).val(), 1);
 
+});
+
+test("Time Min Product", function() {
+  var ds = new DS.Dataset({
+    data : [
+      { "one" : 1, "t" : "2010/01/13" },
+      { "one" : 5, "t" : "2010/05/15" },
+      { "one" : 10, "t" : "2010/01/23" }
+    ],
+    columnTypes : {
+      "t" : "time"
+    }
+  });
+
+  equals(ds._columns[2].type, "time");
+  equals(ds.min("t").val(), ds._columns[2].data[0]);
 });
 
 module("Products :: Sync");

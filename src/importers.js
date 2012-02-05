@@ -38,7 +38,7 @@
     _coerceTypes : function(d) {
       _.each(d._columns, function(column, index) {
         d._columns[index].data = _.map(column.data, function(datum) {
-          return DS.types[column.type].coerce(datum);
+          return DS.types[column.type].coerce(datum, column.typeOptions);
         });
       });
       return d;
@@ -49,8 +49,20 @@
       _.each(d._columns, function(column) {
         var type = options.columnTypes[column.name];
         if (type) {
-          column.type = type;
-        }
+
+          // if the type is specified as an object of a form such as:
+          // { type : time, format : 'YYYY/MM/DDD'}
+          // then take the type property as the type and extend the 
+          // column to add a property called
+          // typeOptions with the rest of the attributes.
+          if (_.isObject(type)) {
+            column.type = type.type;
+            delete type.type;
+            column.typeOptions = type;
+          } else {
+            column.type = type;
+          }
+        } 
       });
     },
 
