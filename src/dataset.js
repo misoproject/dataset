@@ -28,6 +28,9 @@ Version 0.0.1.2
   *   columnNames : {
   *     oldName : newName
   *   },
+  *   columnTypes : {
+  *     name : typeName || { type : name, ...additionalProperties }
+  *   }
   *   google_spreadsheet: {
   *     key : "", worksheet(optional) : ""
   *   },
