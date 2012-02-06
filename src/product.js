@@ -108,16 +108,23 @@
 
       return this.calculated(function(columns) {
         return function() {
-          var max = -Infinity;
+          var max = -Infinity, columnObject;
           for (var i= 0; i < columns.length; i++) {
-            var columnObject = this._columns[this._columnPositionByName[columns[i]]];
+            columnObject = this._columns[this._columnPositionByName[columns[i]]];
+
             for (var j= 0; j < columnObject.data.length; j++) {
               if (DS.types[columnObject.type].compare(columnObject.data[j], max) > 0) {
-                max = columnObject.data[j];
+                max = columnObject.raw(j);
               }
             }
           }
-          return max;
+          
+          // save types and type options to later coerce
+          var type = columnObject.type;
+          var typeOptions = columnObject.typeOptions;
+
+          // return the coerced value for column type.
+          return DS.types[type].coerce(max, typeOptions);
         };
       }(columns));
     },
@@ -149,16 +156,21 @@
 
       return this.calculated(function(columns) {
         return function() {
-          var min = Infinity;
+          var min = Infinity, columnObject;
           for (var i= 0; i < columns.length; i++) {
-            var columnObject = this._columns[this._columnPositionByName[columns[i]]];
+            columnObject = this._columns[this._columnPositionByName[columns[i]]];
             for (var j= 0; j < columnObject.data.length; j++) {
               if (DS.types[columnObject.type].compare(columnObject.data[j], min) < 0) {
-                min = columnObject.data[j];
+                min = columnObject.raw(j);
               }
             }
           }
-          return min;
+           // save types and type options to later coerce
+          var type = columnObject.type;
+          var typeOptions = columnObject.typeOptions;
+
+          // return the coerced value for column type.
+          return DS.types[type].coerce(min, typeOptions);
         };
       }(columns));
     },

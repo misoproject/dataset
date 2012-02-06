@@ -80,7 +80,7 @@ test("Time Max Product", function() {
   });
 
   equals(ds._columns[2].type, "time");
-  equals(ds.max("t").val(), ds._columns[2].data[1]);
+  equals(ds.max("t").val().valueOf(), ds._columns[2].data[1].valueOf());
 })
 
 test("Basic Min Product", function() {
@@ -116,7 +116,7 @@ test("Time Min Product", function() {
   });
 
   equals(ds._columns[2].type, "time");
-  equals(ds.min("t").val(), ds._columns[2].data[0]);
+  equals(ds.min("t").val().valueOf(), ds._columns[2].data[0].valueOf());
 });
 
 module("Products :: Sync");

@@ -169,6 +169,13 @@
         if (s1 < s2) return -1;
         if (s1 > s2) return 1;
         return 0;
+      },
+      // returns a raw value that can be used for computations
+      // should be numeric. In the case of a string, just return its index.
+      // TODO: not sure what this should really be... thinking about scales here
+      // for now, but we may want to return a hash or something instead...
+      raw : function(column, index) {
+        return index;
       }
     },
 
@@ -187,6 +194,9 @@
       },
       compare : function() {
         // what should this really look like?
+      },
+      raw : function(column, index) {
+        return column.data[index];
       }
     },
 
@@ -211,7 +221,11 @@
         if (n1 < n2) return -1;
         if (n1 > n2) return 1;
         return 0;
+      },
+      raw : function(column, index) {
+        return column.data[index];
       }
+
     },
 
     time : {
@@ -220,7 +234,15 @@
       defaultFormat : "YYYY/MM/DD",
       coerce : function(v, options) {
         options = options || {};
-        return moment(v, options.format || this.defaultFormat);
+        // if string, then parse as a time
+        if (_.isString(v)) {
+          return moment(v, options.format || this.defaultFormat);   
+        } else if (_.isNumber(v)) {
+          return moment(v);
+        } else {
+          return v;
+        }
+        
       },
       test : function(v) {
         if (typeof v === 'number' || this.regexp.test( v ) ) {
@@ -236,7 +258,10 @@
         if (d1v < d2v) return -1;
         if (d1v > d2v) return 1;
         return 0;
-      }
+      },
+      raw : function(column, index) {
+        return column.data[index].valueOf();
+      } 
     }
 
   };

@@ -36,8 +36,19 @@
     },
 
     _coerceTypes : function(d) {
+
+      // also save raw type function onto column for future computable
+      // value extraction
       _.each(d._columns, function(column, index) {
-        d._columns[index].data = _.map(column.data, function(datum) {
+
+        column.raw = function(column) {
+          return function(index) {
+            return DS.types[column.type].raw(column, index);
+          }
+        }(column);
+
+        // coerce data based on detected type.
+        column.data = _.map(column.data, function(datum) {
           return DS.types[column.type].coerce(datum, column.typeOptions);
         });
       });
