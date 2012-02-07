@@ -260,6 +260,16 @@
     },
 
     /**
+    * Returns the names of all columns, not including id column.
+    * @returns {array} columnNames
+    */
+    columnNames : function() {
+      var cols = _.pluck(this._columns, 'name');
+      cols.shift();
+      return cols;
+    },
+
+    /**
     * @public
     * Iterates over all rows in the dataset
     * @param {function} iterator - function that is passed each row
@@ -270,6 +280,19 @@
       for(var i = 0; i < this.length; i++) {
         iterator.apply(context || this, [this.rowByPosition(i), i]);
       }
+    },
+
+    /**
+    * Iterates over each column.
+    * @param {function} iterator - function that is passed each column name
+    * iterator(colName, index, dataset)
+    * @param {object} context - options object. Optional.
+    */
+    eachColumn : function(iterator, context) {
+      // skip id col
+      for(var i = 1; i < this.length; i++) {
+        iterator.apply(context || this, [this._columns[i].name, i]);
+      }  
     },
 
     /**

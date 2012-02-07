@@ -10,7 +10,7 @@ module("Extracting Data");
       },
       { 
         "name" : "two", 
-        "type" : "integer"
+        "type" : "integer",
         "data" : [10, 20] 
       }
     ]
@@ -225,3 +225,4 @@ module("Type Checking");
     ok(DS.typeOf(value2)=="string", "Value should be string");
   });
 })();
+

@@ -38,64 +38,6 @@ Version 0.0.1.2
   }
   */
 
-  DS.types = {
-    string : {
-      coerce : function(v) {
-        return _.isNull(v) ? null : v.toString();
-      },
-      test : function(v) {
-        return (typeof v === 'string');
-      }
-    },
-
-    boolean : {
-      regexp : /^(true|false)$/,
-      coerce : function(v) {
-        return !!(v);
-      },
-      test : function(v) {
-        if (typeof v === 'boolean' || this.regexp.test( v ) ) {
-          return true;
-        } else {
-          return false;
-        }
-      }
-    },
-
-    number : {  
-      regexp : /^[\-]?[0-9]+([\.][0-9]+)?$/,
-      coerce : function(v) {
-        if (_.isNull(v)) {
-          return null;
-        }
-        v = Number(v);
-        return _.isNaN(v) ? null : v;
-      },
-      test : function(v) {
-        if (typeof v === 'number' || this.regexp.test( v ) ) {
-          return true;
-        } else {
-          return false;
-        }
-      }
-    },
-
-    time : {
-      regexp : /^\d+\/\d+\/\d+$/,
-      coerce : function(v) {
-        return moment(v);
-      },
-      test : function(v) {
-        if (typeof v === 'number' || this.regexp.test( v ) ) {
-          return true;
-        } else {
-          return false;
-        }
-      }
-    }
-
-  };
-
   DS.Dataset = function(options) {
     options = options || (options = {});
     this._initialize(options);

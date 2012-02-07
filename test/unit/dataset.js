@@ -51,4 +51,39 @@ test("updating a row", function() {
 });
 
 
+module("Type Comparison");
+(function() {
+  
+  test("Compare string type", function() {
+    equals(DS.types.string.compare("A", "B"), -1);
+    equals(DS.types.string.compare("C", "B"),  1);
+    equals(DS.types.string.compare("bbb", "bbb"),  0);
+    equals(DS.types.string.compare("bbb", "bbbb"),  -1);
+    equals(DS.types.string.compare("bbb", "bbbb"),  -1);
+    equals(DS.types.string.compare("bbbb", "bbb"),  1);
+    equals(DS.types.string.compare("bbb", "bbb"),  0);
+  });
+
+  test("Compare number type", function() {
+    equals(DS.types.number.compare(10,20), -1);
+    equals(DS.types.number.compare(20,10),  1);
+    equals(DS.types.number.compare(10,10),  0);
+    equals(DS.types.number.compare(20,200),  -1);
+    equals(DS.types.number.compare(0, 0),  0);
+    equals(DS.types.number.compare(-30, -40),  1);
+    equals(DS.types.number.compare(-30, 0),  -1);
+  });
+
+  test("Compare date type", function() {
+    var m = moment("2011/05/01",  "YYYY/MM/DD"),
+        m2 = moment("2011/05/05", "YYYY/MM/DD"),
+        m3 = moment("2011/05/01", "YYYY/MM/DD");
+
+    equals(DS.types.time.compare(m,m2), -1);
+    equals(DS.types.time.compare(m2,m),  1);
+    equals(DS.types.time.compare(m3,m),  0);
+  });
+
+
+})();
 
