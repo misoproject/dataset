@@ -12,6 +12,19 @@
       // when sync is called.
       this.func = options.func;
 
+      // determine the product type (numeric, string, time etc.)
+      if (options.columns) {
+        var column = options.columns;
+        if (_.isArray(options.columns)) {
+          column = options.columns[0];
+        }
+        
+        this.valuetype = column.type;
+        this.raw = function() {
+          return column.rawValue(this.value);
+        };
+      }
+
       this.value = this.func({ silent : true });
       return this;
     };
@@ -39,6 +52,15 @@
       return this.value;
     },
 
+    /**
+    * @public
+    * return the type of product this is (numeric, time etc.)
+    * @returns {?} type.
+    */
+    type : function() {
+      return this.valuetype;
+    },
+
     _buildDelta : function(old, changed) {
       return {
         old : old,
@@ -55,7 +77,8 @@
       }
 
       columns = _.isArray(columns) ? columns : [columns];
-      
+      var columnObjects = [];
+
       // verify this is an appropriate type for this function
       _.each(columns, function(column) {
         
@@ -66,19 +89,20 @@
         if (column.type !== DS.types.number.name) {
           throw new Error("You can't add up a non numeric column type.");
         }  
+        columnObjects.push(column);
+
       }, this);
       
       
-      return this.calculated(function(columns){
+      return this.calculated(columnObjects, function(columns){
         return function() {
           var sum = 0;
           for (var i= 0; i < columns.length; i++) {
-            var columnObject = this._columns[this._columnPositionByName[columns[i]]];
-            sum += _.sum(columnObject.data);
+            sum += _.sum(columns[i].data);
           }
           return sum;
         };
-      }(columns));
+      }(columnObjects));
     },
     
     /**
@@ -92,6 +116,7 @@
       }
 
       columns = _.isArray(columns) ? columns : [columns];
+      var columnObjects = [];
 
       // verify this is an appropriate type for this function
       _.each(columns, function(column) {
@@ -104,13 +129,15 @@
             column.type !== DS.types.time.name) {
           throw new Error("You can't find the maxumum of a non numeric or date column.");
         }  
+
+        columnObjects.push(column);
       }, this);
 
-      return this.calculated(function(columns) {
+      return this.calculated(columnObjects, function(columns) {
         return function() {
           var max = -Infinity, columnObject;
           for (var i= 0; i < columns.length; i++) {
-            columnObject = this._columns[this._columnPositionByName[columns[i]]];
+            columnObject = columns[i];
 
             for (var j= 0; j < columnObject.data.length; j++) {
               if (DS.types[columnObject.type].compare(columnObject.data[j], max) > 0) {
@@ -126,7 +153,7 @@
           // return the coerced value for column type.
           return DS.types[type].coerce(max, typeOptions);
         };
-      }(columns));
+      }(columnObjects));
     },
 
     /**
@@ -139,7 +166,7 @@
         columns = this.columnNames();
       }
       columns = _.isArray(columns) ? columns : [columns];
-
+      var columnObjects = [];
 
       // verify this is an appropriate type for this function
       _.each(columns, function(column) {
@@ -152,13 +179,15 @@
             column.type !== DS.types.time.name) {
           throw new Error("You can't find the maxumum of a non numeric or date column.");
         }
+
+        columnObjects.push(column);
       }, this);
 
-      return this.calculated(function(columns) {
+      return this.calculated(columnObjects, function(columns) {
         return function() {
           var min = Infinity, columnObject;
           for (var i= 0; i < columns.length; i++) {
-            columnObject = this._columns[this._columnPositionByName[columns[i]]];
+            columnObject = columns[i];
             for (var j= 0; j < columnObject.data.length; j++) {
               if (DS.types[columnObject.type].compare(columnObject.data[j], min) < 0) {
                 min = columnObject.raw(j);
@@ -172,7 +201,7 @@
           // return the coerced value for column type.
           return DS.types[type].coerce(min, typeOptions);
         };
-      }(columns));
+      }(columnObjects));
     },
 
     /**
@@ -195,10 +224,11 @@
     * @param {producer} function which derives the product after
     * being passed each row. TODO: producer signature
     */    
-    calculated : function(producer) {
+    calculated : function(columns, producer) {
       var _self = this;
 
       var prod = new Product({
+        columns : columns,
         func : function(options) {
           options = options || {};
           

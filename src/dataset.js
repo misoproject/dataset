@@ -108,7 +108,7 @@ Version 0.0.1.2
       }
 
       if (importer !== null) {
-        importer.fetch({
+        importer.fetch(_.extend({
           success: _.bind(function(d) {
             _.extend(this, d);
 
@@ -122,7 +122,7 @@ Version 0.0.1.2
               options.ready.call(this);
             }
           }, this)
-          });
+          }, options));
         }
     },
 

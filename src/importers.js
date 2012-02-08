@@ -44,8 +44,9 @@
         column.raw = function(column) {
           return function(index) {
             return DS.types[column.type].raw(column, index);
-          }
+          };
         }(column);
+        column.rawValue = DS.types[column.type].rawValue;
 
         // coerce data based on detected type.
         column.data = _.map(column.data, function(datum) {

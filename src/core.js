@@ -166,8 +166,8 @@
         return (typeof v === 'string');
       },
       compare : function(s1, s2) {
-        if (s1 < s2) return -1;
-        if (s1 > s2) return 1;
+        if (s1 < s2) {return -1;}
+        if (s1 > s2) {return 1;}
         return 0;
       },
       // returns a raw value that can be used for computations
@@ -176,6 +176,9 @@
       // for now, but we may want to return a hash or something instead...
       raw : function(column, index) {
         return index;
+      },
+      rawValue : function(value) {
+        return value;
       }
     },
 
@@ -197,6 +200,9 @@
       },
       raw : function(column, index) {
         return column.data[index];
+      },
+      rawValue : function(value) {
+        return value;
       }
     },
 
@@ -218,12 +224,15 @@
         }
       },
       compare : function(n1, n2) {
-        if (n1 < n2) return -1;
-        if (n1 > n2) return 1;
+        if (n1 < n2) {return -1;}
+        if (n1 > n2) {return 1;}
         return 0;
       },
       raw : function(column, index) {
         return column.data[index];
+      },
+      rawValue : function(value) {
+        return value;
       }
 
     },
@@ -255,12 +264,15 @@
         var d1v = d1.valueOf(),
             d2v = d2.valueOf();
 
-        if (d1v < d2v) return -1;
-        if (d1v > d2v) return 1;
+        if (d1v < d2v) {return -1;}
+        if (d1v > d2v) {return 1;}
         return 0;
       },
       raw : function(column, index) {
         return column.data[index].valueOf();
+      },
+      rawValue : function(value) {
+        return value.valueOf();
       } 
     }
 
