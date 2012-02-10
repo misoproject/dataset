@@ -75,7 +75,7 @@ test("Time Max Product", function() {
       { "one" : 10, "t" : "2010/01/23" }
     ],
     columnTypes : {
-      "t" : "time"
+      "t" : { type : "time", format : 'YYYY/MM/DD' }
     }
   });
 
@@ -83,6 +83,7 @@ test("Time Max Product", function() {
   equals(ds.max("t").val().valueOf(), ds._columns[2].data[1].valueOf());
 })
 
+module("Products :: Min");
 test("Basic Min Product", function() {
 
   var ds = baseSample();
@@ -111,14 +112,15 @@ test("Time Min Product", function() {
       { "one" : 10, "t" : "2010/01/23" }
     ],
     columnTypes : {
-      "t" : "time"
+      "t" : { type : "time", format : 'YYYY/MM/DD' }
     }
   });
 
+  window.ds = ds;
   equals(ds._columns[2].type, "time");
   equals(ds.min("t").val().valueOf(), ds._columns[2].data[0].valueOf());
   equals(ds.min("t").type(), ds._columns[2].type);
-  equals(ds.min("t").raw(), ds._columns[2].data[0].valueOf());
+  equals(ds.min("t").numeric(), ds._columns[2].data[0].valueOf());
 });
 
 module("Products :: Sync");

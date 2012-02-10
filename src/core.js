@@ -174,11 +174,8 @@
       // should be numeric. In the case of a string, just return its index.
       // TODO: not sure what this should really be... thinking about scales here
       // for now, but we may want to return a hash or something instead...
-      raw : function(column, index) {
+      numeric : function(value, index) {
         return index;
-      },
-      rawValue : function(value) {
-        return value;
       }
     },
 
@@ -186,7 +183,8 @@
       name : "boolean",
       regexp : /^(true|false)$/,
       coerce : function(v) {
-        return !!(v);
+        if (v === 'false') { return false; }
+        return Boolean(v);
       },
       test : function(v) {
         if (typeof v === 'boolean' || this.regexp.test( v ) ) {
@@ -195,20 +193,18 @@
           return false;
         }
       },
-      compare : function() {
-        // what should this really look like?
+      compare : function(n1, n2) {
+        if (n1 === n2) { return 0 }
+        return (n1 < n2 ? -1 : 1);
       },
-      raw : function(column, index) {
-        return column.data[index];
-      },
-      rawValue : function(value) {
-        return value;
+      numeric : function(value) {
+        return (value) ? 1 : 0;
       }
     },
 
     number : {  
       name : "number",
-      regexp : /^[\-]?[0-9]+([\.][0-9]+)?$/,
+      regexp : /^[\-\.]?[0-9]+([\.][0-9]+)?$/,
       coerce : function(v) {
         if (_.isNull(v)) {
           return null;
@@ -224,58 +220,75 @@
         }
       },
       compare : function(n1, n2) {
-        if (n1 < n2) {return -1;}
-        if (n1 > n2) {return 1;}
-        return 0;
+        if (n1 === n2) { return 0 }
+        return (n1 < n2 ? -1 : 1);
       },
-      raw : function(column, index) {
-        return column.data[index];
-      },
-      rawValue : function(value) {
+      numeric : function(value) {
         return value;
       }
-
     },
 
     time : {
       name : "time",
-      regexp : /^\d+\/\d+\/\d+$/,
-      defaultFormat : "YYYY/MM/DD",
+      format : "DD/MM/YYYY",
+      _formatLookup : [
+        ['DD', "\\d{2}"],
+        ['MM', "\\d{2}"],
+        ['YYYY', "\\d{4}"],
+        ['YY', "\\d{2}"]
+      ],
+      _regexpTable : {},
+
+      _regexp: function(format) {
+        //memoise
+        if (this._regexpTable[format]) {
+          return this._regexpTable[format];
+        }
+
+        //build the regexp for substitutions
+        var regexp = format;
+        _.each(this._formatLookup, function(pair) {
+          regexp = regexp.replace(pair[0], pair[1]);
+        }, this);
+
+
+        console.log(regexp);
+        return this._regexpTable[format] = new RegExp(regexp, 'g');
+      },
+
       coerce : function(v, options) {
         options = options || {};
         // if string, then parse as a time
         if (_.isString(v)) {
-          return moment(v, options.format || this.defaultFormat);   
+          format = options.format || this.format;
+          return moment(v, format);   
         } else if (_.isNumber(v)) {
           return moment(v);
         } else {
           return v;
         }
-        
+
       },
-      test : function(v) {
-        if (typeof v === 'number' || this.regexp.test( v ) ) {
-          return true;
+
+      test : function(v, format) {
+        if (_.isString(v) ) {
+          format = format || this.format;
+          return this._regexp(format).test(v);
         } else {
-          return false;
+          //any number or moment obj basically
+          return true
         }
       },
       compare : function(d1, d2) {
-        var d1v = d1.valueOf(),
-            d2v = d2.valueOf();
-
-        if (d1v < d2v) {return -1;}
-        if (d1v > d2v) {return 1;}
+        if (d1 < d2) {return -1;}
+        if (d1 > d2) {return 1;}
         return 0;
       },
-      raw : function(column, index) {
-        return column.data[index].valueOf();
-      },
-      rawValue : function(value) {
+      numeric : function( value ) {
+        console.log('v', value);
         return value.valueOf();
-      } 
+      }
     }
-
   };
 
   DS.typeOf = function( value ) {

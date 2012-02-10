@@ -41,12 +41,10 @@
       // value extraction
       _.each(d._columns, function(column, index) {
 
-        column.raw = function(column) {
-          return function(index) {
-            return DS.types[column.type].raw(column, index);
-          };
-        }(column);
-        column.rawValue = DS.types[column.type].rawValue;
+        column.toNumeric = DS.types[column.type].numeric;
+        column.numericAt = function(index) {
+          return column.toNumeric( column.data[index], index );
+        }
 
         // coerce data based on detected type.
         column.data = _.map(column.data, function(datum) {

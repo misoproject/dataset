@@ -20,8 +20,8 @@
         }
         
         this.valuetype = column.type;
-        this.raw = function() {
-          return column.rawValue(this.value);
+        this.numeric = function() {
+          return column.toNumeric(this.value);
         };
       }
 
@@ -72,28 +72,9 @@
   _.extend(DS.Dataset.prototype, {
 
     sum : function(columns) {
-      if (_.isUndefined(columns)) {
-        columns = this.columnNames();
-      }
+      columns = this._columnsToArray(columns);
+      var columnObjects = this._toColumnObjects(columns);
 
-      columns = _.isArray(columns) ? columns : [columns];
-      var columnObjects = [];
-
-      // verify this is an appropriate type for this function
-      _.each(columns, function(column) {
-        
-        column = this._columns[this._columnPositionByName[column]];
-
-        // check that this is a numeric column type. We can't
-        // sum up non numeric types, that makes no sense.
-        if (column.type !== DS.types.number.name) {
-          throw new Error("You can't add up a non numeric column type.");
-        }  
-        columnObjects.push(column);
-
-      }, this);
-      
-      
       return this.calculated(columnObjects, function(columns){
         return function() {
           var sum = 0;
@@ -104,6 +85,25 @@
         };
       }(columnObjects));
     },
+
+    _columnsToArray : function(columns) {
+      if (_.isUndefined(columns)) {
+        columns = this.columnNames();
+      }
+      columns = _.isArray(columns) ? columns : [columns];
+      // verify this is an appropriate type for this function
+      
+      return columns;
+    },
+
+    _toColumnObjects : function(columns) {
+      var columnObjects = [];
+      _.each(columns, function(column) {
+        column = this._columns[this._columnPositionByName[column]];
+        columnObjects.push(column);
+      }, this);
+      return columnObjects;
+    },
     
     /**
     * return a Product with the value of the maximum 
@@ -111,27 +111,8 @@
     * @param {column/columns} column or array of columns on which the value is calculated 
     */    
     max : function(columns) {
-      if (_.isUndefined(columns)) {
-        columns = this.columnNames();
-      }
-
-      columns = _.isArray(columns) ? columns : [columns];
-      var columnObjects = [];
-
-      // verify this is an appropriate type for this function
-      _.each(columns, function(column) {
-        
-        column = this._columns[this._columnPositionByName[column]];
-
-        // check that this is a numeric/date column type. We can't
-        // sum up non numeric types, that makes no sense.
-        if (column.type !== DS.types.number.name &&
-            column.type !== DS.types.time.name) {
-          throw new Error("You can't find the maxumum of a non numeric or date column.");
-        }  
-
-        columnObjects.push(column);
-      }, this);
+      columns = this._columnsToArray(columns);
+      var columnObjects = this._toColumnObjects(columns);
 
       return this.calculated(columnObjects, function(columns) {
         return function() {
@@ -141,7 +122,7 @@
 
             for (var j= 0; j < columnObject.data.length; j++) {
               if (DS.types[columnObject.type].compare(columnObject.data[j], max) > 0) {
-                max = columnObject.raw(j);
+                max = columnObject.numericAt(j);
               }
             }
           }
@@ -162,27 +143,9 @@
     * @param {column} column on which the value is calculated 
     */    
     min : function(columns) {
-      if (_.isUndefined(columns)) {
-        columns = this.columnNames();
-      }
-      columns = _.isArray(columns) ? columns : [columns];
-      var columnObjects = [];
-
-      // verify this is an appropriate type for this function
-      _.each(columns, function(column) {
-        
-        column = this._columns[this._columnPositionByName[column]];
-
-        // check that this is a numeric/date column type. We can't
-        // sum up non numeric types, that makes no sense.
-        if (column.type !== DS.types.number.name &&
-            column.type !== DS.types.time.name) {
-          throw new Error("You can't find the maxumum of a non numeric or date column.");
-        }
-
-        columnObjects.push(column);
-      }, this);
-
+      columns = this._columnsToArray(columns);
+      var columnObjects = this._toColumnObjects(columns);
+    
       return this.calculated(columnObjects, function(columns) {
         return function() {
           var min = Infinity, columnObject;
@@ -190,7 +153,7 @@
             columnObject = columns[i];
             for (var j= 0; j < columnObject.data.length; j++) {
               if (DS.types[columnObject.type].compare(columnObject.data[j], min) < 0) {
-                min = columnObject.raw(j);
+                min = columnObject.numericAt(j);
               }
             }
           }
