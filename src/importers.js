@@ -44,7 +44,7 @@
         column.toNumeric = DS.types[column.type].numeric;
         column.numericAt = function(index) {
           return column.toNumeric( column.data[index], index );
-        }
+        };
 
         // coerce data based on detected type.
         column.data = _.map(column.data, function(datum) {

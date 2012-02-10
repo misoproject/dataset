@@ -194,7 +194,7 @@
         }
       },
       compare : function(n1, n2) {
-        if (n1 === n2) { return 0 }
+        if (n1 === n2) { return 0; }
         return (n1 < n2 ? -1 : 1);
       },
       numeric : function(value) {
@@ -220,7 +220,7 @@
         }
       },
       compare : function(n1, n2) {
-        if (n1 === n2) { return 0 }
+        if (n1 === n2) { return 0; }
         return (n1 < n2 ? -1 : 1);
       },
       numeric : function(value) {
@@ -260,7 +260,7 @@
         options = options || {};
         // if string, then parse as a time
         if (_.isString(v)) {
-          format = options.format || this.format;
+          var format = options.format || this.format;
           return moment(v, format);   
         } else if (_.isNumber(v)) {
           return moment(v);
@@ -276,7 +276,7 @@
           return this._regexp(format).test(v);
         } else {
           //any number or moment obj basically
-          return true
+          return true;
         }
       },
       compare : function(d1, d2) {
