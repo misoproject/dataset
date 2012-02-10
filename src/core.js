@@ -252,7 +252,6 @@
         }, this);
 
 
-        console.log(regexp);
         return this._regexpTable[format] = new RegExp(regexp, 'g');
       },
 
@@ -285,7 +284,6 @@
         return 0;
       },
       numeric : function( value ) {
-        console.log('v', value);
         return value.valueOf();
       }
     }
