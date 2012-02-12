@@ -251,9 +251,8 @@
           regexp = regexp.replace(pair[0], pair[1]);
         }, this);
 
-
-        console.log(regexp);
-        return this._regexpTable[format] = new RegExp(regexp, 'g');
+        this._regexpTable[format] = new RegExp(regexp, 'g');
+        return this._regexpTable[format];
       },
 
       coerce : function(v, options) {
