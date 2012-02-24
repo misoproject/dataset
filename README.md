@@ -1,3 +1,111 @@
+New Dataset Readme Outline:
+
+IF YOU WANT TO USE DATASET
+==========================
+
+1. Explain what dataset is
+  - What its purpose is
+  - How to download it 
+
+2. Explain why it exists
+  - Why we made it
+  - What it does
+  - What it doesn't do
+
+
+3. Creating a new dataset
+
+  -- Sources
+  3.1 From local object
+  3.2 From remote object
+
+  -- Types
+  3.3 Array of Objects
+  3.4 CSV
+
+ -- Custom
+  3.5 Google Spreadsheet
+
+4. Iterating over rows in dataset
+  -- Example
+  -- Explaining row object
+  -- Note that there is NO link between row object and actual row.
+
+5. Creating a view
+  -- Explain how views work
+  -- Show example of creating a view
+  -- Saving a view for later retrieval
+  -- Creating a saved view that is parameterized
+  -- Updating a view manually
+ 
+6. Events
+  -- Create a view
+  -- Tie some event to it
+  -- Change something about original dataset
+
+7. Computed Values
+  -- Explain that by computed values we mean a single numeric result
+  -- Show how to create them (max, min etc.)
+  -- Show how you can bind an event to it.
+
+8. Aggregate Selections
+  -- Explain what that means
+  -- Show example doing a group by
+  -- Bind to it
+  -- Change something about original dataset
+
+IF YOU WANT TO EXTEND DATASET OR UNDERSTAND HOW IT WORKS
+===========================================================
+
+This is where ALL the advanced stuff goes
+
+1. Terminology
+  -- Importer
+  -- Parser
+  -- View
+  -- Product
+  -- Derivative
+
+2. Explain file structure in the repo
+  -- Explain the inheritance.
+
+3. Explain the basic event system
+
+4. Explain the internal representation of dataset
+
+5. Importers
+  -- Talk about basic structure
+  -- Talk about required signature
+  -- Show example here of a custom importer
+
+6. Parsers
+  -- Talk about basic DS.Parsers object and what it gives you
+  -- Talk about existing parsers
+  -- Talk about required functionality from a parser
+  -- Show example here of a custom parser
+
+6. Views
+  -- What advanced things do we want to talk about here?
+  -- Talk about sync.
+  -- Talk about how Views are the non destructive side of dataset
+
+7. Derivatives
+  -- Explain that derivatives are still datasets
+  -- Explain how they maintain their connection
+  -- Show example of new derivative
+  -- Explain how using the base parser might be useful here.
+
+8. Products
+  -- What is this.calculated? Explain how products work.
+  -- Creating your own
+  -- Show example of creating a product.
+
+... What else?
+
+
+
+# Old Outline to pull things out of:
+
 Dataset
 ==============
 
