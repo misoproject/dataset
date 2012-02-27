@@ -4,6 +4,7 @@
       "src": [
         "../src/lib/moment.js",
         "../src/core.js",
+        "../src/sync.js",
         "../src/view.js",
         "../src/dataset.js",
         "../src/product.js",

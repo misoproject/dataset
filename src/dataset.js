@@ -56,6 +56,13 @@ Version 0.0.1.2
     */
     _initialize: function(options) {
 
+      // is this a syncable dataset? if so, pull
+      // required methods and mark this as a syncable dataset.
+      if (options.sync === true) {
+        _.extend(this, DS.Events);
+        this.syncable = true;
+      }
+
       // initialize importer from options or just create a blank
       // one for now, we'll detect it later.
       var importer = options.importer || null;
@@ -140,7 +147,8 @@ Version 0.0.1.2
       }
 
       this._add(row, options);
-      if (!options || !options.silent) {
+
+      if (this.syncable && (!options || !options.silent)) {
         this.trigger('add', this._buildEvent({ changed : row }) );
         this.trigger('change', this._buildEvent({ changed : row }) );
       }
@@ -163,7 +171,7 @@ Version 0.0.1.2
           deltas.push( { old: row } );
         }
       });
-      if (!options || !options.silent) {
+      if (this.syncable && (!options || !options.silent)) {
         var ev = this._buildEvent( deltas );
         this.trigger('change', ev );
         this.trigger('remove', ev );
@@ -198,7 +206,7 @@ Version 0.0.1.2
         }
       }, this);
 
-      if (!options || !options.silent) {
+      if (this.syncable && (!options || !options.silent)) {
         var ev = this._buildEvent( deltas );
         this.trigger('change', ev );
         this.trigger('remove', ev );

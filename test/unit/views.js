@@ -1,3 +1,35 @@
+module("Columns");
+
+  test("Column selection", function() {
+    var ds = baseSample();
+    var column = ds.column("one");
+    var actualColumn = ds._columns[1];
+
+    equals(column.type, actualColumn.type);
+    equals(column.name, actualColumn.name);
+    equals(column._id, actualColumn._id);
+    ok(_.isEqual(column.data, actualColumn.data));
+
+  });
+
+  test("Column max", function() {
+    var ds = baseSample();
+    var column = ds.column("one");
+    equals(column.max(), 3);
+  });
+
+  test("Column min", function() {
+    var ds = baseSample();
+    var column = ds.column("one");
+    equals(column.min(), 1);
+  });
+
+  test("Column sum", function() {
+    var ds = baseSample();
+    var column = ds.column("one");
+    equals(column.sum(), 6);
+  });
+  
 module("Views");
 
   test("Basic View creation", function() {
@@ -43,19 +75,9 @@ module("Views");
     });
   });
 
-  test("Column View creation", function() {
-    var ds = baseSample();
-    var view = ds.column("one");
-
-    equals(view._columns.length, 2, "there is only one data column"); //one column + _id
-    _.each(view._columns[0].data, function(d,i) {
-      equals(d, ds._columns[0].data[i], "data matches parent");
-    });
-  });
-
   test("Columns View creation", function() {
     var ds = baseSample();
-    var view = ds.columns( [ 'one', 'two' ] );
+    var view = ds.where({ columns : [ 'one', 'two' ]});
 
     equals(view._columns.length, 3, "two data columns + _id"); //one column + _id
     _.each(view._columns, function(column, columnIndex) {
@@ -125,7 +147,7 @@ module("Views :: Rows Selection");
 module("Views :: Syncing");
 
   test("Basic sync of dataset changes", function() {
-    var ds = baseSample();
+    var ds = baseSyncingSample();
     _.each(ds._columns.slice(1,4), function(column, i) {
       _.each(column.data, function(oldVal, rowPos) {
         var rowId = ds._columns[0].data[rowPos],
@@ -156,27 +178,82 @@ module("Views :: Syncing");
         ds.trigger("change", event);
 
         // make sure view updated
-        ok(view._columns[colPos].data[0] === 100, "view was updated.");
+        ok(view._columns[colPos].data[0] === 100, "view was updated to " + view._columns[colPos].data[0]);
       })
     }, this);
   });
 
 
+  test("No syncing of non syncable dataset changes", function() {
+    var ds = baseSample();
+    _.each(ds._columns.slice(1,4), function(column, i) {
+      _.each(column.data, function(oldVal, rowPos) {
+        var rowId = ds._columns[0].data[rowPos],
+            colPos = i+1,
+            col   = ds._columns[colPos].name;
+          
+        // make a view
+        var view = ds.where({
+          rows : [rowId]
+        });   
+
+        // make a manual change to dataset
+        var oldVal = ds._columns[colPos].data[rowPos];
+        ds._columns[colPos].data[rowPos] = 100;
+
+        // create delta to propagate
+        var delta = {
+          _id : rowId,
+          old : {},
+          changed : {}
+        };
+        delta.old[col] = oldVal;
+        delta.changed[col] = 100;
+        
+        var event = DS.Events._buildEvent(delta);
+
+        // trigger view sync with delta
+        // view.sync(delta);
+        if (_.isUndefined(ds.trigger)) {
+          ok(true, "can't even trigger change, no trigger api.")
+        }
+
+        // make sure view updated
+        ok(view._columns[colPos].data[0] === oldVal, "view was not updated");
+      })
+    }, this);
+  });
+
   test("Sync of updates via the external API", function() {
-    var ds = baseSample(),
-        view1 = ds.column('one'),
-        view2 = ds.column('two'),
+    var ds = baseSyncingSample(),
+        view1 = ds.where({ column : 'one'}),
+        view2 = ds.where({ column : 'two'}),
         firstRowId = ds._rowIdByPosition[0],
         view3 = ds.where(firstRowId);
 
     ds.update(firstRowId, { one: 100, two: 200 });
-    equals(view1._columns[1].data[0], 100);
+    equals(view1.column('one').data[0], 100);
+    equals(view2.column('two').data[0], 200);
     equals(view3._columns[1].data[0], 100);
-    equals(view2._columns[1].data[0], 200);
+  });
+
+  test("No Sync of updates via the external API", function() {
+    var ds = baseSample();
+    var view1 = ds.where({ column : 'one'});
+    var view2 = ds.where({ column : 'two'});
+    var firstRowId = ds._rowIdByPosition[0];
+    var view3 = ds.where(firstRowId);
+
+    var oldVals = { one : view1.column('one').data[0], two : view2.column('two').data[0], three: view3._columns[1].data[0] };
+    ds.update(firstRowId, { one: 100, two: 200 });
+
+    equals(view1.column('one').data[0], oldVals.one);
+    equals(view2.column('two').data[0], oldVals.two);
+    equals(view3._columns[1].data[0], oldVals.three);
   });
 
   test("Nested Syncing", function() {
-    var ds = baseSample();
+    var ds = baseSyncingSample();
     var colname = ds._columns[1].name;
     var oldVal  = ds._columns[1].data[0];
 
@@ -190,7 +267,7 @@ module("Views :: Syncing");
       rows : [view._columns[0].data[0]]
     });
 
-    var superdeepview = deepview.where({});
+    var superdeepview = deepview.where({}, { sync : true });
 
     // modify a value in the dataset's first row
     ds._columns[1].data[0] = 100;
@@ -212,7 +289,7 @@ module("Views :: Syncing");
   });
 
   test("Basic row removal propagation", function() {
-    var ds = baseSample();
+    var ds = baseSyncingSample();
     var colname = ds._columns[1].name;
     var rowPos = 0;
 
@@ -241,8 +318,8 @@ module("Views :: Syncing");
   });
 
   test("row removal propagation via external API", function() {
-    var ds = baseSample();
-    var view = ds.column('one');
+    var ds = baseSyncingSample();
+    var view = ds.where({ column : 'one' });
 
     ds.remove(function(row) {
       return (row.one === 1);
@@ -254,7 +331,7 @@ module("Views :: Syncing");
   });
 
   test("Basic row adding propagation", function() {
-    var ds = baseSample();
+    var ds = baseSyncingSample();
 
     // create view with a function filter
     var view = ds.where({ rows : function(row) {
@@ -287,15 +364,15 @@ module("Views :: Syncing");
   });
 
   test("Propagating row adding via external API", function() {
-    var ds = baseSample();
-    var view = ds.column('one');
+    var ds = baseSyncingSample();
+    var view = ds.where({ column : ['one']});
 
     ds.add( { one: 10, two: 22 } );
     ok(view.length === 4, "row was added to view");
   });
 
   test("Basic row adding propagation - Not added when out of filter range", function() {
-    var ds = baseSample();
+    var ds = baseSyncingSample();
 
     // create view with a function filter
     var view = ds.where({ rows : function(row) {

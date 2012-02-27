@@ -2,6 +2,55 @@
 
   var DS = global.DS;
 
+  DS.Column = function(options) {
+    this._id = options.id || _.uniqueId();
+    this.name = options.name;
+    this.type = options.type;
+    this.data = options.data || [];
+    return this;
+  };
+
+  _.extend(DS.Column.prototype, {
+
+    toNumeric : function(value, index) {
+      return DS.types[this.type].numeric(value, index);  
+    },
+
+    numericAt : function(index) {
+      return this.toNumeric(this.data[index], index);
+    },
+
+    coerce : function() {
+      this.data = _.map(this.data, function(datum) {
+        return DS.types[this.type].coerce(datum, this.typeOptions);
+      }, this);
+    },
+
+    sum : function() {
+      return _.sum(this.data);
+    },
+
+    max : function() {
+      var max = -Infinity;
+      for (var j = 0; j < this.data.length; j++) {
+        if (DS.types[this.type].compare(this.data[j], max) > 0) {
+          max = this.numericAt(j);
+        }
+      }
+      return max;
+    },
+
+    min : function() {
+      var min = Infinity;
+      for (var j = 0; j < this.data.length; j++) {
+        if (DS.types[this.type].compare(this.data[j], min) < 0) {
+          min = this.numericAt(j);
+        }
+      }
+      return min;
+    }
+  });
+
   /**
   * @constructor
   *
@@ -23,10 +72,17 @@
     return this;
   };
 
-  _.extend(DS.View.prototype, DS.Events, {
+  _.extend(DS.View.prototype, {
 
     _initialize: function(options) {
       
+      // is this a syncable dataset? if so, pull
+      // required methods and mark this as a syncable dataset.
+      if (this.parent.syncable === true) {
+        _.extend(this, DS.Events);
+        this.syncable = true;
+      }
+
       // save filter
       this.filter = {
         columns : this._columnFilter(options.filter.columns || undefined),
@@ -46,13 +102,17 @@
         tempParser._cacheColumns(this), 
         tempParser._cacheRows(this));
 
-      // bind to parent
-      this.parent.bind("change", this.sync, this);
+      // bind to parent if syncable
+      if (this.syncable) {
+        this.parent.bind("change", this.sync, this);  
+      }
     },
 
     /**
     * @public
     * Syncs up the current view based on a passed delta.
+    * TODO Should this be moved to sync.js? Not sure I want to separate it
+    * But also not sure it still belongs here.
     */
     sync : function(event) {
       var deltas = event.deltas;
@@ -119,8 +179,9 @@
       }, this);
 
       // trigger any subscribers 
-      this.trigger("change", event);
-     
+      if (this.syncable) {
+        this.trigger("change", event);  
+      }
     },
 
     /**
@@ -230,10 +291,7 @@
     * @param {string} name - name of the column to be selected
     */
     column : function(name) {
-      return new DS.View({
-        filter : { columns : [name] },
-        parent : this
-      });
+      return this._column(name);
     },
 
     /**
@@ -512,7 +570,10 @@
           swap(0,1);
         }
       }
-      this.trigger("sort");
+
+      if (this.syncable) {
+        this.trigger("sort");  
+      }
     }
   });
 

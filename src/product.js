@@ -71,21 +71,6 @@
 
   _.extend(DS.Dataset.prototype, {
 
-    sum : function(columns) {
-      columns = this._columnsToArray(columns);
-      var columnObjects = this._toColumnObjects(columns);
-
-      return this.calculated(columnObjects, function(columns){
-        return function() {
-          var sum = 0;
-          for (var i= 0; i < columns.length; i++) {
-            sum += _.sum(columns[i].data);
-          }
-          return sum;
-        };
-      }(columnObjects));
-    },
-
     _columnsToArray : function(columns) {
       if (_.isUndefined(columns)) {
         columns = this.columnNames();
@@ -104,17 +89,40 @@
       }, this);
       return columnObjects;
     },
-    
+
+    sum : function(columns, options) {
+      options = options || {};
+      columns = this._columnsToArray(columns);
+      var columnObjects = this._toColumnObjects(columns);
+
+      var sumFunc = function(columns){
+        return function() {
+          var sum = 0;
+          for (var i= 0; i < columns.length; i++) {
+            sum += columns[i].sum();
+          }
+          return sum;
+        };
+      }(columnObjects);
+
+      if (this.syncable) {
+        return this.calculated(columnObjects, sumFunc);
+      } else {
+        return sumFunc();
+      }
+    },
+
     /**
     * return a Product with the value of the maximum 
     * value of the column
     * @param {column/columns} column or array of columns on which the value is calculated 
     */    
-    max : function(columns) {
+    max : function(columns, options) {
+      options = options || {};
       columns = this._columnsToArray(columns);
       var columnObjects = this._toColumnObjects(columns);
 
-      return this.calculated(columnObjects, function(columns) {
+      var maxFunc = function(columns) {
         return function() {
           var max = -Infinity, columnObject;
           for (var i= 0; i < columns.length; i++) {
@@ -134,7 +142,14 @@
           // return the coerced value for column type.
           return DS.types[type].coerce(max, typeOptions);
         };
-      }(columnObjects));
+      }(columnObjects);
+
+      if (this.syncable) {
+        return this.calculated(columnObjects, maxFunc);  
+      } else {
+        return maxFunc();
+      }
+      
     },
 
     /**
@@ -142,11 +157,12 @@
     * value of the column
     * @param {column} column on which the value is calculated 
     */    
-    min : function(columns) {
+    min : function(columns, options) {
+      options = options || {};
       columns = this._columnsToArray(columns);
       var columnObjects = this._toColumnObjects(columns);
-    
-      return this.calculated(columnObjects, function(columns) {
+      
+      var minFunc = function(columns) {
         return function() {
           var min = Infinity, columnObject;
           for (var i= 0; i < columns.length; i++) {
@@ -164,7 +180,14 @@
           // return the coerced value for column type.
           return DS.types[type].coerce(min, typeOptions);
         };
-      }(columnObjects));
+      }(columnObjects);
+
+      if (this.syncable) {
+        return this.calculated(columnObjects, minFunc);  
+      } else {
+        return minFunc();
+      }
+      
     },
 
     /**
@@ -172,14 +195,14 @@
     * value of the column
     * @param {column} column on which the value is calculated 
     */    
-    mean : function(column) {},
+    mean : function(column, options) {},
 
     /*
     * return a Product with the value of the mode
     * of the column
     * @param {column} column on which the value is calculated 
     */    
-    mode : function(column) {},
+    mode : function(column, options) {},
 
     /*
     * return a Product derived by running the passed function
@@ -199,11 +222,14 @@
           // so that any subscribers know whether they need to 
           // update if they are sharing a column.
           var delta = this._buildDelta( this.value, producer.apply(_self) );
-          var event = this._buildEvent( "change", delta );
 
-          // trigger any subscribers this might have if the values are diff
-          if (!_.isUndefined(delta.old) && !options.silent && delta.old !== delta.changed) {
-            this.trigger("change", event);
+          if (_self.syncable) {
+            var event = this._buildEvent( "change", delta );
+
+            // trigger any subscribers this might have if the values are diff
+            if (!_.isUndefined(delta.old) && !options.silent && delta.old !== delta.changed) {
+              this.trigger("change", event);
+            }  
           }
 
           // return updated value
@@ -211,8 +237,10 @@
         }
       });
 
-      // auto bind to parent dataset
-      this.bind("change", prod.sync, prod);
+      // auto bind to parent dataset if its syncable
+      if (this.syncable) {
+        this.bind("change", prod.sync, prod);  
+      }
       return prod;
     }
 
