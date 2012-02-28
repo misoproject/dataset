@@ -30,7 +30,7 @@
     };
 
     return DS.Product;
-  }());
+  })();
 
   _.extend(Product.prototype, DS.Events, {
 
@@ -95,7 +95,7 @@
       columns = this._columnsToArray(columns);
       var columnObjects = this._toColumnObjects(columns);
 
-      var sumFunc = function(columns){
+      var sumFunc = (function(columns){
         return function() {
           var sum = 0;
           for (var i= 0; i < columns.length; i++) {
@@ -103,7 +103,7 @@
           }
           return sum;
         };
-      }(columnObjects);
+      }(columnObjects));
 
       if (this.syncable) {
         return this.calculated(columnObjects, sumFunc);
@@ -122,7 +122,7 @@
       columns = this._columnsToArray(columns);
       var columnObjects = this._toColumnObjects(columns);
 
-      var maxFunc = function(columns) {
+      var maxFunc = (function(columns) {
         return function() {
           var max = -Infinity, columnObject;
           for (var i= 0; i < columns.length; i++) {
@@ -142,7 +142,7 @@
           // return the coerced value for column type.
           return DS.types[type].coerce(max, typeOptions);
         };
-      }(columnObjects);
+      }(columnObjects));
 
       if (this.syncable) {
         return this.calculated(columnObjects, maxFunc);  
@@ -162,7 +162,7 @@
       columns = this._columnsToArray(columns);
       var columnObjects = this._toColumnObjects(columns);
       
-      var minFunc = function(columns) {
+      var minFunc = (function(columns) {
         return function() {
           var min = Infinity, columnObject;
           for (var i= 0; i < columns.length; i++) {
@@ -180,7 +180,7 @@
           // return the coerced value for column type.
           return DS.types[type].coerce(min, typeOptions);
         };
-      }(columnObjects);
+      }(columnObjects));
 
       if (this.syncable) {
         return this.calculated(columnObjects, minFunc);  

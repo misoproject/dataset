@@ -1,0 +1,48 @@
+{
+	"name"				: "Miso.Dataset",
+	"title" 			: "Miso.Dataset",
+	"description" : "A quick and easy way to import local and remote data into one common structure.",
+	"version" 		: "0.1.0",
+	"homepage" 		: "http://github.com/alexgraul/Dataset",
+	"authors"			: "Alex Graul, Irene Ros",
+	
+	"bugs" : {
+		"url" : "http://github.com:alexgraul/Dataset/issues"
+	},
+
+	"licenses" : [	
+		{
+			"type" : "MIT",
+			"url" : "http://github.com:alexgraul/Dataset/blob/master/LICENSE-MIT"
+		},
+		{
+			"type" : "GPL",
+			"url" : "http://github.com:alexgraul/Dataset/blob/master/LICENSE-GPL"
+		}
+	],
+
+	"repository": {
+		"type": "git",
+		"url": "git@github.com:alexgraul/Dataset.git"
+	},
+
+	"keywords" : [ "data", "dataset" ],
+
+	"engines": {
+		"node": ">=v0.4.8"
+	},
+	
+	"devDependencies": {
+		"jake": "*",
+		"underscore": "*",
+		"jshint": "*",
+		"uglify-js": "*",
+		"express": "*",
+		"vows": "*",
+		"colors": "*",
+		"zlib": "*",
+		"dateformat": "*",
+		"jsonlint": "*",
+		"stats":"*"
+	}
+}

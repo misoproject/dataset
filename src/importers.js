@@ -91,7 +91,7 @@
 
             var t = DS.typeOf(value);
 
-            if (value !== "" && memo.indexOf(t) == -1 && !_.isNull(value)) {
+            if (value !== "" && memo.indexOf(t) === -1 && !_.isNull(value)) {
               memo.push(t);
             }
             return memo;
@@ -434,7 +434,7 @@
         if (error) { 
           error.call(null);
         }
-      }
+      };
 
       script.src = url;
       head.insertBefore(script, head.firstChild);

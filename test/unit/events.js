@@ -1,31 +1,48 @@
-module("Events");
-
-(function() {
-  var ds = new DS.Dataset({
-    data: { columns : [ { name: "one", data: [1,2] } ] },
-    strict: true,
-    sync : true
-  }),
-      result = 0,
-      increment = function(by) {
-        by = (by || 1);
-        result += by;
-      };
-
-  ds.bind('ping', increment);
+(function(global) {
+  
+  var Util  = global.Util;
+  var DS    = global.DS || {};
+  
+  module("Events");
 
   test("binding and firing an event", function() {
+
+    var ds = new DS.Dataset({
+      data: { columns : [ { name: "one", data: [1,2] } ] },
+      strict: true,
+      sync : true
+    }),
+    result = 0,
+    increment = function(by) {
+      by = (by || 1);
+      result += by;
+    };
+
+    ds.bind('ping', increment);
+
     result = 0;
     ds.trigger('ping', 1);
-    equal(result, 1);
+    equals(result, 1);
   });
 
   test("unbinding event", function() {
-    result = 0;
+    var ds = new DS.Dataset({
+      data: { columns : [ { name: "one", data: [1,2] } ] },
+      strict: true,
+      sync : true
+    }),
+    result = 0,
+    increment = function(by) {
+      by = (by || 1);
+      result += by;
+    };
+
+    ds.bind('ping', increment);
+
     ds.trigger('ping');
-    ds.unbind('ping', increment)
+    ds.unbind('ping', increment);
     ds.trigger('ping');
-    equal(result, 1);
+    equals(result, 1);
   });
 
-}());
+}(this));

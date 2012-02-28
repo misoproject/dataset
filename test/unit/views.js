@@ -1,7 +1,12 @@
-module("Columns");
+(function(global) {
+  
+  var Util  = global.Util;
+  var DS    = global.DS || {};  
+
+  module("Columns");
 
   test("Column selection", function() {
-    var ds = baseSample();
+    var ds = Util.baseSample();
     var column = ds.column("one");
     var actualColumn = ds._columns[1];
 
@@ -13,27 +18,27 @@ module("Columns");
   });
 
   test("Column max", function() {
-    var ds = baseSample();
+    var ds = Util.baseSample();
     var column = ds.column("one");
     equals(column.max(), 3);
   });
 
   test("Column min", function() {
-    var ds = baseSample();
+    var ds = Util.baseSample();
     var column = ds.column("one");
     equals(column.min(), 1);
   });
 
   test("Column sum", function() {
-    var ds = baseSample();
+    var ds = Util.baseSample();
     var column = ds.column("one");
     equals(column.sum(), 6);
   });
   
-module("Views");
+  module("Views");
 
   test("Basic View creation", function() {
-    var ds = baseSample();
+    var ds = Util.baseSample();
     var view = ds.where({});
     _.each(ds._columns, function(column, i) {
       ok(_.isEqual(ds._columns[i].data, view._columns[i].data), "data has been copied");  
@@ -41,7 +46,7 @@ module("Views");
    });
 
   test("One Row Filter View creation", function() {
-    var ds = baseSample();
+    var ds = Util.baseSample();
     var view = ds.where({
       rows : [ds._columns[0].data[0]]
     });
@@ -52,7 +57,7 @@ module("Views");
   });
 
   test("Two Row Filter View creation", function() {
-    var ds = baseSample();
+    var ds = Util.baseSample();
     var view = ds.where({
       rows : [ds._columns[0].data[0], ds._columns[0].data[1]]
     });
@@ -63,7 +68,7 @@ module("Views");
   });
 
   test("Function Row Filter View creation", function() {
-    var ds = baseSample();
+    var ds = Util.baseSample();
     var view = ds.where({
       rows : function(row) {
         return row._id === ds._columns[0].data[0];
@@ -76,7 +81,7 @@ module("Views");
   });
 
   test("Columns View creation", function() {
-    var ds = baseSample();
+    var ds = Util.baseSample();
     var view = ds.where({ columns : [ 'one', 'two' ]});
 
     equals(view._columns.length, 3, "two data columns + _id"); //one column + _id
@@ -88,7 +93,7 @@ module("Views");
   });
 
   test("Select by columns and rows", function() {
-    var ds = baseSample();
+    var ds = Util.baseSample();
     var view = ds.where({
       rows : [ds._columns[0].data[0], ds._columns[0].data[1]],
       columns : [ 'one' ]
@@ -102,14 +107,14 @@ module("Views");
   });
 
   test("get all column names minus the id col", function() {
-    var ds = baseSample();
+    var ds = Util.baseSample();
     ok(_.isEqual(ds.columnNames(), ["one", "two", "three"]), "All column names fetched");  
   });
 
 module("Views :: Rows Selection");
 
   test("Get row by position", function() {
-    var ds = baseSample();
+    var ds = Util.baseSample();
     var row = ds.rowByPosition(0);
     var expectedRow = {
       _id : ds._columns[0].data[0],
@@ -121,7 +126,7 @@ module("Views :: Rows Selection");
   });
 
   test("Get row internal", function() {
-    var ds = baseSample();
+    var ds = Util.baseSample();
     var row = ds._row(0);
     var expectedRow = {
       _id : ds._columns[0].data[0],
@@ -133,7 +138,7 @@ module("Views :: Rows Selection");
   });
 
   test("Get row by _id", function() {
-    var ds = baseSample();
+    var ds = Util.baseSample();
     var row = ds.rowById(ds._columns[0].data[0]);
     var expectedRow = {
       _id : ds._columns[0].data[0],
@@ -147,7 +152,7 @@ module("Views :: Rows Selection");
 module("Views :: Syncing");
 
   test("Basic sync of dataset changes", function() {
-    var ds = baseSyncingSample();
+    var ds = Util.baseSyncingSample();
     _.each(ds._columns.slice(1,4), function(column, i) {
       _.each(column.data, function(oldVal, rowPos) {
         var rowId = ds._columns[0].data[rowPos],
@@ -179,13 +184,13 @@ module("Views :: Syncing");
 
         // make sure view updated
         ok(view._columns[colPos].data[0] === 100, "view was updated to " + view._columns[colPos].data[0]);
-      })
+      });
     }, this);
   });
 
 
   test("No syncing of non syncable dataset changes", function() {
-    var ds = baseSample();
+    var ds = Util.baseSample();
     _.each(ds._columns.slice(1,4), function(column, i) {
       _.each(column.data, function(oldVal, rowPos) {
         var rowId = ds._columns[0].data[rowPos],
@@ -198,7 +203,7 @@ module("Views :: Syncing");
         });   
 
         // make a manual change to dataset
-        var oldVal = ds._columns[colPos].data[rowPos];
+        oldVal = ds._columns[colPos].data[rowPos];
         ds._columns[colPos].data[rowPos] = 100;
 
         // create delta to propagate
@@ -215,17 +220,17 @@ module("Views :: Syncing");
         // trigger view sync with delta
         // view.sync(delta);
         if (_.isUndefined(ds.trigger)) {
-          ok(true, "can't even trigger change, no trigger api.")
+          ok(true, "can't even trigger change, no trigger api.");
         }
 
         // make sure view updated
         ok(view._columns[colPos].data[0] === oldVal, "view was not updated");
-      })
+      });
     }, this);
   });
 
   test("Sync of updates via the external API", function() {
-    var ds = baseSyncingSample(),
+    var ds = Util.baseSyncingSample(),
         view1 = ds.where({ column : 'one'}),
         view2 = ds.where({ column : 'two'}),
         firstRowId = ds._rowIdByPosition[0],
@@ -238,7 +243,7 @@ module("Views :: Syncing");
   });
 
   test("No Sync of updates via the external API", function() {
-    var ds = baseSample();
+    var ds = Util.baseSample();
     var view1 = ds.where({ column : 'one'});
     var view2 = ds.where({ column : 'two'});
     var firstRowId = ds._rowIdByPosition[0];
@@ -253,7 +258,7 @@ module("Views :: Syncing");
   });
 
   test("Nested Syncing", function() {
-    var ds = baseSyncingSample();
+    var ds = Util.baseSyncingSample();
     var colname = ds._columns[1].name;
     var oldVal  = ds._columns[1].data[0];
 
@@ -289,7 +294,7 @@ module("Views :: Syncing");
   });
 
   test("Basic row removal propagation", function() {
-    var ds = baseSyncingSample();
+    var ds = Util.baseSyncingSample();
     var colname = ds._columns[1].name;
     var rowPos = 0;
 
@@ -318,7 +323,7 @@ module("Views :: Syncing");
   });
 
   test("row removal propagation via external API", function() {
-    var ds = baseSyncingSample();
+    var ds = Util.baseSyncingSample();
     var view = ds.where({ column : 'one' });
 
     ds.remove(function(row) {
@@ -331,11 +336,11 @@ module("Views :: Syncing");
   });
 
   test("Basic row adding propagation", function() {
-    var ds = baseSyncingSample();
+    var ds = Util.baseSyncingSample();
 
     // create view with a function filter
     var view = ds.where({ rows : function(row) {
-      return row.three > 5
+      return row.three > 5;
     }});
 
     ok(view.length === 3, "all rows initially copied");
@@ -364,7 +369,7 @@ module("Views :: Syncing");
   });
 
   test("Propagating row adding via external API", function() {
-    var ds = baseSyncingSample();
+    var ds = Util.baseSyncingSample();
     var view = ds.where({ column : ['one']});
 
     ds.add( { one: 10, two: 22 } );
@@ -372,11 +377,11 @@ module("Views :: Syncing");
   });
 
   test("Basic row adding propagation - Not added when out of filter range", function() {
-    var ds = baseSyncingSample();
+    var ds = Util.baseSyncingSample();
 
     // create view with a function filter
     var view = ds.where({ rows : function(row) {
-      return row.three > 5
+      return row.three > 5;
     }});
 
     ok(view.length === 3, "all rows initially copied");
@@ -403,138 +408,139 @@ module("Views :: Syncing");
     ok(view.length === 3, "row was NOT added");
 
     ok(_.isEqual(view.rowByPosition(2), ds.rowByPosition(2)), "last row in view hasn't changed.");
-  })
-
-module("Sort");
-
-test("Sort fail", function() {
-  var ds = baseSample();
-  try {
-    ds.sort();
-    ok(false, "error should have been thrown.");
-  } catch (e) {
-    ok(e.message === "Cannot sort without this.comparator.");
-  }
-});
-
-test("Basic Sort", function() {
-  var ds = new DS.Dataset({
-    data: { columns : [ 
-      { name : "one",   data : [10, 2, 3, 14, 3, 4] },
-      { name : "two",   data : [4,  5, 6, 1,  1, 1] },
-      { name : "three", data : [7,  8, 9, 1,  1, 1] } 
-    ] },
-    strict: true
-  });
-  
-  ds.comparator = function(r1, r2) {
-    if (r1.one > r2.one) return 1;
-    if (r1.one < r2.one) return -1;
-    return 0;
-  }
-
-  _.when(ds.fetch(), function(){
-    ds.sort();
-
-    ok(_.isEqual(ds._columns[1].data, [2,3,3,4,10,14]));
-    ok(_.isEqual(ds._columns[2].data, [5,6,1,1,4,1]));
-    ok(_.isEqual(ds._columns[3].data, [8,9,1,1,7,1]));
   });
 
-});
+  module("Sort");
 
-test("Basic Sort reverse", function() {
-  var ds = new DS.Dataset({
-    data: { columns : [ 
-      { name : "one",   data : [10, 2, 3, 14, 3, 4] },
-      { name : "two",   data : [4,  5, 6, 1,  1, 1] },
-      { name : "three", data : [7,  8, 9, 1,  1, 1] } 
-    ] },
-    strict: true
-  });
-  
-  ds.comparator = function(r1, r2) {
-    if (r1.one > r2.one) return -1;
-    if (r1.one < r2.one) return 1;
-    return 0;
-  }
-  _.when(ds.fetch(), function(){
-    ds.sort();
-    
-    ok(_.isEqual(ds._columns[1].data, [2,3,3,4,10,14].reverse()));
-    ok(_.isEqual(ds._columns[2].data, [5,6,1,1,4,1].reverse()));
-    ok(_.isEqual(ds._columns[3].data, [8,9,1,1,7,1].reverse()));
-  });
-});
-
-test("Sort in init", function() {
-  var ds = new DS.Dataset({
-    data: { columns : [ 
-      { name : "one",   data : [10, 2, 3, 14, 3, 4] },
-      { name : "two",   data : [4,  5, 6, 1,  1, 1] },
-      { name : "three", data : [7,  8, 9, 1,  1, 1] } 
-    ] },
-    comparator : function(r1, r2) {
-      if (r1.one > r2.one) return -1;
-      if (r1.one < r2.one) return 1;
-      return 0;
-    },
-    strict: true
-  });
-  _.when(ds.fetch(), function(){
-    ok(_.isEqual(ds._columns[1].data, [2,3,3,4,10,14].reverse()));
-    ok(_.isEqual(ds._columns[2].data, [5,6,1,1,4,1].reverse()));
-    ok(_.isEqual(ds._columns[3].data, [8,9,1,1,7,1].reverse()));
-  });
-});
-
-test("Add row in sorted order", function() {
-  var ds = new DS.Dataset({
-    data: { columns : [ 
-      { name : "one",   data : [10, 2, 3, 14, 3, 4] },
-      { name : "two",   data : [4,  5, 6, 1,  1, 1] },
-      { name : "three", data : [7,  8, 9, 1,  1, 1] } 
-    ] },
-    comparator : function(r1, r2) {
-      if (r1.one > r2.one) return 1;
-      if (r1.one < r2.one) return -1;
-      return 0;
-    },
-    strict: true
-  });
-  _.when(ds.fetch(), function(){
-    ds.add({
-      one : 5, two: 5, three: 5
-    });
-
-    ok(_.isEqual(ds._columns[1].data, [2,3,3,4,5,10,14]));
-    ok(_.isEqual(ds._columns[2].data, [5,6,1,1,5,4,1]));
-    ok(_.isEqual(ds._columns[3].data, [8,9,1,1,5,7,1]));
-  });
-});
-
-test("Add row in reverse sorted order", function() {
-  var ds = new DS.Dataset({
-    data: { columns : [ 
-      { name : "one",   data : [10, 2, 3, 14, 3, 4] },
-      { name : "two",   data : [4,  5, 6, 1,  1, 1] },
-      { name : "three", data : [7,  8, 9, 1,  1, 1] } 
-    ] },
-    comparator : function(r1, r2) {
-      if (r1.one > r2.one) return -1;
-      if (r1.one < r2.one) return 1;
-      return 0;
-    },
-    strict: true
+  test("Sort fail", function() {
+    var ds = Util.baseSample();
+    try {
+      ds.sort();
+      ok(false, "error should have been thrown.");
+    } catch (e) {
+      ok(e.message === "Cannot sort without this.comparator.");
+    }
   });
 
-  _.when(ds.fetch(), function(){
-    ds.add({
-      one : 5, two: 5, three: 5
+  test("Basic Sort", function() {
+    var ds = new DS.Dataset({
+      data: { columns : [ 
+        { name : "one",   data : [10, 2, 3, 14, 3, 4] },
+        { name : "two",   data : [4,  5, 6, 1,  1, 1] },
+        { name : "three", data : [7,  8, 9, 1,  1, 1] } 
+      ] },
+      strict: true
     });
     
-    ok(_.isEqual(ds._columns[1].data, [2,3,3,4,5,10,14].reverse()));
-    ok(_.isEqual(ds._columns[2].data, [5,6,1,1,5,4,1].reverse()));
-    ok(_.isEqual(ds._columns[3].data, [8,9,1,1,5,7,1].reverse()));
+    ds.comparator = function(r1, r2) {
+      if (r1.one > r2.one) {return 1;}
+      if (r1.one < r2.one) {return -1;}
+      return 0;
+    };
+
+    _.when(ds.fetch(), function(){
+      ds.sort();
+
+      ok(_.isEqual(ds._columns[1].data, [2,3,3,4,10,14]));
+      ok(_.isEqual(ds._columns[2].data, [5,6,1,1,4,1]));
+      ok(_.isEqual(ds._columns[3].data, [8,9,1,1,7,1]));
+    });
+
   });
-});
+
+  test("Basic Sort reverse", function() {
+    var ds = new DS.Dataset({
+      data: { columns : [ 
+        { name : "one",   data : [10, 2, 3, 14, 3, 4] },
+        { name : "two",   data : [4,  5, 6, 1,  1, 1] },
+        { name : "three", data : [7,  8, 9, 1,  1, 1] } 
+      ] },
+      strict: true
+    });
+    
+    ds.comparator = function(r1, r2) {
+      if (r1.one > r2.one) {return -1;}
+      if (r1.one < r2.one) {return 1;}
+      return 0;
+    };
+    _.when(ds.fetch(), function(){
+      ds.sort();
+      
+      ok(_.isEqual(ds._columns[1].data, [2,3,3,4,10,14].reverse()));
+      ok(_.isEqual(ds._columns[2].data, [5,6,1,1,4,1].reverse()));
+      ok(_.isEqual(ds._columns[3].data, [8,9,1,1,7,1].reverse()));
+    });
+  });
+
+  test("Sort in init", function() {
+    var ds = new DS.Dataset({
+      data: { columns : [ 
+        { name : "one",   data : [10, 2, 3, 14, 3, 4] },
+        { name : "two",   data : [4,  5, 6, 1,  1, 1] },
+        { name : "three", data : [7,  8, 9, 1,  1, 1] } 
+      ] },
+      comparator : function(r1, r2) {
+        if (r1.one > r2.one) {return -1;}
+        if (r1.one < r2.one) {return 1;}
+        return 0;
+      },
+      strict: true
+    });
+    _.when(ds.fetch(), function(){
+      ok(_.isEqual(ds._columns[1].data, [2,3,3,4,10,14].reverse()));
+      ok(_.isEqual(ds._columns[2].data, [5,6,1,1,4,1].reverse()));
+      ok(_.isEqual(ds._columns[3].data, [8,9,1,1,7,1].reverse()));
+    });
+  });
+
+  test("Add row in sorted order", function() {
+    var ds = new DS.Dataset({
+      data: { columns : [ 
+        { name : "one",   data : [10, 2, 3, 14, 3, 4] },
+        { name : "two",   data : [4,  5, 6, 1,  1, 1] },
+        { name : "three", data : [7,  8, 9, 1,  1, 1] } 
+      ] },
+      comparator : function(r1, r2) {
+        if (r1.one > r2.one) { return 1;  }
+        if (r1.one < r2.one) { return -1; }
+        return 0;
+      },
+      strict: true
+    });
+    _.when(ds.fetch(), function(){
+      ds.add({
+        one : 5, two: 5, three: 5
+      });
+
+      ok(_.isEqual(ds._columns[1].data, [2,3,3,4,5,10,14]));
+      ok(_.isEqual(ds._columns[2].data, [5,6,1,1,5,4,1]));
+      ok(_.isEqual(ds._columns[3].data, [8,9,1,1,5,7,1]));
+    });
+  });
+
+  test("Add row in reverse sorted order", function() {
+    var ds = new DS.Dataset({
+      data: { columns : [ 
+        { name : "one",   data : [10, 2, 3, 14, 3, 4] },
+        { name : "two",   data : [4,  5, 6, 1,  1, 1] },
+        { name : "three", data : [7,  8, 9, 1,  1, 1] } 
+      ] },
+      comparator : function(r1, r2) {
+        if (r1.one > r2.one) { return -1; }
+        if (r1.one < r2.one) { return 1; }
+        return 0;
+      },
+      strict: true
+    });
+
+    _.when(ds.fetch(), function(){
+      ds.add({
+        one : 5, two: 5, three: 5
+      });
+      
+      ok(_.isEqual(ds._columns[1].data, [2,3,3,4,5,10,14].reverse()));
+      ok(_.isEqual(ds._columns[2].data, [5,6,1,1,5,4,1].reverse()));
+      ok(_.isEqual(ds._columns[3].data, [8,9,1,1,5,7,1].reverse()));
+    });
+  });
+}(this));

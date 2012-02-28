@@ -1,37 +1,45 @@
-function baseSample() {
-  var ds = null;
 
-  new DS.Dataset({
-    data: { columns : [ 
-      { name : "one",   data : [1, 2, 3] },
-      { name : "two",   data : [4, 5, 6] },
-      { name : "three", data : [7, 8, 9] } 
-    ] },
-    strict: true
-  }).fetch({
-    success : function() {
-      ds = this;
-    }
-  });
-  return ds;
-}
+(function(global) {
+
+  var Util = global.Util = global.Util || {};
+  var DS = global.DS || {};
+
+  Util.baseSample = function() {
+    var ds = null;
+
+    new DS.Dataset({
+      data: { columns : [ 
+        { name : "one",   data : [1, 2, 3] },
+        { name : "two",   data : [4, 5, 6] },
+        { name : "three", data : [7, 8, 9] } 
+      ] },
+      strict: true
+    }).fetch({
+      success : function() {
+        ds = this;
+      }
+    });
+    return ds;
+  };
 
 
-function baseSyncingSample() {
-  var ds = null;
+  Util.baseSyncingSample = function() {
+    var ds = null;
 
-  new DS.Dataset({
-    data: { columns : [ 
-      { name : "one",   data : [1, 2, 3] },
-      { name : "two",   data : [4, 5, 6] },
-      { name : "three", data : [7, 8, 9] } 
-    ] },
-    strict: true,
-    sync : true
-  }).fetch({
-    success : function() {
-      ds = this;
-    }
-  });
-  return ds;
-}
+    new DS.Dataset({
+      data: { columns : [ 
+        { name : "one",   data : [1, 2, 3] },
+        { name : "two",   data : [4, 5, 6] },
+        { name : "three", data : [7, 8, 9] } 
+      ] },
+      strict: true,
+      sync : true
+    }).fetch({
+      success : function() {
+        ds = this;
+      }
+    });
+    return ds;
+  };
+
+}(this));

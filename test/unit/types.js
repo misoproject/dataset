@@ -1,17 +1,21 @@
-module("DS Numeric Type");
-(function() {
-  var numbers = ['123', '0.34', '.23'];
+(function(global) {
+  
+  var Util  = global.Util;
+  var DS    = global.DS || {};  
 
+  var numbers = ['123', '0.34', '.23'];
+  
+  module("DS Numeric Type");
   test("Check number type", function() {
     var notNumbers = ['a', undefined, {}, 'll22'];
 
     _.each(numbers, function(num) {
-      ok(DS.typeOf(num) == "number", "Value should be number");
+      ok(DS.typeOf(num) === "number", "Value should be number");
       ok(DS.types.number.test(num), "Should return true for a number");
     });
 
     _.each(notNumbers, function(nn) {
-      ok(DS.typeOf(nn) != "number", "Value should not be number");
+      ok(DS.typeOf(nn) !== "number", "Value should not be number");
       ok(!DS.types.number.test(nn), "Should not return true for a number");
     });
   });
@@ -33,20 +37,19 @@ module("DS Numeric Type");
     equals(DS.types.number.compare(-30, 0),  -1);
   });
 
-}());
 
-module("DS Boolean Type");
-(function() {
+  module("DS Boolean Type");
+
   var booleans = ['true', 'false', true];
 
   test("Check boolean type", function() {
     var notBooleans = [1, 'foo', null, undefined, {}];
     _.each(booleans, function(bool) {
-      ok(DS.typeOf(bool) == "boolean", "Value should be boolean");
+      ok(DS.typeOf(bool) === "boolean", "Value should be boolean");
       ok(DS.types.boolean.test(bool), "Should return true for a bool");
     });
     _.each(notBooleans, function(nb) {
-      ok(DS.typeOf(nb) != "boolean", nb+" Value should not be number");
+      ok(DS.typeOf(nb) !== "boolean", nb+" Value should not be number");
       ok(!DS.types.boolean.test(nb), nb+" Should not return true for a boolean");
     });
   });
@@ -70,10 +73,8 @@ module("DS Boolean Type");
     equals(DS.types.boolean.numeric(false), 0, "False returns 0");
   });
 
-}());
+  module("DS Time Type");
 
-module("DS Time Type");
-(function() {
   test("Check date type", function() {
     ok(DS.types.time.test("22/22/2001"), "date in correct format");
     ok(!DS.types.time.test("20"), "date incorrect format");
@@ -89,19 +90,16 @@ module("DS Time Type");
     equals(DS.types.time.compare(m3,m),  0);
   });
 
-
-}());
-
-module("DS String Type");
-test("Compare string type", function() {
-  equals(DS.types.string.compare("A", "B"), -1);
-  equals(DS.types.string.compare("C", "B"),  1);
-  equals(DS.types.string.compare("bbb", "bbb"),  0);
-  equals(DS.types.string.compare("bbb", "bbbb"),  -1);
-  equals(DS.types.string.compare("bbb", "bbbb"),  -1);
-  equals(DS.types.string.compare("bbbb", "bbb"),  1);
-  equals(DS.types.string.compare("bbb", "bbb"),  0);
-});
-
+  module("DS String Type");
+  test("Compare string type", function() {
+    equals(DS.types.string.compare("A", "B"), -1);
+    equals(DS.types.string.compare("C", "B"),  1);
+    equals(DS.types.string.compare("bbb", "bbb"),  0);
+    equals(DS.types.string.compare("bbb", "bbbb"),  -1);
+    equals(DS.types.string.compare("bbb", "bbbb"),  -1);
+    equals(DS.types.string.compare("bbbb", "bbb"),  1);
+    equals(DS.types.string.compare("bbb", "bbb"),  0);
+  });
+}(this));
 
 
