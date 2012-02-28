@@ -1,15 +1,3 @@
-function baseSample() {
-  var ds = new DS.Dataset({
-    data: { columns : [ 
-      { name : "one",   data : [1, 2, 3] },
-      { name : "two",   data : [4, 5, 6] },
-      { name : "three", data : [7, 8, 9] } 
-    ] },
-    strict: true
-  });
-  return ds;
-}
-
 module("Products");
 
 module("Products :: Sum");
@@ -47,19 +35,20 @@ test("Time Sum Should Fail", function() {
     sync : true
   });
 
-  equals(ds._columns[2].type, "time");
-  try {
-    ds.sum("t").val()
-  } catch(e) {
-    ok(true, "can't sum up time.");
-  }
+  _.when(ds.fetch()).then(function(){
+    equals(ds._columns[2].type, "time");
+    try {
+      ds.sum("t").val()
+    } catch(e) {
+      ok(true, "can't sum up time.");
+    }
 
-  try {
-    ds.sum("t").val()
-  } catch(e) {
-    ok(true, "can't sum up time.");
-  }
-  
+    try {
+      ds.sum("t").val()
+    } catch(e) {
+      ok(true, "can't sum up time.");
+    }
+  });
 });
 
 module("Products :: Max");
@@ -117,10 +106,14 @@ test("Time Max Product", function() {
       "t" : { type : "time", format : 'YYYY/MM/DD' }
     },
     sync : true
+  }).fetch({
+    success : function() {
+      equals(this._columns[2].type, "time");
+      equals(this.max("t").val().valueOf(), this._columns[2].data[1].valueOf());    
+    }
   });
 
-  equals(ds._columns[2].type, "time");
-  equals(ds.max("t").val().valueOf(), ds._columns[2].data[1].valueOf());
+  
 });
 
 test("Time Max Product non syncable", function() {
@@ -134,9 +127,10 @@ test("Time Max Product non syncable", function() {
       "t" : { type : "time", format : 'YYYY/MM/DD' }
     }
   });
-
-  equals(ds._columns[2].type, "time");
-  equals(ds.max("t").valueOf(), ds._columns[2].data[1].valueOf());
+  _.when(ds.fetch()).then(function(){
+    equals(ds._columns[2].type, "time");
+    equals(ds.max("t").valueOf(), ds._columns[2].data[1].valueOf());
+  });
 });
 
 module("Products :: Min");
@@ -145,9 +139,10 @@ test("Basic Min Product", function() {
   var ds = baseSyncingSample();
 
   // check each column
-  _.each(ds._columns, function(column) {
-    if (column.name === '_id') { return }
-    var min = ds.min(column.name);
+  ds.eachColumn(function(columnName) {
+    if (columnName === '_id') { return }
+    var min = ds.min(columnName);
+    var column = ds.column(columnName);
     ok(min.val() === Math.min.apply(null, column.data), "Min is correct");  
   });
 
@@ -190,11 +185,12 @@ test("Time Min Product", function() {
     sync : true
   });
 
-  window.ds = ds;
-  equals(ds._columns[2].type, "time");
-  equals(ds.min("t").val().valueOf(), ds._columns[2].data[0].valueOf());
-  equals(ds.min("t").type(), ds._columns[2].type);
-  equals(ds.min("t").numeric(), ds._columns[2].data[0].valueOf());
+  _.when(ds.fetch()).then(function() {
+    equals(ds._columns[2].type, "time");
+    equals(ds.min("t").val().valueOf(), ds._columns[2].data[0].valueOf());
+    equals(ds.min("t").type(), ds._columns[2].type);
+    equals(ds.min("t").numeric(), ds._columns[2].data[0].valueOf());
+  });
 });
 
 test("Time Min Product Non Syncable", function() {
@@ -209,9 +205,10 @@ test("Time Min Product Non Syncable", function() {
     }
   });
 
-  window.ds = ds;
-  equals(ds._columns[2].type, "time");
-  equals(ds.min("t").valueOf(), ds._columns[2].data[0].valueOf());
+  _.when(ds.fetch(), function(){
+    equals(ds._columns[2].type, "time");
+    equals(ds.min("t").valueOf(), ds._columns[2].data[0].valueOf());
+  });
 });
 
 module("Products :: Sync");

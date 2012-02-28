@@ -70,9 +70,10 @@ test("Basic Strict Import through Dataset API", 54, function() {
     data : DS.alphabet_strict, 
     strict: true
   });
-
-  verifyImport(DS.alphabet_strict, ds);
-  equals(typeof ds.columns, "function", "columns is the function, not the columns obj");
+  _.when(ds.fetch()).then(function(){
+    verifyImport(DS.alphabet_strict, ds);
+    equals(typeof ds.columns, "function", "columns is the function, not the columns obj");
+  });
 });
 
 module("Coercion and type setting");
@@ -84,10 +85,11 @@ test("Manual column type override", function() {
       name : 'number'
     }
   });
-
-  ok(ds._columns[2].name === "name", "character is 2 column");
-  ok(ds._columns[2].type === "number", "character is 2 column");
-  ok(_.uniq(ds._columns[2].data)[0] === null, "character has been coerced to null");
+  _.when(ds.fetch()).then(function(){
+    ok(ds._columns[2].name === "name", "character is 2 column");
+    ok(ds._columns[2].type === "number", "character is 2 column");
+    ok(_.uniq(ds._columns[2].data)[0] === null, "character has been coerced to null");
+  });
 });
 
 test("Manual column type override", function() {
@@ -105,9 +107,11 @@ test("Manual column type override", function() {
     }
   });
 
-  ok(ds._columns[1].type === "time", "name column has a type of time");
-  //nasty check that it's a moment bject
-  ok(ds._columns[1].data[0].version === moment().version, "is a moment object");
+  _.when(ds.fetch()).then(function(){
+    ok(ds._columns[1].type === "time", "name column has a type of time");
+    //nasty check that it's a moment bject
+    ok(ds._columns[1].data[0].version === moment().version, "is a moment object");
+  });
 });
 
 test("Manual column type override with extra properties", function() {
@@ -121,11 +125,11 @@ test("Manual column type override with extra properties", function() {
       character : { type : 'time', format : 'MM/DD YYYY' }
     }
   });
-
-  ok(ds._columns[1].type === "time", "character column has a type of time");
-  // verify format was properly coerced
-  equals(ds._columns[1].data[0].valueOf(), moment("12/31 2012", "MM/DD YYYY"));
-
+  _.when(ds.fetch()).then(function(){
+    ok(ds._columns[1].type === "time", "character column has a type of time");
+    // verify format was properly coerced
+    equals(ds._columns[1].data[0].valueOf(), moment("12/31 2012", "MM/DD YYYY"));
+  });
 });
 
 module("Obj Importer");
@@ -161,7 +165,9 @@ test("Convert object to dataset", 57, function() {
 
 test("Convert object to dataset through dataset API", 53, function() {
   var ds = new DS.Dataset({ data : DS.alphabet_obj });
-  verifyImport(DS.alphabet_obj, ds);
+  _.when(ds.fetch()).then(function(){
+    verifyImport(DS.alphabet_obj, ds);
+  });
 });
 
 module("Remote Importer");
@@ -192,6 +198,7 @@ test("Basic json url fetch through Dataset API", 53, function() {
       start();
     }
   });
+  ds.fetch();
   stop();
 });
 
@@ -227,6 +234,7 @@ test("Basic jsonp url fetch with Dataset API", 53, function() {
       start();
     }
   });
+  ds.fetch();
   stop();
 });
   
@@ -270,8 +278,9 @@ test("Basic delimiter parsing test with Dataset API", 53, function() {
     data : window.DS.alphabet_csv,
     delimiter : ","
   });
-  
-  verifyImport(DS.alphabet_strict, ds);
+  _.when(ds.fetch()).then(function(){
+    verifyImport(DS.alphabet_strict, ds);
+  });
 });
 
 test("Basic delimiter parsing test with custom separator", 53, function() {
@@ -292,8 +301,9 @@ test("Basic delimiter parsing test with custom separator with Dataset API", 53, 
     data : window.DS.alphabet_customseparator,
     delimiter : "###"
   });
-  
-  verifyImport(DS.alphabet_strict, ds);
+  _.when(ds.fetch()).then(function(){
+    verifyImport(DS.alphabet_strict, ds);
+  })
 });
 
 module("Google Spreadsheet Support");
@@ -365,6 +375,7 @@ test("Google spreadsheet dataset test", function() {
       start();
     }
   });
+  ds.fetch();
 });
 
 

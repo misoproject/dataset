@@ -38,6 +38,8 @@ Version 0.0.1.2
   *     so that we don't trigger a sort otherwise.
   *   comparator : function (optional) - takes two rows and returns 1, 0, or -1  if row1 is
   *     before, equal or after row2. 
+  *   deferred : by default we use underscore.deferred, but if you want to pass your own (like jquery's) just
+  *              pass it here.
   }
   */
 
@@ -65,26 +67,27 @@ Version 0.0.1.2
 
       // initialize importer from options or just create a blank
       // one for now, we'll detect it later.
-      var importer = options.importer || null;
+      this.importer = options.importer || null;
 
       // default parser is object parser, unless otherwise specified.
-      var parser  = options.parser || DS.Parsers.Obj;
+      this.parser  = options.parser || DS.Parsers.Obj;
 
       // figure out out if we need another parser.
       if (_.isUndefined(options.parser)) {
         if (options.strict) {
-          parser = DS.Parsers.Strict;
+          this.parser = DS.Parsers.Strict;
         } else if (options.delimiter) {
-          parser = DS.Parsers.Delimited;
+          this.parser = DS.Parsers.Delimited;
         } else if (options.google_spreadsheet) {
-          parser = DS.Parsers.GoogleSpreadsheet;
+          this.parser = DS.Parsers.GoogleSpreadsheet;
         }
       }
 
       // set up some base options for importer.
       var importerOptions = _.extend({}, 
         options,
-      { parser : parser });
+        { parser : this.parser }
+      );
 
       if (options.delimiter) {
         importerOptions.dataType = "text";
@@ -95,27 +98,71 @@ Version 0.0.1.2
       }
 
       // initialize the proper importer
-      if (importer === null) {
+      if (this.importer === null) {
         if (options.url) {
-          importer = DS.Importers.Remote;
+          this.importer = DS.Importers.Remote;
         } else if (options.google_spreadsheet) {
-          importer = DS.Importers.GoogleSpreadsheet;
+          this.importer = DS.Importers.GoogleSpreadsheet;
           delete options.google_spreadsheet;
         } else {
-          importer = DS.Importers.Local;
+          this.importer = DS.Importers.Local;
         }
       }
 
       // initialize actual new importer.
-      importer = new importer(importerOptions);
+      this.importer = new this.importer(importerOptions);
 
       // save comparator if we have one
       if (options.comparator) {
         this.comparator = options.comparator;  
       }
 
-      if (importer !== null) {
-        importer.fetch(_.extend({
+      // if we have a ready callback, save it too
+      if (options.ready) {
+        this.ready = options.ready;
+      }
+
+      // if for any reason, you want to use a different deferred
+      // implementation, pass it as an option
+      if (options.deferred) {
+        this.deferred = options.deferred;
+      }
+    },
+
+    /**
+    * Responsible for actually fetching the data based on the initialized dataset.
+    * Note that this needs to be called for either local or remote data.
+    * There are three different ways to use this method:
+    * ds.fetch() - will just fetch the data based on the importer. Note that for async 
+    *              fetching this isn't blocking so don't put your next set of instructions
+    *              expecting the data to be there.
+    * ds.fetch({
+    *   success: function() { 
+    *     // do stuff
+    *     // this is the dataset.
+    *   },
+    *   error : function(e) {
+    *     // do stuff
+    *   }
+    * })        - Allows you to pass success and error callbacks that will be called once data
+    *             is property fetched.
+    *
+    * _.when(ds.fetch(), function() {
+    *   // do stuff
+    *   // note 'this' is NOT the dataset.
+    * })        - Allows you to use deferred behavior to potentially chain multiple datasets.
+    *
+    * @param {object} options Optional success/error callbacks.
+    **/
+    fetch : function(options) {
+      options = options || {};
+      
+      var dfd = this.deferred || new _.Deferred();
+
+      if (this.importer !== null) {
+
+        this.importer.fetch({
+          
           success: _.bind(function(d) {
             _.extend(this, d);
 
@@ -125,12 +172,35 @@ Version 0.0.1.2
             }
 
             // call ready method
-            if (options.ready) {
-              options.ready.call(this);
+            if (this.ready) {
+              this.ready.call(this);
             }
+
+            // call success method if any passed
+            if (options.success) {
+              options.success.call(this);
+            }
+
+            // resolve deferred
+            dfd.resolve(this);
+
+          }, this),
+
+          error : _.bind(function(e) {
+
+            // call error if any passed
+            if (options.error) {
+              options.error.call(this);
+            }
+
+            // reject deferred
+            dfd.reject(e);
+
           }, this)
-          }, options));
-        }
+        });
+      }
+
+      return dfd.promise();
     },
 
     /**

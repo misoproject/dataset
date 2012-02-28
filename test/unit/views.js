@@ -433,11 +433,13 @@ test("Basic Sort", function() {
     return 0;
   }
 
-  ds.sort();
+  _.when(ds.fetch(), function(){
+    ds.sort();
 
-  ok(_.isEqual(ds._columns[1].data, [2,3,3,4,10,14]));
-  ok(_.isEqual(ds._columns[2].data, [5,6,1,1,4,1]));
-  ok(_.isEqual(ds._columns[3].data, [8,9,1,1,7,1]));
+    ok(_.isEqual(ds._columns[1].data, [2,3,3,4,10,14]));
+    ok(_.isEqual(ds._columns[2].data, [5,6,1,1,4,1]));
+    ok(_.isEqual(ds._columns[3].data, [8,9,1,1,7,1]));
+  });
 
 });
 
@@ -456,13 +458,13 @@ test("Basic Sort reverse", function() {
     if (r1.one < r2.one) return 1;
     return 0;
   }
-
-  ds.sort();
-  
-  ok(_.isEqual(ds._columns[1].data, [2,3,3,4,10,14].reverse()));
-  ok(_.isEqual(ds._columns[2].data, [5,6,1,1,4,1].reverse()));
-  ok(_.isEqual(ds._columns[3].data, [8,9,1,1,7,1].reverse()));
-
+  _.when(ds.fetch(), function(){
+    ds.sort();
+    
+    ok(_.isEqual(ds._columns[1].data, [2,3,3,4,10,14].reverse()));
+    ok(_.isEqual(ds._columns[2].data, [5,6,1,1,4,1].reverse()));
+    ok(_.isEqual(ds._columns[3].data, [8,9,1,1,7,1].reverse()));
+  });
 });
 
 test("Sort in init", function() {
@@ -479,10 +481,11 @@ test("Sort in init", function() {
     },
     strict: true
   });
-  
-  ok(_.isEqual(ds._columns[1].data, [2,3,3,4,10,14].reverse()));
-  ok(_.isEqual(ds._columns[2].data, [5,6,1,1,4,1].reverse()));
-  ok(_.isEqual(ds._columns[3].data, [8,9,1,1,7,1].reverse()));
+  _.when(ds.fetch(), function(){
+    ok(_.isEqual(ds._columns[1].data, [2,3,3,4,10,14].reverse()));
+    ok(_.isEqual(ds._columns[2].data, [5,6,1,1,4,1].reverse()));
+    ok(_.isEqual(ds._columns[3].data, [8,9,1,1,7,1].reverse()));
+  });
 });
 
 test("Add row in sorted order", function() {
@@ -499,15 +502,15 @@ test("Add row in sorted order", function() {
     },
     strict: true
   });
+  _.when(ds.fetch(), function(){
+    ds.add({
+      one : 5, two: 5, three: 5
+    });
 
-  ds.add({
-    one : 5, two: 5, three: 5
+    ok(_.isEqual(ds._columns[1].data, [2,3,3,4,5,10,14]));
+    ok(_.isEqual(ds._columns[2].data, [5,6,1,1,5,4,1]));
+    ok(_.isEqual(ds._columns[3].data, [8,9,1,1,5,7,1]));
   });
-
-  ok(_.isEqual(ds._columns[1].data, [2,3,3,4,5,10,14]));
-  ok(_.isEqual(ds._columns[2].data, [5,6,1,1,5,4,1]));
-  ok(_.isEqual(ds._columns[3].data, [8,9,1,1,5,7,1]));
-
 });
 
 test("Add row in reverse sorted order", function() {
@@ -525,12 +528,13 @@ test("Add row in reverse sorted order", function() {
     strict: true
   });
 
-  ds.add({
-    one : 5, two: 5, three: 5
+  _.when(ds.fetch(), function(){
+    ds.add({
+      one : 5, two: 5, three: 5
+    });
+    
+    ok(_.isEqual(ds._columns[1].data, [2,3,3,4,5,10,14].reverse()));
+    ok(_.isEqual(ds._columns[2].data, [5,6,1,1,5,4,1].reverse()));
+    ok(_.isEqual(ds._columns[3].data, [8,9,1,1,5,7,1].reverse()));
   });
-  
-  ok(_.isEqual(ds._columns[1].data, [2,3,3,4,5,10,14].reverse()));
-  ok(_.isEqual(ds._columns[2].data, [5,6,1,1,5,4,1].reverse()));
-  ok(_.isEqual(ds._columns[3].data, [8,9,1,1,5,7,1].reverse()));
-
 });

@@ -116,7 +116,13 @@
       });
 
       // TODO: subscribe this to parent dataset!
-      return ds;
+      var fetcheddata = null;
+      ds.fetch({
+        success : function() {
+          fetcheddata = this;
+        }
+      });
+      return fetcheddata;
     }
   });
 
