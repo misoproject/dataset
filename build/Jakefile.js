@@ -53,7 +53,8 @@ var // Program References
 				browser: true,
 				boss: true,
 				predef: [ "_", "moment" ],
-				loopfunc: true
+				loopfunc: true,
+				bitwise : true,
 				// onevar: true,
 				// "eqnull": true,
 				// "immed": true,

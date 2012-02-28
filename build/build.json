@@ -2,10 +2,9 @@
   "files": {
     "../dist/ds": {
       "src": [
-        "../src/lib/underscore.js",
-        "../src/lib/underscore.math.js",
         "../src/lib/moment.js",
         "../src/core.js",
+        "../src/sync.js",
         "../src/view.js",
         "../src/dataset.js",
         "../src/product.js",

@@ -125,11 +125,10 @@
             } else {
 
               // we are building the column names here
-              d._columns.push({
+              d._columns.push(this._buildColumn({
                 name : strMatchedValue,
-                data : [],
-                _id  : _.uniqueId()
-              });
+                data : []
+              }));
             }
         }
 
@@ -137,6 +136,7 @@
         return d;
       };
 
+      parseCSV = _.bind(parseCSV, this);
       parseCSV(
         this.__delimiterPatterns, 
         this._data, 

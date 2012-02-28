@@ -16,20 +16,27 @@
     * group rows by values in a given column
     * @param {byColumn} column by which rows will be grouped
     * @param {columns} columns to be included
-    * @param {method} function to be applied, default addition
+    * @params {object} options 
+    *   method function to be applied, default addition
+    *   preprocess - specify a normalization function for the
+    * byColumn values if you need to group by some kind of derivation of 
+    * those values that are not just equality based.
     */
-    groupBy : function(byColumn, columns, method) {
+    groupBy : function(byColumn, columns, options) {
+      
+      options = options || {};
+
       // TODO: should we check type match here?
       // default method is addition
-      method = method || function(array) {
-        return _.reduce(array, function(memo, num){ 
-          return memo + num; 
-        }, 0);
-      };
+      var method = options.method || _.sum;
 
       var d = {
         _columns : []
       };
+
+      if (options && options.preprocess) {
+        this.preprocess = options.preprocess;  
+      }
 
       var parser = new DS.Parsers();
 
@@ -53,7 +60,12 @@
 
       // bin all values by their categories
       for(var i = 0; i < this.length; i++) {
-        var category = this._columns[this._columnPositionByName[byColumn]].data[i];
+        var category = null;
+        if (this.preprocess) {
+          category = this.preprocess(this._columns[this._columnPositionByName[byColumn]].data[i]);
+        } else {
+          category = this._columns[this._columnPositionByName[byColumn]].data[i];  
+        }
          
         if (_.isUndefined(categoryPositions[category])) {
             

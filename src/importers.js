@@ -14,12 +14,17 @@
     * @param {string} type The type of the data in the column
     */
     _buildColumn : function(name, type, data) {
-      return {
-        _id : _.uniqueId(),
-        name : name,
-        type : type,
-        data : (data || [])
-      };
+      // if all properties were passed as an object rather
+      // than separatly
+      if (_.isObject(name) && arguments.length === 1) {
+        return new DS.Column(name);  
+      } else {
+        return new DS.Column({
+          name : name,
+          type : type,
+          data : data
+        });
+      }
     },
 
     build : function(options) {
@@ -40,16 +45,7 @@
       // also save raw type function onto column for future computable
       // value extraction
       _.each(d._columns, function(column, index) {
-
-        column.toNumeric = DS.types[column.type].numeric;
-        column.numericAt = function(index) {
-          return column.toNumeric( column.data[index], index );
-        };
-
-        // coerce data based on detected type.
-        column.data = _.map(column.data, function(datum) {
-          return DS.types[column.type].coerce(datum, column.typeOptions);
-        });
+        column.coerce();
       });
       return d;
     },
@@ -213,20 +209,16 @@
     DS.Parsers.prototype, {
 
       _buildColumns : function(d) {
-        d._columns = this._data._columns;
-
-        // add unique ids to columns
-        // TODO do we still need this??
-        _.each(d._columns, function(column) {
-          if (typeof column._id === "undefined") {
-            column._id = _.uniqueId();
-          }
-        });
+        d._columns = [];
+        
+        _.each(this._data._columns, function(columnOpts) {
+          d._columns.push(this._buildColumn(columnOpts));
+        }, this);
 
         // add row _id column. Generate auto ids if there
         // isn't already a unique id column.
         if (_.pluck(d._columns, "name").indexOf("_id") === -1) {
-          this._addIdColumn(this._data, d._columns[0].data.length);
+          this._addIdColumn(d, d._columns[0].data.length);
         }
 
         return d;
