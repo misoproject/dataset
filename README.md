@@ -1,11 +1,109 @@
-New Dataset Readme Outline:
+# Dataset.js
 
-IF YOU WANT TO USE DATASET
-==========================
+Dataset is a library that makes it easy to work with data on the client. Dataset makes it painless to import &amp; standardise datsets and then select &amp; manipulate data within them.
 
-1. Explain what dataset is
-  - What its purpose is
-  - How to download it 
+Download Production :: Download Development
+
+## Why Dataset
+
+Dataset is designed to solve common problems and patterns around client-side dataset manipulation and management. Unlike more general client-side model frameworks dataset is designed exclusively for working with matricies/tables of data. This allows dataset to provide a rich set of capabilities bit with this specific use case in mind as well as optimise for large numbers of rows in a standard format.
+
+## What Dataset does
+
+### Importing
+Out of the box dataset can take local or remote files in almost any common format such as JSON, CSV, TSV as well as a growing library of APIs (Google Spreadsheets, NYTimes Congress, Github) & convert that data into a local dataset. 
+
+The import system can also easily be extended for custom data formats and other APIs. Dataset also supports type coercion, making it trivial to convert strings to numbers or timestamps to `moment` objects. The type system itself can also be extended to support new rich data types as needed.
+
+```javascript
+  new DS.Dataset({ url : 'http://example.com/feed.json' });
+
+  new DS.Dataset({
+    data : localJson,
+    coerceColumns : {
+      'timestamp' : { type : 'time', format : 'MM/DD YYYY' },
+      'total' : { type : 'numeric' }
+    }
+  });
+```
+
+### Selection
+Dataset makes it easy to select sections of your columns and rows based on either static or function based criteria.
+
+```javascript
+  var ds = new DS.Dataset({ ... });
+
+  ds.select({
+    rows : function(row) {
+      return row.total > 5000 ? true : false
+    },
+    columns : ['name', 'total']
+  });
+```
+
+### Grouping &amp; Modification
+Dataset comes with a powerful set of abilities to modify your data to generate moving averages, group data by other rows and other abilities. These will create a new dataset and leave the original untouched.
+
+```javascript
+  var ds = new DS.Dataset({ ... });
+
+  ds.groupBy('state', ['income', 'expenditure']);
+  ds.movingAvg('income', { width : 3 } )
+```
+
+### Products
+Generate numbers about your data - min, max, mean, mode.
+
+```javascript
+  var ds = new DS.Dataset({ ... });
+
+  ds.mode('income');
+  ds.max('income');
+```
+
+
+### Realtime / Live updates
+Products, Modifications and Selections can all be live, meaning changes and updates to the underlying dataset will be reflected in those as well, making it easy to handle sophisticated visualisations on top of realtime data. 
+
+Live products, modifications and selections emit events and can have callbacks bound to them changing. The synced versions of each can accessed as such:
+
+#### Selections
+
+```javascript
+  var ds = new DS.Dataset({ ... });
+
+  var view = ds.view({ rows : function(row) {
+    return row.assets > 100000;
+  });
+
+  //events
+  view.on('add', function() { ... });
+  view.on('remove', function() { ... });
+  view.on('update', function() { ... });
+```
+
+#### Modifications
+
+```javascript
+  var ds = new DS.Dataset({ ... });
+
+  ds.derive('groupBy', 'state', ['income', 'expenditure']);
+```
+
+#### Products
+
+```javascript
+  var ds = new DS.Dataset({ ... });
+
+  ds.product('max', 'assets');
+```
+
+***
+***
+***
+***
+
+## What Dataset doesn't do
 
 2. Explain why it exists
   - Why we made it
