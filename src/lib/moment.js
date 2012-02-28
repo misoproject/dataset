@@ -1,2 +1,650 @@
-/* Moment.js | version : 1.3.0 | author : Tim Wood | license : MIT */
-(function(a,b){function q(a){this._d=a}function r(a,b){var c=a+"";while(c.length<b)c="0"+c;return c}function s(b,c,d,e){var f=typeof c=="string",g=f?{}:c,h,i,j,k;return f&&e&&(g[c]=e),h=(g.ms||g.milliseconds||0)+(g.s||g.seconds||0)*1e3+(g.m||g.minutes||0)*6e4+(g.h||g.hours||0)*36e5,i=(g.d||g.days||0)+(g.w||g.weeks||0)*7,j=(g.M||g.months||0)+(g.y||g.years||0)*12,h&&b.setTime(+b+h*d),i&&b.setDate(b.getDate()+i*d),j&&(k=b.getDate(),b.setDate(1),b.setMonth(b.getMonth()+j*d),b.setDate(Math.min((new a(b.getFullYear(),b.getMonth()+1,0)).getDate(),k))),b}function t(a){return Object.prototype.toString.call(a)==="[object Array]"}function u(b){return new a(b[0],b[1]||0,b[2]||1,b[3]||0,b[4]||0,b[5]||0,b[6]||0)}function v(b,d){function u(d){var e,i;switch(d){case"M":return f+1;case"Mo":return f+1+s(f+1);case"MM":return r(f+1,2);case"MMM":return c.monthsShort[f];case"MMMM":return c.months[f];case"D":return g;case"Do":return g+s(g);case"DD":return r(g,2);case"DDD":return e=new a(h,f,g),i=new a(h,0,1),~~((e-i)/864e5+1.5);case"DDDo":return e=u("DDD"),e+s(e);case"DDDD":return r(u("DDD"),3);case"d":return l;case"do":return l+s(l);case"ddd":return c.weekdaysShort[l];case"dddd":return c.weekdays[l];case"w":return e=new a(h,f,g-l+5),i=new a(e.getFullYear(),0,4),~~((e-i)/864e5/7+1.5);case"wo":return e=u("w"),e+s(e);case"ww":return r(u("w"),2);case"YY":return r(h%100,2);case"YYYY":return h;case"a":return m>11?t.pm:t.am;case"A":return m>11?t.PM:t.AM;case"H":return m;case"HH":return r(m,2);case"h":return m%12||12;case"hh":return r(m%12||12,2);case"m":return n;case"mm":return r(n,2);case"s":return o;case"ss":return r(o,2);case"zz":case"z":return(b.toString().match(k)||[""])[0].replace(j,"");case"Z":return(p>0?"+":"-")+r(~~(Math.abs(p)/60),2)+":"+r(~~(Math.abs(p)%60),2);case"ZZ":return(p>0?"+":"-")+r(~~(10*Math.abs(p)/6),4);case"L":case"LL":case"LLL":case"LLLL":case"LT":return v(b,c.longDateFormat[d]);default:return d.replace(/(^\[)|(\\)|\]$/g,"")}}var e=new q(b),f=e.month(),g=e.date(),h=e.year(),l=e.day(),m=e.hours(),n=e.minutes(),o=e.seconds(),p=e.zone(),s=c.ordinal,t=c.meridiem;return d.replace(i,u)}function w(b,d){function p(a,b){var d;switch(a){case"M":case"MM":e[1]=~~b-1;break;case"MMM":case"MMMM":for(d=0;d<12;d++)if(c.monthsParse[d].test(b)){e[1]=d;break}break;case"D":case"DD":case"DDD":case"DDDD":e[2]=~~b;break;case"YY":b=~~b,e[0]=b+(b>70?1900:2e3);break;case"YYYY":e[0]=~~Math.abs(b);break;case"a":case"A":o=b.toLowerCase()==="pm";break;case"H":case"HH":case"h":case"hh":e[3]=~~b;break;case"m":case"mm":e[4]=~~b;break;case"s":case"ss":e[5]=~~b;break;case"Z":case"ZZ":h=!0,d=b.match(n),d[1]&&(f=~~d[1]),d[2]&&(g=~~d[2]),d[0]==="-"&&(f=-f,g=-g)}}var e=[0,0,1,0,0,0,0],f=0,g=0,h=!1,i=b.match(m),j=d.match(l),k,o;for(k=0;k<j.length;k++)p(j[k],i[k]);return o&&e[3]<12&&(e[3]+=12),o===!1&&e[3]===12&&(e[3]=0),e[3]+=f,e[4]+=g,h?new a(a.UTC.apply({},e)):u(e)}function x(a,b){var c=Math.min(a.length,b.length),d=Math.abs(a.length-b.length),e=0,f;for(f=0;f<c;f++)~~a[f]!==~~b[f]&&e++;return e+d}function y(a,b){var c,d=a.match(m),e=[],f=99,g,h,i;for(g=0;g<b.length;g++)h=w(a,b[g]),i=x(d,v(h,b[g]).match(m)),i<f&&(f=i,c=h);return c}function z(a,b,d){var e=c.relativeTime[a];return typeof e=="function"?e(b||1,!!d,a):e.replace(/%d/i,b||1)}function A(a,b){var c=d(Math.abs(a)/1e3),e=d(c/60),f=d(e/60),g=d(f/24),h=d(g/365),i=c<45&&["s",c]||e===1&&["m"]||e<45&&["mm",e]||f===1&&["h"]||f<22&&["hh",f]||g===1&&["d"]||g<=25&&["dd",g]||g<=45&&["M"]||g<345&&["MM",d(g/30)]||h===1&&["y"]||["yy",h];return i[2]=b,z.apply({},i)}function B(a,b){c.fn[a]=function(a){return a!=null?(this._d["set"+b](a),this):this._d["get"+b]()}}var c,d=Math.round,e={},f=typeof module!="undefined",g="months|monthsShort|monthsParse|weekdays|weekdaysShort|longDateFormat|calendar|relativeTime|ordinal|meridiem".split("|"),h,i=/(\[[^\[]*\])|(\\)?(Mo|MM?M?M?|Do|DDDo|DD?D?D?|dddd?|do?|w[o|w]?|YYYY|YY|a|A|hh?|HH?|mm?|ss?|zz?|ZZ?|LT|LL?L?L?)/g,j=/[^A-Z]/g,k=/\([A-Za-z ]+\)|:[0-9]{2} [A-Z]{3} /g,l=/(\\)?(MM?M?M?|dd?d?d|DD?D?D?|YYYY|YY|a|A|hh?|HH?|mm?|ss?|ZZ?|T)/g,m=/(\\)?([0-9]+|([a-zA-Z\u00A0-\uD7FF\uF900-\uFDCF\uFDF0-\uFFEF])+|([\+\-]\d\d:?\d\d))/gi,n=/([\+\-]|\d\d)/gi,o="1.3.0",p="Month|Date|Hours|Minutes|Seconds|Milliseconds".split("|");c=function(c,d){if(c===null)return null;var e;return c&&c._d instanceof a?e=new a(+c._d):d?t(d)?e=y(c,d):e=w(c,d):e=c===b?new a:c instanceof a?c:t(c)?u(c):new a(c),new q(e)},c.version=o,c.lang=function(a,b){var d,h,i,j=[];if(b){for(d=0;d<12;d++)j[d]=new RegExp("^"+b.months[d]+"|^"+b.monthsShort[d].replace(".",""),"i");b.monthsParse=b.monthsParse||j,e[a]=b}if(e[a])for(d=0;d<g.length;d++)h=g[d],c[h]=e[a][h]||c[h];else f&&(i=require("./lang/"+a),c.lang(a,i))},c.lang("en",{months:"January_February_March_April_May_June_July_August_September_October_November_December".split("_"),monthsShort:"Jan_Feb_Mar_Apr_May_Jun_Jul_Aug_Sep_Oct_Nov_Dec".split("_"),weekdays:"Sunday_Monday_Tuesday_Wednesday_Thursday_Friday_Saturday".split("_"),weekdaysShort:"Sun_Mon_Tue_Wed_Thu_Fri_Sat".split("_"),longDateFormat:{LT:"h:mm A",L:"MM/DD/YYYY",LL:"MMMM D YYYY",LLL:"MMMM D YYYY LT",LLLL:"dddd, MMMM D YYYY LT"},meridiem:{AM:"AM",am:"am",PM:"PM",pm:"pm"},calendar:{sameDay:"[Today at] LT",nextDay:"[Tomorrow at] LT",nextWeek:"dddd [at] LT",lastDay:"[Yesterday at] LT",lastWeek:"[last] dddd [at] LT",sameElse:"L"},relativeTime:{future:"in %s",past:"%s ago",s:"a few seconds",m:"a minute",mm:"%d minutes",h:"an hour",hh:"%d hours",d:"a day",dd:"%d days",M:"a month",MM:"%d months",y:"a year",yy:"%d years"},ordinal:function(a){var b=a%10;return~~(a%100/10)===1?"th":b===1?"st":b===2?"nd":b===3?"rd":"th"}}),c.fn=q.prototype={clone:function(){return c(this)},valueOf:function(){return+this._d},"native":function(){return this._d},toString:function(){return this._d.toString()},toDate:function(){return this._d},format:function(a){return v(this._d,a)},add:function(a,b){return this._d=s(this._d,a,1,b),this},subtract:function(a,b){return this._d=s(this._d,a,-1,b),this},diff:function(a,b,e){var f=c(a),g=this._d-f._d,h=this.year()-f.year(),i=this.month()-f.month(),j=this.day()-f.day(),k;return b==="months"?k=h*12+i+j/30:b==="years"?k=h+i/12:k=b==="seconds"?g/1e3:b==="minutes"?g/6e4:b==="hours"?g/36e5:b==="days"?g/864e5:b==="weeks"?g/6048e5:b==="days"?g/3600:g,e?k:d(k)},from:function(a,b){var d=this.diff(a),e=c.relativeTime,f=A(d,b);return b?f:(d<=0?e.past:e.future).replace(/%s/i,f)},fromNow:function(a){return this.from(c(),a)},calendar:function(){var a=c(),b=c([a.year(),a.month(),a.date()]),d=this.diff(b,"days",!0),e=c.calendar,f=e.sameElse,g=d<-6?f:d<-1?e.lastWeek:d<0?e.lastDay:d<1?e.sameDay:d<2?e.nextDay:d<7?e.nextWeek:f;return this.format(typeof g=="function"?g.apply(this):g)},isLeapYear:function(){var a=this.year();return a%4===0&&a%100!==0||a%400===0},isDST:function(){return this.zone()!==c([this.year()]).zone()},day:function(a){var b=this._d.getDay();return a==null?b:this.add({d:a-b})}};for(h=0;h<p.length;h++)B(p[h].toLowerCase(),p[h]);B("year","FullYear"),c.fn.zone=function(){return this._d.getTimezoneOffset()},f&&(module.exports=c),typeof window!="undefined"&&(window.moment=c)})(Date);
+// Moment.js
+//
+// (c) 2011 Tim Wood
+// Moment.js is freely distributable under the terms of the MIT license.
+//
+// Version 1.4.0
+
+/*global define:false */
+
+(function (Date, undefined) {
+
+    var moment,
+        round = Math.round,
+        languages = {},
+        hasModule = (typeof module !== 'undefined'),
+        paramsToParse = 'months|monthsShort|monthsParse|weekdays|weekdaysShort|longDateFormat|calendar|relativeTime|ordinal|meridiem'.split('|'),
+        i,
+        jsonRegex = /^\/?Date\((\d+)/i,
+        charactersToReplace = /(\[[^\[]*\])|(\\)?(Mo|MM?M?M?|Do|DDDo|DD?D?D?|dddd?|do?|w[o|w]?|YYYY|YY|a|A|hh?|HH?|mm?|ss?|zz?|ZZ?|LT|LL?L?L?)/g,
+        nonuppercaseLetters = /[^A-Z]/g,
+        timezoneRegex = /\([A-Za-z ]+\)|:[0-9]{2} [A-Z]{3} /g,
+        tokenCharacters = /(\\)?(MM?M?M?|dd?d?d|DD?D?D?|YYYY|YY|a|A|hh?|HH?|mm?|ss?|ZZ?|T)/g,
+        inputCharacters = /(\\)?([0-9]+|([a-zA-Z\u00A0-\uD7FF\uF900-\uFDCF\uFDF0-\uFFEF])+|([\+\-]\d\d:?\d\d))/gi,
+        timezoneParseRegex = /([\+\-]|\d\d)/gi,
+        VERSION = "1.4.0",
+        shortcuts = 'Month|Date|Hours|Minutes|Seconds|Milliseconds'.split('|');
+
+    // Moment prototype object
+    function Moment(date) {
+        this._d = date;
+    }
+
+    // left zero fill a number
+    // see http://jsperf.com/left-zero-filling for performance comparison
+    function leftZeroFill(number, targetLength) {
+        var output = number + '';
+        while (output.length < targetLength) {
+            output = '0' + output;
+        }
+        return output;
+    }
+
+    // helper function for _.addTime and _.subtractTime
+    function dateAddRemove(date, _input, adding, val) {
+        var isString = (typeof _input === 'string'),
+            input = isString ? {} : _input,
+            ms, d, M, currentDate;
+        if (isString && val) {
+            input[_input] = +val;
+        }
+        ms = (input.ms || input.milliseconds || 0) +
+            (input.s || input.seconds || 0) * 1e3 + // 1000
+            (input.m || input.minutes || 0) * 6e4 + // 1000 * 60
+            (input.h || input.hours || 0) * 36e5; // 1000 * 60 * 60
+        d = (input.d || input.days || 0) +
+            (input.w || input.weeks || 0) * 7;
+        M = (input.M || input.months || 0) +
+            (input.y || input.years || 0) * 12;
+        if (ms) {
+            date.setTime(+date + ms * adding);
+        }
+        if (d) {
+            date.setDate(date.getDate() + d * adding);
+        }
+        if (M) {
+            currentDate = date.getDate();
+            date.setDate(1);
+            date.setMonth(date.getMonth() + M * adding);
+            date.setDate(Math.min(new Date(date.getFullYear(), date.getMonth() + 1, 0).getDate(), currentDate));
+        }
+        return date;
+    }
+
+    // check if is an array
+    function isArray(input) {
+        return Object.prototype.toString.call(input) === '[object Array]';
+    }
+
+    // convert an array to a date.
+    // the array should mirror the parameters below
+    // note: all values past the year are optional and will default to the lowest possible value.
+    // [year, month, day , hour, minute, second, millisecond]
+    function dateFromArray(input) {
+        return new Date(input[0], input[1] || 0, input[2] || 1, input[3] || 0, input[4] || 0, input[5] || 0, input[6] || 0);
+    }
+
+    // format date using native date object
+    function formatDate(date, inputString) {
+        var m = new Moment(date),
+            currentMonth = m.month(),
+            currentDate = m.date(),
+            currentYear = m.year(),
+            currentDay = m.day(),
+            currentHours = m.hours(),
+            currentMinutes = m.minutes(),
+            currentSeconds = m.seconds(),
+            currentZone = -m.zone(),
+            ordinal = moment.ordinal,
+            meridiem = moment.meridiem;
+        // check if the character is a format
+        // return formatted string or non string.
+        //
+        // uses switch/case instead of an object of named functions (like http://phpjs.org/functions/date:380)
+        // for minification and performance
+        // see http://jsperf.com/object-of-functions-vs-switch for performance comparison
+        function replaceFunction(input) {
+            // create a couple variables to be used later inside one of the cases.
+            var a, b;
+            switch (input) {
+                // MONTH
+            case 'M' :
+                return currentMonth + 1;
+            case 'Mo' :
+                return (currentMonth + 1) + ordinal(currentMonth + 1);
+            case 'MM' :
+                return leftZeroFill(currentMonth + 1, 2);
+            case 'MMM' :
+                return moment.monthsShort[currentMonth];
+            case 'MMMM' :
+                return moment.months[currentMonth];
+            // DAY OF MONTH
+            case 'D' :
+                return currentDate;
+            case 'Do' :
+                return currentDate + ordinal(currentDate);
+            case 'DD' :
+                return leftZeroFill(currentDate, 2);
+            // DAY OF YEAR
+            case 'DDD' :
+                a = new Date(currentYear, currentMonth, currentDate);
+                b = new Date(currentYear, 0, 1);
+                return ~~ (((a - b) / 864e5) + 1.5);
+            case 'DDDo' :
+                a = replaceFunction('DDD');
+                return a + ordinal(a);
+            case 'DDDD' :
+                return leftZeroFill(replaceFunction('DDD'), 3);
+            // WEEKDAY
+            case 'd' :
+                return currentDay;
+            case 'do' :
+                return currentDay + ordinal(currentDay);
+            case 'ddd' :
+                return moment.weekdaysShort[currentDay];
+            case 'dddd' :
+                return moment.weekdays[currentDay];
+            // WEEK OF YEAR
+            case 'w' :
+                a = new Date(currentYear, currentMonth, currentDate - currentDay + 5);
+                b = new Date(a.getFullYear(), 0, 4);
+                return ~~ ((a - b) / 864e5 / 7 + 1.5);
+            case 'wo' :
+                a = replaceFunction('w');
+                return a + ordinal(a);
+            case 'ww' :
+                return leftZeroFill(replaceFunction('w'), 2);
+            // YEAR
+            case 'YY' :
+                return leftZeroFill(currentYear % 100, 2);
+            case 'YYYY' :
+                return currentYear;
+            // AM / PM
+            case 'a' :
+                return currentHours > 11 ? meridiem.pm : meridiem.am;
+            case 'A' :
+                return currentHours > 11 ? meridiem.PM : meridiem.AM;
+            // 24 HOUR
+            case 'H' :
+                return currentHours;
+            case 'HH' :
+                return leftZeroFill(currentHours, 2);
+            // 12 HOUR
+            case 'h' :
+                return currentHours % 12 || 12;
+            case 'hh' :
+                return leftZeroFill(currentHours % 12 || 12, 2);
+            // MINUTE
+            case 'm' :
+                return currentMinutes;
+            case 'mm' :
+                return leftZeroFill(currentMinutes, 2);
+            // SECOND
+            case 's' :
+                return currentSeconds;
+            case 'ss' :
+                return leftZeroFill(currentSeconds, 2);
+            // TIMEZONE
+            case 'zz' :
+                // depreciating 'zz' fall through to 'z'
+            case 'z' :
+                return (date.toString().match(timezoneRegex) || [''])[0].replace(nonuppercaseLetters, '');
+            case 'Z' :
+                return (currentZone > 0 ? '+' : '-') + leftZeroFill(~~(Math.abs(currentZone) / 60), 2) + ':' + leftZeroFill(~~(Math.abs(currentZone) % 60), 2);
+            case 'ZZ' :
+                return (currentZone > 0 ? '+' : '-') + leftZeroFill(~~(10 * Math.abs(currentZone) / 6), 4);
+            // LONG DATES
+            case 'L' :
+            case 'LL' :
+            case 'LLL' :
+            case 'LLLL' :
+            case 'LT' :
+                return formatDate(date, moment.longDateFormat[input]);
+            // DEFAULT
+            default :
+                return input.replace(/(^\[)|(\\)|\]$/g, "");
+            }
+        }
+        return inputString.replace(charactersToReplace, replaceFunction);
+    }
+
+    // date from string and format string
+    function makeDateFromStringAndFormat(string, format) {
+        var inArray = [0, 0, 1, 0, 0, 0, 0],
+            timezoneHours = 0,
+            timezoneMinutes = 0,
+            isUsingUTC = false,
+            inputParts = string.match(inputCharacters),
+            formatParts = format.match(tokenCharacters),
+            i,
+            isPm;
+
+        // function to convert string input to date
+        function addTime(format, input) {
+            var a;
+            switch (format) {
+            // MONTH
+            case 'M' :
+                // fall through to MM
+            case 'MM' :
+                inArray[1] = ~~input - 1;
+                break;
+            case 'MMM' :
+                // fall through to MMMM
+            case 'MMMM' :
+                for (a = 0; a < 12; a++) {
+                    if (moment.monthsParse[a].test(input)) {
+                        inArray[1] = a;
+                        break;
+                    }
+                }
+                break;
+            // DAY OF MONTH
+            case 'D' :
+                // fall through to DDDD
+            case 'DD' :
+                // fall through to DDDD
+            case 'DDD' :
+                // fall through to DDDD
+            case 'DDDD' :
+                inArray[2] = ~~input;
+                break;
+            // YEAR
+            case 'YY' :
+                input = ~~input;
+                inArray[0] = input + (input > 70 ? 1900 : 2000);
+                break;
+            case 'YYYY' :
+                inArray[0] = ~~Math.abs(input);
+                break;
+            // AM / PM
+            case 'a' :
+                // fall through to A
+            case 'A' :
+                isPm = (input.toLowerCase() === 'pm');
+                break;
+            // 24 HOUR
+            case 'H' :
+                // fall through to hh
+            case 'HH' :
+                // fall through to hh
+            case 'h' :
+                // fall through to hh
+            case 'hh' :
+                inArray[3] = ~~input;
+                break;
+            // MINUTE
+            case 'm' :
+                // fall through to mm
+            case 'mm' :
+                inArray[4] = ~~input;
+                break;
+            // SECOND
+            case 's' :
+                // fall through to ss
+            case 'ss' :
+                inArray[5] = ~~input;
+                break;
+            // TIMEZONE
+            case 'Z' :
+                // fall through to ZZ
+            case 'ZZ' :
+                isUsingUTC = true;
+                a = (input || '').match(timezoneParseRegex);
+                if (a && a[1]) {
+                    timezoneHours = ~~a[1];
+                }
+                if (a && a[2]) {
+                    timezoneMinutes = ~~a[2];
+                }
+                // reverse offsets
+                if (a && a[0] === '+') {
+                    timezoneHours = -timezoneHours;
+                    timezoneMinutes = -timezoneMinutes;
+                }
+                break;
+            }
+        }
+        for (i = 0; i < formatParts.length; i++) {
+            addTime(formatParts[i], inputParts[i]);
+        }
+        // handle am pm
+        if (isPm && inArray[3] < 12) {
+            inArray[3] += 12;
+        }
+        // if is 12 am, change hours to 0
+        if (isPm === false && inArray[3] === 12) {
+            inArray[3] = 0;
+        }
+        // handle timezone
+        inArray[3] += timezoneHours;
+        inArray[4] += timezoneMinutes;
+        // return
+        return isUsingUTC ? new Date(Date.UTC.apply({}, inArray)) : dateFromArray(inArray);
+    }
+
+    // compare two arrays, return the number of differences
+    function compareArrays(array1, array2) {
+        var len = Math.min(array1.length, array2.length),
+            lengthDiff = Math.abs(array1.length - array2.length),
+            diffs = 0,
+            i;
+        for (i = 0; i < len; i++) {
+            if (~~array1[i] !== ~~array2[i]) {
+                diffs++;
+            }
+        }
+        return diffs + lengthDiff;
+    }
+
+    // date from string and array of format strings
+    function makeDateFromStringAndArray(string, formats) {
+        var output,
+            inputParts = string.match(inputCharacters),
+            scores = [],
+            scoreToBeat = 99,
+            i,
+            curDate,
+            curScore;
+        for (i = 0; i < formats.length; i++) {
+            curDate = makeDateFromStringAndFormat(string, formats[i]);
+            curScore = compareArrays(inputParts, formatDate(curDate, formats[i]).match(inputCharacters));
+            if (curScore < scoreToBeat) {
+                scoreToBeat = curScore;
+                output = curDate;
+            }
+        }
+        return output;
+    }
+
+    moment = function (input, format) {
+        if (input === null) {
+            return null;
+        }
+        var date,
+            matched;
+        // parse Moment object
+        if (input && input._d instanceof Date) {
+            date = new Date(+input._d);
+        // parse string and format
+        } else if (format) {
+            if (isArray(format)) {
+                date = makeDateFromStringAndArray(input, format);
+            } else {
+                date = makeDateFromStringAndFormat(input, format);
+            }
+        // evaluate it as a JSON-encoded date
+        } else {
+            matched = jsonRegex.exec(input);
+            date = input === undefined ? new Date() :
+                matched ? new Date(+matched[1]) :
+                input instanceof Date ? input :
+                isArray(input) ? dateFromArray(input) :
+                new Date(input);
+        }
+        return new Moment(date);
+    };
+
+    // version number
+    moment.version = VERSION;
+
+    // language switching and caching
+    moment.lang = function (key, values) {
+        var i,
+            param,
+            req,
+            parse = [];
+        if (values) {
+            for (i = 0; i < 12; i++) {
+                parse[i] = new RegExp('^' + values.months[i] + '|^' + values.monthsShort[i].replace('.', ''), 'i');
+            }
+            values.monthsParse = values.monthsParse || parse;
+            languages[key] = values;
+        }
+        if (languages[key]) {
+            for (i = 0; i < paramsToParse.length; i++) {
+                param = paramsToParse[i];
+                moment[param] = languages[key][param] || moment[param];
+            }
+        } else {
+            if (hasModule) {
+                req = require('./lang/' + key);
+                moment.lang(key, req);
+            }
+        }
+    };
+
+    // set default language
+    moment.lang('en', {
+        months : "January_February_March_April_May_June_July_August_September_October_November_December".split("_"),
+        monthsShort : "Jan_Feb_Mar_Apr_May_Jun_Jul_Aug_Sep_Oct_Nov_Dec".split("_"),
+        weekdays : "Sunday_Monday_Tuesday_Wednesday_Thursday_Friday_Saturday".split("_"),
+        weekdaysShort : "Sun_Mon_Tue_Wed_Thu_Fri_Sat".split("_"),
+        longDateFormat : {
+            LT : "h:mm A",
+            L : "MM/DD/YYYY",
+            LL : "MMMM D YYYY",
+            LLL : "MMMM D YYYY LT",
+            LLLL : "dddd, MMMM D YYYY LT"
+        },
+        meridiem : {
+            AM : 'AM',
+            am : 'am',
+            PM : 'PM',
+            pm : 'pm'
+        },
+        calendar : {
+            sameDay : '[Today at] LT',
+            nextDay : '[Tomorrow at] LT',
+            nextWeek : 'dddd [at] LT',
+            lastDay : '[Yesterday at] LT',
+            lastWeek : '[last] dddd [at] LT',
+            sameElse : 'L'
+        },
+        relativeTime : {
+            future : "in %s",
+            past : "%s ago",
+            s : "a few seconds",
+            m : "a minute",
+            mm : "%d minutes",
+            h : "an hour",
+            hh : "%d hours",
+            d : "a day",
+            dd : "%d days",
+            M : "a month",
+            MM : "%d months",
+            y : "a year",
+            yy : "%d years"
+        },
+        ordinal : function (number) {
+            var b = number % 10;
+            return (~~ (number % 100 / 10) === 1) ? 'th' :
+                (b === 1) ? 'st' :
+                (b === 2) ? 'nd' :
+                (b === 3) ? 'rd' : 'th';
+        }
+    });
+
+    // helper function for _date.from() and _date.fromNow()
+    function substituteTimeAgo(string, number, withoutSuffix) {
+        var rt = moment.relativeTime[string];
+        return (typeof rt === 'function') ?
+            rt(number || 1, !!withoutSuffix, string) :
+            rt.replace(/%d/i, number || 1);
+    }
+
+    function relativeTime(milliseconds, withoutSuffix) {
+        var seconds = round(Math.abs(milliseconds) / 1000),
+            minutes = round(seconds / 60),
+            hours = round(minutes / 60),
+            days = round(hours / 24),
+            years = round(days / 365),
+            args = seconds < 45 && ['s', seconds] ||
+                minutes === 1 && ['m'] ||
+                minutes < 45 && ['mm', minutes] ||
+                hours === 1 && ['h'] ||
+                hours < 22 && ['hh', hours] ||
+                days === 1 && ['d'] ||
+                days <= 25 && ['dd', days] ||
+                days <= 45 && ['M'] ||
+                days < 345 && ['MM', round(days / 30)] ||
+                years === 1 && ['y'] || ['yy', years];
+        args[2] = withoutSuffix;
+        return substituteTimeAgo.apply({}, args);
+    }
+
+    // shortcut for prototype
+    moment.fn = Moment.prototype = {
+
+        clone : function () {
+            return moment(this);
+        },
+
+        valueOf : function () {
+            return +this._d;
+        },
+
+        'native' : function () {
+            return this._d;
+        },
+
+        toString : function () {
+            return this._d.toString();
+        },
+
+        toDate : function () {
+            return this._d;
+        },
+
+        format : function (inputString) {
+            return formatDate(this._d, inputString);
+        },
+
+        add : function (input, val) {
+            this._d = dateAddRemove(this._d, input, 1, val);
+            return this;
+        },
+
+        subtract : function (input, val) {
+            this._d = dateAddRemove(this._d, input, -1, val);
+            return this;
+        },
+
+        diff : function (input, val, asFloat) {
+            var inputMoment = moment(input),
+                zoneDiff = (this.zone() - inputMoment.zone()) * 6e4,
+                diff = this._d - inputMoment._d - zoneDiff,
+                year = this.year() - inputMoment.year(),
+                month = this.month() - inputMoment.month(),
+                date = this.date() - inputMoment.date(),
+                output;
+            if (val === 'months') {
+                output = year * 12 + month + date / 30;
+            } else if (val === 'years') {
+                output = year + month / 12;
+            } else {
+                output = val === 'seconds' ? diff / 1e3 : // 1000
+                    val === 'minutes' ? diff / 6e4 : // 1000 * 60
+                    val === 'hours' ? diff / 36e5 : // 1000 * 60 * 60
+                    val === 'days' ? diff / 864e5 : // 1000 * 60 * 60 * 24
+                    val === 'weeks' ? diff / 6048e5 : // 1000 * 60 * 60 * 24 * 7
+                    diff;
+            }
+            return asFloat ? output : round(output);
+        },
+
+        from : function (time, withoutSuffix) {
+            var difference = this.diff(time),
+                rel = moment.relativeTime,
+                output = relativeTime(difference, withoutSuffix);
+            return withoutSuffix ? output : (difference <= 0 ? rel.past : rel.future).replace(/%s/i, output);
+        },
+
+        fromNow : function (withoutSuffix) {
+            return this.from(moment(), withoutSuffix);
+        },
+
+        calendar : function () {
+            var diff = this.diff(moment().sod(), 'days', true),
+                calendar = moment.calendar,
+                allElse = calendar.sameElse,
+                format = diff < -6 ? allElse :
+                diff < -1 ? calendar.lastWeek :
+                diff < 0 ? calendar.lastDay :
+                diff < 1 ? calendar.sameDay :
+                diff < 2 ? calendar.nextDay :
+                diff < 7 ? calendar.nextWeek : allElse;
+            return this.format(typeof format === 'function' ? format.apply(this) : format);
+        },
+
+        isLeapYear : function () {
+            var year = this.year();
+            return (year % 4 === 0 && year % 100 !== 0) || year % 400 === 0;
+        },
+
+        isDST : function () {
+            return (this.zone() < moment([this.year()]).zone() || 
+                this.zone() < moment([this.year(), 5]).zone());
+        },
+
+        day : function (input) {
+            var day = this._d.getDay();
+            return input == null ? day :
+                this.add({ d : input - day });
+        },
+
+        sod: function () {
+            return this.clone()
+                .hours(0)
+                .minutes(0)
+                .seconds(0)
+                .milliseconds(0);
+        },
+
+        eod: function () {
+            // end of day = start of day plus 1 day, minus 1 millisecond
+            return this.sod().add({
+                d : 1,
+                ms : -1
+            });
+        }
+    };
+
+    // helper for adding shortcuts
+    function makeShortcut(name, key) {
+        moment.fn[name] = function (input) {
+            if (input != null) {
+                this._d['set' + key](input);
+                return this;
+            } else {
+                return this._d['get' + key]();
+            }
+        };
+    }
+
+    // loop through and add shortcuts (Month, Date, Hours, Minutes, Seconds, Milliseconds)
+    for (i = 0; i < shortcuts.length; i ++) {
+        makeShortcut(shortcuts[i].toLowerCase(), shortcuts[i]);
+    }
+
+    // add shortcut for year (uses different syntax than the getter/setter 'year' == 'FullYear')
+    makeShortcut('year', 'FullYear');
+
+    // add shortcut for timezone offset (no setter)
+    moment.fn.zone = function () {
+        return this._d.getTimezoneOffset();
+    };
+
+    // CommonJS module is defined
+    if (hasModule) {
+        module.exports = moment;
+    }
+    if (typeof window !== 'undefined') {
+        window.moment = moment;
+    }
+    if (typeof define === "function" && define.amd) {
+        define("moment", [], function () {
+            return moment;
+        });
+    }
+})(Date);
