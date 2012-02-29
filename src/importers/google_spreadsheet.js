@@ -123,6 +123,6 @@ DS.Importers.GoogleSpreadsheet = function(options) {
 
 _.extend(
   DS.Importers.GoogleSpreadsheet.prototype, 
-DS.Importers.Remote.prototype);
+  DS.Importers.Remote.prototype);
 
 }(this, _));
