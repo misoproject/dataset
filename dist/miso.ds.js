@@ -8,17 +8,17 @@
 (function(global, _) {
 
   /* @exports namespace */
-  var DS = global.DS = {};
+  var Miso = global.Miso = {};
 
-  DS.typeOf = function( value ) {
-    var types = _.keys(DS.types),
+  Miso.typeOf = function( value ) {
+    var types = _.keys(Miso.types),
         chosenType;
 
     //move string to the end
     types.push(types.splice(_.indexOf(types, 'string'), 1)[0]);
 
     chosenType = _.find(types, function(type) {
-      return DS.types[type].test( value );
+      return Miso.types[type].test( value );
     });
 
     chosenType = _.isUndefined(chosenType) ? 'string' : chosenType;
@@ -26,7 +26,7 @@
     return chosenType;
   };
   
-  DS.types = {
+  Miso.types = {
     string : {
       name : "string",
       coerce : function(v) {
@@ -163,7 +163,7 @@
 (function(global, _) {
 
   /* @exports namespace */
-  var DS = global.DS || (global.DS = {});
+  var Miso = global.Miso || (global.Miso = {});
 
   /**
   * A representation of an event as it is passed through the
@@ -173,14 +173,14 @@
   * @param {string} ev - Name of event
   * @param {object|array of objects} deltas - array of deltas.
   */
-  DS.Event = function(deltas) {
+  Miso.Event = function(deltas) {
     if (!_.isArray(deltas)) {
       deltas = [deltas];
     }
     this.deltas = deltas;
   };
 
-  _.extend(DS.Event.prototype, {
+  _.extend(Miso.Event.prototype, {
     affectedColumns : function() {
       var cols = [];
       
@@ -195,7 +195,7 @@
     }
   });
 
-   _.extend(DS.Event, {
+   _.extend(Miso.Event, {
     /**
     * Returns true if the event is a deletion
     */
@@ -231,12 +231,12 @@
   });
   
   /**
-  * @name DS.Events
+  * @name Miso.Events
   * - Event Related Methods
-  * @property {object} DS.Events - A module aggregating some functionality
+  * @property {object} Miso.Events - A module aggregating some functionality
   *  related to events. Will be used to extend other classes.
   */
-  DS.Events = {};
+  Miso.Events = {};
 
   /**
   * Bind callbacks to dataset events
@@ -245,7 +245,7 @@
   * @param {object} context - context for the callback. optional.
   * @returns {object} context
   */
-  DS.Events.bind = function (ev, callback, context) {
+  Miso.Events.bind = function (ev, callback, context) {
     var calls = this._callbacks || (this._callbacks = {});
     var list  = calls[ev] || (calls[ev] = {});
     var tail = list.tail || (list.tail = list.next = {});
@@ -262,7 +262,7 @@
   * @param {string} ev - event name
   * @param {function} callback - callback function to be removed
   */
-  DS.Events.unbind = function(ev, callback) {
+  Miso.Events.unbind = function(ev, callback) {
     var calls, node, prev;
     if (!ev) {
       this._callbacks = null;
@@ -288,7 +288,7 @@
   * trigger a given event
   * @param {string} eventName - name of event
   */
-  DS.Events.trigger = function(eventName) {
+  Miso.Events.trigger = function(eventName) {
     var node, calls, callback, args, ev, events = ['all', eventName];
     if (!(calls = this._callbacks)) {
       return this;
@@ -314,15 +314,15 @@
   * @param {object|array of objects} delta - change delta object.
   * @returns {object} event - Event object.
   */
-  DS.Events._buildEvent = function(delta) {
-    return new DS.Event(delta);
+  Miso.Events._buildEvent = function(delta) {
+    return new Miso.Event(delta);
   };
 }(this, _));
 (function(global, _) {
 
-  var DS = global.DS;
+  var Miso = global.Miso;
 
-  DS.Column = function(options) {
+  Miso.Column = function(options) {
     this._id = options.id || _.uniqueId();
     this.name = options.name;
     this.type = options.type;
@@ -330,10 +330,10 @@
     return this;
   };
 
-  _.extend(DS.Column.prototype, {
+  _.extend(Miso.Column.prototype, {
 
     toNumeric : function(value, index) {
-      return DS.types[this.type].numeric(value, index);  
+      return Miso.types[this.type].numeric(value, index);  
     },
 
     numericAt : function(index) {
@@ -342,7 +342,7 @@
 
     coerce : function() {
       this.data = _.map(this.data, function(datum) {
-        return DS.types[this.type].coerce(datum, this.typeOptions);
+        return Miso.types[this.type].coerce(datum, this.typeOptions);
       }, this);
     },
 
@@ -353,7 +353,7 @@
     max : function() {
       var max = -Infinity;
       for (var j = 0; j < this.data.length; j++) {
-        if (DS.types[this.type].compare(this.data[j], max) > 0) {
+        if (Miso.types[this.type].compare(this.data[j], max) > 0) {
           max = this.numericAt(j);
         }
       }
@@ -363,7 +363,7 @@
     min : function() {
       var min = Infinity;
       for (var j = 0; j < this.data.length; j++) {
-        if (DS.types[this.type].compare(this.data[j], min) < 0) {
+        if (Miso.types[this.type].compare(this.data[j], min) < 0) {
           min = this.numericAt(j);
         }
       }
@@ -379,7 +379,7 @@
   *   parent : parent dataset
   *   filter : filter specification TODO: document better
   */
-  DS.View = function(options) {
+  Miso.View = function(options) {
     //rowFilter, columnFilter, parent
     options = options || (options = {});
 
@@ -392,14 +392,14 @@
     return this;
   };
 
-  _.extend(DS.View.prototype, {
+  _.extend(Miso.View.prototype, {
 
     _initialize: function(options) {
       
       // is this a syncable dataset? if so, pull
-      // required methods and mark this as a syncable dataset.
+      // required methoMiso and mark this as a syncable dataset.
       if (this.parent.syncable === true) {
-        _.extend(this, DS.Events);
+        _.extend(this, Miso.Events);
         this.syncable = true;
       }
 
@@ -417,7 +417,7 @@
       // either pass through importer, or pull that out. Maybe
       // the data caching can happen elsewhere?
       // right now just passing through default parser.
-      var tempParser = new DS.Parsers();
+      var tempParser = new Miso.Parsers();
       _.extend(this, 
         tempParser._cacheColumns(this), 
         tempParser._cacheRows(this));
@@ -445,7 +445,7 @@
 
         // ===== ADD NEW ROW
 
-        if (typeof rowPos === "undefined" && DS.Event.isAdd(d)) {
+        if (typeof rowPos === "undefined" && Miso.Event.isAdd(d)) {
           // this is an add event, since we couldn't find an
           // existing row to update and now need to just add a new
           // one. Use the delta's changed properties as the new row
@@ -477,7 +477,7 @@
     
         // if this is a delete event OR the row no longer
         // passes the filter, remove it.
-        if (DS.Event.isDelete(d) || 
+        if (Miso.Event.isDelete(d) || 
             (this.filter.row && !this.filter.row(row))) {
 
           // Since this is now a delete event, we need to convert it
@@ -515,7 +515,7 @@
       options.parent = this;
       options.filter = filter || {};
 
-      return new DS.View(options);
+      return new Miso.View(options);
     },
 
     _selectData : function() {
@@ -631,7 +631,7 @@
     * @param {array} filter - an array of column names
     */    
     columns : function(columnsArray) {
-     return new DS.View({
+     return new Miso.View({
         filter : { columns : columnsArray },
         parent : this
       });
@@ -790,7 +790,7 @@
     * the same as where
     */    
     rows : function(filter) {
-      return new DS.View({
+      return new Miso.View({
         filter : { rows : filter },
         parent : this
       });
@@ -908,7 +908,7 @@ Version 0.0.1.2
 
 (function(global, _, moment) {
 
-  var DS = global.DS;
+  var Miso = global.Miso;
 
   /**
   * @constructor
@@ -944,13 +944,13 @@ Version 0.0.1.2
   }
   */
 
-  DS.Dataset = function(options) {
+  Miso.Dataset = function(options) {
     options = options || (options = {});
     this._initialize(options);
     return this;
   };
 
-  _.extend(DS.Dataset.prototype, DS.View.prototype, {
+  _.extend(Miso.Dataset.prototype, Miso.View.prototype, {
 
     /**
     * @private
@@ -962,7 +962,7 @@ Version 0.0.1.2
       // is this a syncable dataset? if so, pull
       // required methods and mark this as a syncable dataset.
       if (options.sync === true) {
-        _.extend(this, DS.Events);
+        _.extend(this, Miso.Events);
         this.syncable = true;
       }
 
@@ -971,16 +971,16 @@ Version 0.0.1.2
       this.importer = options.importer || null;
 
       // default parser is object parser, unless otherwise specified.
-      this.parser  = options.parser || DS.Parsers.Obj;
+      this.parser  = options.parser || Miso.Parsers.Obj;
 
       // figure out out if we need another parser.
       if (_.isUndefined(options.parser)) {
         if (options.strict) {
-          this.parser = DS.Parsers.Strict;
+          this.parser = Miso.Parsers.Strict;
         } else if (options.delimiter) {
-          this.parser = DS.Parsers.Delimited;
+          this.parser = Miso.Parsers.Delimited;
         } else if (options.google_spreadsheet) {
-          this.parser = DS.Parsers.GoogleSpreadsheet;
+          this.parser = Miso.Parsers.GoogleSpreadsheet;
         }
       }
 
@@ -1001,12 +1001,12 @@ Version 0.0.1.2
       // initialize the proper importer
       if (this.importer === null) {
         if (options.url) {
-          this.importer = DS.Importers.Remote;
+          this.importer = Miso.Importers.Remote;
         } else if (options.google_spreadsheet) {
-          this.importer = DS.Importers.GoogleSpreadsheet;
+          this.importer = Miso.Importers.GoogleSpreadsheet;
           delete options.google_spreadsheet;
         } else {
-          this.importer = DS.Importers.Local;
+          this.importer = Miso.Importers.Local;
         }
       }
 
@@ -1166,8 +1166,8 @@ Version 0.0.1.2
         if (filter(row)) {
           _.each(this._columns, function(c) {
             if (_.indexOf(newKeys, c.name) !== -1) {
-              if ((c.type !== 'untyped') && (c.type !== DS.typeOf(newProperties[c.name]))) {
-                throw("incorrect value '"+newProperties[c.name]+"' of type "+DS.typeOf(newProperties[c.name])+" passed to column with type "+c.type);
+              if ((c.type !== 'untyped') && (c.type !== Miso.typeOf(newProperties[c.name]))) {
+                throw("incorrect value '"+newProperties[c.name]+"' of type "+Miso.typeOf(newProperties[c.name])+" passed to column with type "+c.type);
               }
               c.data[rowIndex] = newProperties[c.name];
             }
@@ -1192,10 +1192,10 @@ Version 0.0.1.2
 (function(global, _) {
 
   // shorthand
-  var DS = global.DS;
-  var Product = (DS.Product || function() {
+  var Miso = global.Miso;
+  var Product = (Miso.Product || function() {
 
-    DS.Product = function(options) {
+    Miso.Product = function(options) {
       options = options || (options = {});
       
       // save column name. This will be necessary later
@@ -1220,10 +1220,10 @@ Version 0.0.1.2
       return this;
     };
 
-    return DS.Product;
+    return Miso.Product;
   })();
 
-  _.extend(Product.prototype, DS.Events, {
+  _.extend(Product.prototype, Miso.Events, {
 
     /**
     * @public
@@ -1260,7 +1260,7 @@ Version 0.0.1.2
     }
   });
 
-  _.extend(DS.Dataset.prototype, {
+  _.extend(Miso.Dataset.prototype, {
 
     _columnsToArray : function(columns) {
       if (_.isUndefined(columns)) {
@@ -1320,7 +1320,7 @@ Version 0.0.1.2
             columnObject = columns[i];
 
             for (var j= 0; j < columnObject.data.length; j++) {
-              if (DS.types[columnObject.type].compare(columnObject.data[j], max) > 0) {
+              if (Miso.types[columnObject.type].compare(columnObject.data[j], max) > 0) {
                 max = columnObject.numericAt(j);
               }
             }
@@ -1331,7 +1331,7 @@ Version 0.0.1.2
           var typeOptions = columnObject.typeOptions;
 
           // return the coerced value for column type.
-          return DS.types[type].coerce(max, typeOptions);
+          return Miso.types[type].coerce(max, typeOptions);
         };
       }(columnObjects));
 
@@ -1359,7 +1359,7 @@ Version 0.0.1.2
           for (var i= 0; i < columns.length; i++) {
             columnObject = columns[i];
             for (var j= 0; j < columnObject.data.length; j++) {
-              if (DS.types[columnObject.type].compare(columnObject.data[j], min) < 0) {
+              if (Miso.types[columnObject.type].compare(columnObject.data[j], min) < 0) {
                 min = columnObject.numericAt(j);
               }
             }
@@ -1369,7 +1369,7 @@ Version 0.0.1.2
           var typeOptions = columnObject.typeOptions;
 
           // return the coerced value for column type.
-          return DS.types[type].coerce(min, typeOptions);
+          return Miso.types[type].coerce(min, typeOptions);
         };
       }(columnObjects));
 
@@ -1442,9 +1442,9 @@ Version 0.0.1.2
 
 (function(global, _) {
 
-  var DS = (global.DS = global.DS || {});
+  var Miso = (global.Miso = global.Miso || {});
 
-  _.extend(global.DS.Dataset.prototype, {
+  _.extend(global.Miso.Dataset.prototype, {
     /**
     * moving average
     * @param {column} column on which to calculate the average
@@ -1480,7 +1480,7 @@ Version 0.0.1.2
         this.preprocess = options.preprocess;  
       }
 
-      var parser = new DS.Parsers();
+      var parser = new Miso.Parsers();
 
       // copy columns we want - just types and names. No data.
       var newCols = _.union([byColumn], columns);
@@ -1552,7 +1552,7 @@ Version 0.0.1.2
       // create new dataset based on this data
       d.columns = d._columns;
       delete d._columns;
-      var ds = new DS.Dataset({
+      var ds = new Miso.Dataset({
         data   : d,
         strict : true
       });
@@ -1572,13 +1572,13 @@ Version 0.0.1.2
 
 
 (function(global, _) {
-  
-  var DS = (global.DS || (global.DS = {}));
+
+  var Miso = (global.Miso || (global.Miso = {}));
 
   // ------ data parsers ---------
-  DS.Parsers = function() {};
+  Miso.Parsers = function() {};
 
-  _.extend(DS.Parsers.prototype, {
+  _.extend(Miso.Parsers.prototype, {
 
     /**
     * Creates an internal representation of a column based on
@@ -1590,9 +1590,9 @@ Version 0.0.1.2
       // if all properties were passed as an object rather
       // than separatly
       if (_.isObject(name) && arguments.length === 1) {
-        return new DS.Column(name);  
+        return new Miso.Column(name);  
       } else {
-        return new DS.Column({
+        return new Miso.Column({
           name : name,
           type : type,
           data : data
@@ -1662,7 +1662,7 @@ Version 0.0.1.2
           // and then squashing it to create a unique subset.
           var type = _.inject(column.data.slice(0, (n || 5)), function(memo, value) {
 
-            var t = DS.typeOf(value);
+            var t = Miso.typeOf(value);
 
             if (value !== "" && memo.indexOf(t) === -1 && !_.isNull(value)) {
               memo.push(t);
@@ -1772,14 +1772,14 @@ Version 0.0.1.2
   * Handles basic strict data format.
   * TODO: add verify flag to disable auto id assignment for example.
   */
-  DS.Parsers.Strict = function(data, options) {
+  Miso.Parsers.Strict = function(data, options) {
     this.options = options || {};
     this._data = this.parse(data);
   };
 
   _.extend(
-    DS.Parsers.Strict.prototype,
-    DS.Parsers.prototype, {
+    Miso.Parsers.Strict.prototype,
+    Miso.Parsers.prototype, {
 
       _buildColumns : function(d) {
         d._columns = [];
@@ -1805,14 +1805,14 @@ Version 0.0.1.2
     * Each object is a flat json object of properties.
     * @params {Object} obj = [{},{}...]
     */
-    DS.Parsers.Obj = function(data, options) {
+    Miso.Parsers.Obj = function(data, options) {
       this.options = options || {};
       this._data = data;
     };
 
     _.extend(
-      DS.Parsers.Obj.prototype,
-      DS.Parsers.prototype, {
+      Miso.Parsers.Obj.prototype,
+      Miso.Parsers.prototype, {
 
         _buildColumns : function(d, n) {
 
@@ -1878,7 +1878,7 @@ Version 0.0.1.2
       }
     }, rparams = /\?/;
 
-    DS.Xhr = function(options) {
+    Miso.Xhr = function(options) {
 
       // json|jsonp etc.
       options.dataType = options.dataType && options.dataType.toLowerCase() || null;
@@ -1886,7 +1886,7 @@ Version 0.0.1.2
       if (options.dataType && 
         (options.dataType === "jsonp" || options.dataType === "script" )) {
 
-          DS.Xhr.getJSONP(
+          Miso.Xhr.getJSONP(
             options.url,
             options.success,
             options.dataType === "script",
@@ -1914,11 +1914,11 @@ Version 0.0.1.2
           settings.ajax.open(settings.type, settings.url, settings.async);
           settings.ajax.send(settings.data || null);
 
-          return DS.Xhr.httpData(settings);
+          return Miso.Xhr.httpData(settings);
         }
     };
 
-    DS.Xhr.getJSONP = function(url, success, isScript, error) {
+    Miso.Xhr.getJSONP = function(url, success, isScript, error) {
       // If this is a script request, ensure that we do not 
       // call something that has already been loaded
       if (isScript) {
@@ -2014,7 +2014,7 @@ Version 0.0.1.2
       return;
     };
 
-    DS.Xhr.httpData = function(settings) {
+    Miso.Xhr.httpData = function(settings) {
       var data, json = null;
 
       settings.ajax.onreadystatechange = function() {
@@ -2049,12 +2049,12 @@ Version 0.0.1.2
       return data;
     };
 
-    DS.Importers = function(data, options) {};
+    Miso.Importers = function(data, options) {};
 
     /**
     * Simple base parse method, passing data through
     */
-    DS.Importers.prototype.extract = function(data) {
+    Miso.Importers.prototype.extract = function(data) {
       data = _.clone(data);
       data._columns = data.columns;
       delete data.columns;
@@ -2065,19 +2065,19 @@ Version 0.0.1.2
     * Local data importer is responsible for just using 
     * a data object and passing it appropriatly.
     */
-    DS.Importers.Local = function(options) {
+    Miso.Importers.Local = function(options) {
       this.options = options || (options = {});
 
       if (this.options.extract) {
         this.extract = this.options.extract;
       }
       this.data = options.data;
-      this.parser = this.options.parser || DS.Importer.Obj;
+      this.parser = this.options.parser || Miso.Importer.Obj;
     };
 
     _.extend(
-      DS.Importers.Local.prototype,
-      DS.Importers.prototype, {
+      Miso.Importers.Local.prototype,
+      Miso.Importers.prototype, {
         fetch : function(options) {
           // since this is the local importer, it just
           // passes the data through, parsed.
@@ -2097,7 +2097,7 @@ Version 0.0.1.2
       * A remote importer is responsible for fetching data from a url
       * and passing it through the right parser.
       */
-      DS.Importers.Remote = function(options) {
+      Miso.Importers.Remote = function(options) {
         options = options || {};
         this._url = options.url;
 
@@ -2105,7 +2105,7 @@ Version 0.0.1.2
           this.extract = options.extract;
         }
 
-        this.parser = options.parser || DS.Parsers.Obj;
+        this.parser = options.parser || Miso.Parsers.Obj;
 
         // Default ajax request parameters
         this.params = {
@@ -2116,8 +2116,8 @@ Version 0.0.1.2
       };
 
       _.extend(
-        DS.Importers.Remote.prototype,
-        DS.Importers.prototype,
+        Miso.Importers.Remote.prototype,
+        Miso.Importers.prototype,
         {
           fetch : function(options) {
 
@@ -2136,7 +2136,7 @@ Version 0.0.1.2
             }, this);
 
             // make ajax call to fetch remote url.
-            DS.Xhr(_.extend(this.params, { 
+            Miso.Xhr(_.extend(this.params, { 
               success : callback,
               error   : options.error
             }));
@@ -2154,7 +2154,7 @@ Version 0.0.1.2
 
 (function(global, _) {
 
-  var DS = (global.DS || (global.DS = {}));
+  var Miso = (global.Miso || (global.Miso = {}));
 
 /**
 * @constructor
@@ -2164,12 +2164,12 @@ Version 0.0.1.2
 * @param {object} data - the google spreadsheet data.
 * @param {object} options - Optional options argument.
 */
-DS.Parsers.GoogleSpreadsheet = function(data, options) {
+Miso.Parsers.GoogleSpreadsheet = function(data, options) {
   this.options = options || {};
   this._data = data;
 };
 
-_.extend(DS.Parsers.GoogleSpreadsheet.prototype, DS.Parsers.prototype, {
+_.extend(Miso.Parsers.GoogleSpreadsheet.prototype, Miso.Parsers.prototype, {
 
   _buildColumns : function(d, n) {
     d._columns = [];
@@ -2241,7 +2241,7 @@ _.extend(DS.Parsers.GoogleSpreadsheet.prototype, DS.Parsers.prototype, {
 *     url - a more complex url (that may include filtering.) In this case
 *           make sure it's returning the feed json data.
 */
-DS.Importers.GoogleSpreadsheet = function(options) {
+Miso.Importers.GoogleSpreadsheet = function(options) {
   options = options || {};
   if (options.url) {
 
@@ -2261,7 +2261,7 @@ DS.Importers.GoogleSpreadsheet = function(options) {
     }
   }
 
-  this.parser = DS.Parsers.GoogleSpreadsheet;
+  this.parser = Miso.Parsers.GoogleSpreadsheet;
   this.params = {
     type : "GET",
     url : options.url,
@@ -2272,8 +2272,8 @@ DS.Importers.GoogleSpreadsheet = function(options) {
 };
 
 _.extend(
-  DS.Importers.GoogleSpreadsheet.prototype, 
-DS.Importers.Remote.prototype);
+  Miso.Importers.GoogleSpreadsheet.prototype, 
+Miso.Importers.Remote.prototype);
 
 }(this, _));
 
@@ -2288,10 +2288,10 @@ DS.Importers.Remote.prototype);
 
 (function(global, _) {
 
-  var DS = (global.DS || (global.DS = {}));
+  var Miso = (global.Miso || (global.Miso = {}));
 
 
-  DS.Parsers.Delimited = function(data, options) {
+  Miso.Parsers.Delimited = function(data, options) {
     this.options = options || {};
 
     this.delimiter = this.options.delimiter || ",";
@@ -2312,7 +2312,7 @@ DS.Importers.Remote.prototype);
     );
   };
 
-  _.extend(DS.Parsers.Delimited.prototype, DS.Parsers.prototype, {
+  _.extend(Miso.Parsers.Delimited.prototype, Miso.Parsers.prototype, {
 
     _buildColumns : function(d, sample) {
 

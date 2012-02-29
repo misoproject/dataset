@@ -4,7 +4,7 @@
 
 (function(global, _) {
 
-  var DS = (global.DS || (global.DS = {}));
+  var Miso = (global.Miso || (global.Miso = {}));
 
 /**
 * @constructor
@@ -14,12 +14,12 @@
 * @param {object} data - the google spreadsheet data.
 * @param {object} options - Optional options argument.
 */
-DS.Parsers.GoogleSpreadsheet = function(data, options) {
+Miso.Parsers.GoogleSpreadsheet = function(data, options) {
   this.options = options || {};
   this._data = data;
 };
 
-_.extend(DS.Parsers.GoogleSpreadsheet.prototype, DS.Parsers.prototype, {
+_.extend(Miso.Parsers.GoogleSpreadsheet.prototype, Miso.Parsers.prototype, {
 
   _buildColumns : function(d, n) {
     d._columns = [];
@@ -91,7 +91,7 @@ _.extend(DS.Parsers.GoogleSpreadsheet.prototype, DS.Parsers.prototype, {
 *     url - a more complex url (that may include filtering.) In this case
 *           make sure it's returning the feed json data.
 */
-DS.Importers.GoogleSpreadsheet = function(options) {
+Miso.Importers.GoogleSpreadsheet = function(options) {
   options = options || {};
   if (options.url) {
 
@@ -111,7 +111,7 @@ DS.Importers.GoogleSpreadsheet = function(options) {
     }
   }
 
-  this.parser = DS.Parsers.GoogleSpreadsheet;
+  this.parser = Miso.Parsers.GoogleSpreadsheet;
   this.params = {
     type : "GET",
     url : options.url,
@@ -122,7 +122,7 @@ DS.Importers.GoogleSpreadsheet = function(options) {
 };
 
 _.extend(
-  DS.Importers.GoogleSpreadsheet.prototype, 
-DS.Importers.Remote.prototype);
+  Miso.Importers.GoogleSpreadsheet.prototype, 
+Miso.Importers.Remote.prototype);
 
 }(this, _));

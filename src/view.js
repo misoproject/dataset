@@ -1,8 +1,8 @@
 (function(global, _) {
 
-  var DS = global.DS;
+  var Miso = global.Miso;
 
-  DS.Column = function(options) {
+  Miso.Column = function(options) {
     this._id = options.id || _.uniqueId();
     this.name = options.name;
     this.type = options.type;
@@ -10,10 +10,10 @@
     return this;
   };
 
-  _.extend(DS.Column.prototype, {
+  _.extend(Miso.Column.prototype, {
 
     toNumeric : function(value, index) {
-      return DS.types[this.type].numeric(value, index);  
+      return Miso.types[this.type].numeric(value, index);  
     },
 
     numericAt : function(index) {
@@ -22,7 +22,7 @@
 
     coerce : function() {
       this.data = _.map(this.data, function(datum) {
-        return DS.types[this.type].coerce(datum, this.typeOptions);
+        return Miso.types[this.type].coerce(datum, this.typeOptions);
       }, this);
     },
 
@@ -33,7 +33,7 @@
     max : function() {
       var max = -Infinity;
       for (var j = 0; j < this.data.length; j++) {
-        if (DS.types[this.type].compare(this.data[j], max) > 0) {
+        if (Miso.types[this.type].compare(this.data[j], max) > 0) {
           max = this.numericAt(j);
         }
       }
@@ -43,7 +43,7 @@
     min : function() {
       var min = Infinity;
       for (var j = 0; j < this.data.length; j++) {
-        if (DS.types[this.type].compare(this.data[j], min) < 0) {
+        if (Miso.types[this.type].compare(this.data[j], min) < 0) {
           min = this.numericAt(j);
         }
       }
@@ -59,7 +59,7 @@
   *   parent : parent dataset
   *   filter : filter specification TODO: document better
   */
-  DS.View = function(options) {
+  Miso.View = function(options) {
     //rowFilter, columnFilter, parent
     options = options || (options = {});
 
@@ -72,14 +72,14 @@
     return this;
   };
 
-  _.extend(DS.View.prototype, {
+  _.extend(Miso.View.prototype, {
 
     _initialize: function(options) {
       
       // is this a syncable dataset? if so, pull
-      // required methods and mark this as a syncable dataset.
+      // required methoMiso and mark this as a syncable dataset.
       if (this.parent.syncable === true) {
-        _.extend(this, DS.Events);
+        _.extend(this, Miso.Events);
         this.syncable = true;
       }
 
@@ -97,7 +97,7 @@
       // either pass through importer, or pull that out. Maybe
       // the data caching can happen elsewhere?
       // right now just passing through default parser.
-      var tempParser = new DS.Parsers();
+      var tempParser = new Miso.Parsers();
       _.extend(this, 
         tempParser._cacheColumns(this), 
         tempParser._cacheRows(this));
@@ -125,7 +125,7 @@
 
         // ===== ADD NEW ROW
 
-        if (typeof rowPos === "undefined" && DS.Event.isAdd(d)) {
+        if (typeof rowPos === "undefined" && Miso.Event.isAdd(d)) {
           // this is an add event, since we couldn't find an
           // existing row to update and now need to just add a new
           // one. Use the delta's changed properties as the new row
@@ -157,7 +157,7 @@
     
         // if this is a delete event OR the row no longer
         // passes the filter, remove it.
-        if (DS.Event.isDelete(d) || 
+        if (Miso.Event.isDelete(d) || 
             (this.filter.row && !this.filter.row(row))) {
 
           // Since this is now a delete event, we need to convert it
@@ -195,7 +195,7 @@
       options.parent = this;
       options.filter = filter || {};
 
-      return new DS.View(options);
+      return new Miso.View(options);
     },
 
     _selectData : function() {
@@ -311,7 +311,7 @@
     * @param {array} filter - an array of column names
     */    
     columns : function(columnsArray) {
-     return new DS.View({
+     return new Miso.View({
         filter : { columns : columnsArray },
         parent : this
       });
@@ -470,7 +470,7 @@
     * the same as where
     */    
     rows : function(filter) {
-      return new DS.View({
+      return new Miso.View({
         filter : { rows : filter },
         parent : this
       });

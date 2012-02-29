@@ -1,7 +1,7 @@
 (function(global) {
   
   var Util  = global.Util;
-  var DS    = global.DS || {};  
+  var Miso    = global.Miso || {};  
 
   module("Products :: Sum");
   test("Basic Sum Product", function() {
@@ -26,7 +26,7 @@
   });
 
   test("Time Sum Should Fail", function() {
-    var ds = new DS.Dataset({
+    var ds = new Miso.Dataset({
       data : [
         { "one" : 1, "t" : "2010/01/13" },
         { "one" : 5, "t" : "2010/05/15" },
@@ -99,7 +99,7 @@
   });
 
   test("Time Max Product", function() {
-    var ds = new DS.Dataset({
+    var ds = new Miso.Dataset({
       data : [
         { "one" : 1, "t" : "2010/01/13" },
         { "one" : 5, "t" : "2010/05/15" },
@@ -120,7 +120,7 @@
   });
 
   test("Time Max Product non syncable", function() {
-    var ds = new DS.Dataset({
+    var ds = new Miso.Dataset({
       data : [
         { "one" : 1, "t" : "2010/01/13" },
         { "one" : 5, "t" : "2010/05/15" },
@@ -176,7 +176,7 @@
   });
 
   test("Time Min Product", function() {
-    var ds = new DS.Dataset({
+    var ds = new Miso.Dataset({
       data : [
         { "one" : 1, "t" : "2010/01/13" },
         { "one" : 5, "t" : "2010/05/15" },
@@ -197,7 +197,7 @@
   });
 
   test("Time Min Product Non Syncable", function() {
-    var ds = new DS.Dataset({
+    var ds = new Miso.Dataset({
       data : [
         { "one" : 1, "t" : "2010/01/13" },
         { "one" : 5, "t" : "2010/05/15" },
@@ -263,7 +263,7 @@
         counter = 0;
 
     equals(_.isUndefined(max.bind), true);
-    equals(DS.typeOf(max), "number");
+    equals(Miso.typeOf(max), "number");
   });
 
 
@@ -306,10 +306,10 @@
 
   });
 
-  test("Defining a new product on the DS prototype", function() {
+  test("Defining a new product on the Miso prototype", function() {
 
     var ds = Util.baseSyncingSample();
-    DS.Dataset.prototype.custom = function() {
+    Miso.Dataset.prototype.custom = function() {
       return this.calculated(ds.column('one'), function() {
         var min = Infinity;
         _.each(this._column('one').data, function(value) {

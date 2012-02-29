@@ -1,11 +1,11 @@
 (function(global, _) {
 
-  var DS = (global.DS || (global.DS = {}));
+  var Miso = (global.Miso || (global.Miso = {}));
 
   // ------ data parsers ---------
-  DS.Parsers = function() {};
+  Miso.Parsers = function() {};
 
-  _.extend(DS.Parsers.prototype, {
+  _.extend(Miso.Parsers.prototype, {
 
     /**
     * Creates an internal representation of a column based on
@@ -17,9 +17,9 @@
       // if all properties were passed as an object rather
       // than separatly
       if (_.isObject(name) && arguments.length === 1) {
-        return new DS.Column(name);  
+        return new Miso.Column(name);  
       } else {
-        return new DS.Column({
+        return new Miso.Column({
           name : name,
           type : type,
           data : data
@@ -89,7 +89,7 @@
           // and then squashing it to create a unique subset.
           var type = _.inject(column.data.slice(0, (n || 5)), function(memo, value) {
 
-            var t = DS.typeOf(value);
+            var t = Miso.typeOf(value);
 
             if (value !== "" && memo.indexOf(t) === -1 && !_.isNull(value)) {
               memo.push(t);
@@ -199,14 +199,14 @@
   * Handles basic strict data format.
   * TODO: add verify flag to disable auto id assignment for example.
   */
-  DS.Parsers.Strict = function(data, options) {
+  Miso.Parsers.Strict = function(data, options) {
     this.options = options || {};
     this._data = this.parse(data);
   };
 
   _.extend(
-    DS.Parsers.Strict.prototype,
-    DS.Parsers.prototype, {
+    Miso.Parsers.Strict.prototype,
+    Miso.Parsers.prototype, {
 
       _buildColumns : function(d) {
         d._columns = [];
@@ -232,14 +232,14 @@
     * Each object is a flat json object of properties.
     * @params {Object} obj = [{},{}...]
     */
-    DS.Parsers.Obj = function(data, options) {
+    Miso.Parsers.Obj = function(data, options) {
       this.options = options || {};
       this._data = data;
     };
 
     _.extend(
-      DS.Parsers.Obj.prototype,
-      DS.Parsers.prototype, {
+      Miso.Parsers.Obj.prototype,
+      Miso.Parsers.prototype, {
 
         _buildColumns : function(d, n) {
 
@@ -305,7 +305,7 @@
       }
     }, rparams = /\?/;
 
-    DS.Xhr = function(options) {
+    Miso.Xhr = function(options) {
 
       // json|jsonp etc.
       options.dataType = options.dataType && options.dataType.toLowerCase() || null;
@@ -313,7 +313,7 @@
       if (options.dataType && 
         (options.dataType === "jsonp" || options.dataType === "script" )) {
 
-          DS.Xhr.getJSONP(
+          Miso.Xhr.getJSONP(
             options.url,
             options.success,
             options.dataType === "script",
@@ -341,11 +341,11 @@
           settings.ajax.open(settings.type, settings.url, settings.async);
           settings.ajax.send(settings.data || null);
 
-          return DS.Xhr.httpData(settings);
+          return Miso.Xhr.httpData(settings);
         }
     };
 
-    DS.Xhr.getJSONP = function(url, success, isScript, error) {
+    Miso.Xhr.getJSONP = function(url, success, isScript, error) {
       // If this is a script request, ensure that we do not 
       // call something that has already been loaded
       if (isScript) {
@@ -441,7 +441,7 @@
       return;
     };
 
-    DS.Xhr.httpData = function(settings) {
+    Miso.Xhr.httpData = function(settings) {
       var data, json = null;
 
       settings.ajax.onreadystatechange = function() {
@@ -476,12 +476,12 @@
       return data;
     };
 
-    DS.Importers = function(data, options) {};
+    Miso.Importers = function(data, options) {};
 
     /**
     * Simple base parse method, passing data through
     */
-    DS.Importers.prototype.extract = function(data) {
+    Miso.Importers.prototype.extract = function(data) {
       data = _.clone(data);
       data._columns = data.columns;
       delete data.columns;
@@ -492,19 +492,19 @@
     * Local data importer is responsible for just using 
     * a data object and passing it appropriatly.
     */
-    DS.Importers.Local = function(options) {
+    Miso.Importers.Local = function(options) {
       this.options = options || (options = {});
 
       if (this.options.extract) {
         this.extract = this.options.extract;
       }
       this.data = options.data;
-      this.parser = this.options.parser || DS.Importer.Obj;
+      this.parser = this.options.parser || Miso.Importer.Obj;
     };
 
     _.extend(
-      DS.Importers.Local.prototype,
-      DS.Importers.prototype, {
+      Miso.Importers.Local.prototype,
+      Miso.Importers.prototype, {
         fetch : function(options) {
           // since this is the local importer, it just
           // passes the data through, parsed.
@@ -524,7 +524,7 @@
       * A remote importer is responsible for fetching data from a url
       * and passing it through the right parser.
       */
-      DS.Importers.Remote = function(options) {
+      Miso.Importers.Remote = function(options) {
         options = options || {};
         this._url = options.url;
 
@@ -532,7 +532,7 @@
           this.extract = options.extract;
         }
 
-        this.parser = options.parser || DS.Parsers.Obj;
+        this.parser = options.parser || Miso.Parsers.Obj;
 
         // Default ajax request parameters
         this.params = {
@@ -543,8 +543,8 @@
       };
 
       _.extend(
-        DS.Importers.Remote.prototype,
-        DS.Importers.prototype,
+        Miso.Importers.Remote.prototype,
+        Miso.Importers.prototype,
         {
           fetch : function(options) {
 
@@ -563,7 +563,7 @@
             }, this);
 
             // make ajax call to fetch remote url.
-            DS.Xhr(_.extend(this.params, { 
+            Miso.Xhr(_.extend(this.params, { 
               success : callback,
               error   : options.error
             }));

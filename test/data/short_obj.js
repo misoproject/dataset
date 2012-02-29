@@ -1,4 +1,4 @@
-window.DS.shortObj = { "metadata" : {"name" : "Greek Alphabet" },
+window.Miso.shortObj = { "metadata" : {"name" : "Greek Alphabet" },
   "columns" : [
     {
         "name" : "character", 

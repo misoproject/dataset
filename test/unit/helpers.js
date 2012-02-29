@@ -2,12 +2,12 @@
 (function(global) {
 
   var Util = global.Util = global.Util || {};
-  var DS = global.DS || {};
+  var Miso = global.Miso || {};
 
   Util.baseSample = function() {
     var ds = null;
 
-    new DS.Dataset({
+    new Miso.Dataset({
       data: { columns : [ 
         { name : "one",   data : [1, 2, 3] },
         { name : "two",   data : [4, 5, 6] },
@@ -26,7 +26,7 @@
   Util.baseSyncingSample = function() {
     var ds = null;
 
-    new DS.Dataset({
+    new Miso.Dataset({
       data: { columns : [ 
         { name : "one",   data : [1, 2, 3] },
         { name : "two",   data : [4, 5, 6] },

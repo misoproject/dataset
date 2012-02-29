@@ -7,7 +7,7 @@ Version 0.0.1.2
 
 (function(global, _, moment) {
 
-  var DS = global.DS;
+  var Miso = global.Miso;
 
   /**
   * @constructor
@@ -43,13 +43,13 @@ Version 0.0.1.2
   }
   */
 
-  DS.Dataset = function(options) {
+  Miso.Dataset = function(options) {
     options = options || (options = {});
     this._initialize(options);
     return this;
   };
 
-  _.extend(DS.Dataset.prototype, DS.View.prototype, {
+  _.extend(Miso.Dataset.prototype, Miso.View.prototype, {
 
     /**
     * @private
@@ -61,7 +61,7 @@ Version 0.0.1.2
       // is this a syncable dataset? if so, pull
       // required methods and mark this as a syncable dataset.
       if (options.sync === true) {
-        _.extend(this, DS.Events);
+        _.extend(this, Miso.Events);
         this.syncable = true;
       }
 
@@ -70,16 +70,16 @@ Version 0.0.1.2
       this.importer = options.importer || null;
 
       // default parser is object parser, unless otherwise specified.
-      this.parser  = options.parser || DS.Parsers.Obj;
+      this.parser  = options.parser || Miso.Parsers.Obj;
 
       // figure out out if we need another parser.
       if (_.isUndefined(options.parser)) {
         if (options.strict) {
-          this.parser = DS.Parsers.Strict;
+          this.parser = Miso.Parsers.Strict;
         } else if (options.delimiter) {
-          this.parser = DS.Parsers.Delimited;
+          this.parser = Miso.Parsers.Delimited;
         } else if (options.google_spreadsheet) {
-          this.parser = DS.Parsers.GoogleSpreadsheet;
+          this.parser = Miso.Parsers.GoogleSpreadsheet;
         }
       }
 
@@ -100,12 +100,12 @@ Version 0.0.1.2
       // initialize the proper importer
       if (this.importer === null) {
         if (options.url) {
-          this.importer = DS.Importers.Remote;
+          this.importer = Miso.Importers.Remote;
         } else if (options.google_spreadsheet) {
-          this.importer = DS.Importers.GoogleSpreadsheet;
+          this.importer = Miso.Importers.GoogleSpreadsheet;
           delete options.google_spreadsheet;
         } else {
-          this.importer = DS.Importers.Local;
+          this.importer = Miso.Importers.Local;
         }
       }
 
@@ -265,8 +265,8 @@ Version 0.0.1.2
         if (filter(row)) {
           _.each(this._columns, function(c) {
             if (_.indexOf(newKeys, c.name) !== -1) {
-              if ((c.type !== 'untyped') && (c.type !== DS.typeOf(newProperties[c.name]))) {
-                throw("incorrect value '"+newProperties[c.name]+"' of type "+DS.typeOf(newProperties[c.name])+" passed to column with type "+c.type);
+              if ((c.type !== 'untyped') && (c.type !== Miso.typeOf(newProperties[c.name]))) {
+                throw("incorrect value '"+newProperties[c.name]+"' of type "+Miso.typeOf(newProperties[c.name])+" passed to column with type "+c.type);
               }
               c.data[rowIndex] = newProperties[c.name];
             }

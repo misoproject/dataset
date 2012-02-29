@@ -9,10 +9,10 @@
 
 (function(global, _) {
 
-  var DS = (global.DS || (global.DS = {}));
+  var Miso = (global.Miso || (global.Miso = {}));
 
 
-  DS.Parsers.Delimited = function(data, options) {
+  Miso.Parsers.Delimited = function(data, options) {
     this.options = options || {};
 
     this.delimiter = this.options.delimiter || ",";
@@ -33,7 +33,7 @@
     );
   };
 
-  _.extend(DS.Parsers.Delimited.prototype, DS.Parsers.prototype, {
+  _.extend(Miso.Parsers.Delimited.prototype, Miso.Parsers.prototype, {
 
     _buildColumns : function(d, sample) {
 

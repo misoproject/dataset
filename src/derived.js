@@ -1,8 +1,8 @@
 (function(global, _) {
 
-  var DS = (global.DS = global.DS || {});
+  var Miso = (global.Miso = global.Miso || {});
 
-  _.extend(global.DS.Dataset.prototype, {
+  _.extend(global.Miso.Dataset.prototype, {
     /**
     * moving average
     * @param {column} column on which to calculate the average
@@ -38,7 +38,7 @@
         this.preprocess = options.preprocess;  
       }
 
-      var parser = new DS.Parsers();
+      var parser = new Miso.Parsers();
 
       // copy columns we want - just types and names. No data.
       var newCols = _.union([byColumn], columns);
@@ -110,7 +110,7 @@
       // create new dataset based on this data
       d.columns = d._columns;
       delete d._columns;
-      var ds = new DS.Dataset({
+      var ds = new Miso.Dataset({
         data   : d,
         strict : true
       });

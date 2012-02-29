@@ -1,11 +1,11 @@
 (function(global) {
   
   var Util  = global.Util;
-  var DS    = global.DS || {};
+  var Miso    = global.Miso || {};
 
   module("Fetching");
   test("Basic fetch + success callback", function() {
-    var ds = new DS.Dataset({
+    var ds = new Miso.Dataset({
       data: { columns : [ 
         { name : "one",   data : [1, 2, 3] },
         { name : "two",   data : [4, 5, 6] },
@@ -15,7 +15,7 @@
     });
     ds.fetch({
       success: function() {
-        equals(this instanceof DS.Dataset, true);
+        equals(this instanceof Miso.Dataset, true);
         ok(_.isEqual(this.columnNames(), ["one", "two", "three"]));
       }
     });
@@ -23,7 +23,7 @@
 
   // these tests pass but take FOREVER....!
   // test("Basic fetch + error callback", 1, function() {
-  //   var ds = new DS.Dataset({
+  //   var ds = new Miso.Dataset({
   //     url: 'http://madeupurl2345675432124.com/json.json'
   //   });
   //   stop();
@@ -37,7 +37,7 @@
   // });
 
   // test("Basic fetch jsonp + error callback", 1, function() {
-  //   var ds = new DS.Dataset({
+  //   var ds = new Miso.Dataset({
   //     url: 'http://madeupurl2345675432124.com/json.json?callback=',
   //     jsonp : true
   //   });
@@ -51,7 +51,7 @@
   // });
 
   test("Basic fetch + deferred callback", function() {
-    var ds = new DS.Dataset({
+    var ds = new Miso.Dataset({
       data: { columns : [ 
         { name : "one",   data : [1, 2, 3] },
         { name : "two",   data : [4, 5, 6] },
@@ -60,13 +60,13 @@
       strict: true
     });
     _.when(ds.fetch()).then(function() {
-      equals(ds instanceof DS.Dataset, true);
+      equals(ds instanceof Miso.Dataset, true);
       ok(_.isEqual(ds.columnNames(), ["one", "two", "three"]));
     });
   });
 
   test("Instantiation ready callback", function() {
-    var ds = new DS.Dataset({
+    var ds = new Miso.Dataset({
       data: { columns : [ 
         { name : "one",   data : [1, 2, 3] },
         { name : "two",   data : [4, 5, 6] },
@@ -74,7 +74,7 @@
       ] },
       strict: true,
       ready : function() {
-        equals(this instanceof DS.Dataset, true);
+        equals(this instanceof Miso.Dataset, true);
         ok(_.isEqual(this.columnNames(), ["one", "two", "three"]));
       }
     }).fetch();
@@ -88,8 +88,8 @@
   });
 
   test("String raw extraction", 2, function() {
-    var ds = new DS.Dataset({
-      data : DS.alphabet_strict,
+    var ds = new Miso.Dataset({
+      data : Miso.alphabet_strict,
       strict: true
     }).fetch({
       success: function() {
@@ -100,7 +100,7 @@
   });
 
   test("Time raw extraction", 2, function() {
-    var ds = new DS.Dataset({
+    var ds = new Miso.Dataset({
       data : [
         { 'character' : '12/31 2012' },
         { 'character' : '01/31 2011' }

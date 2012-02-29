@@ -1,13 +1,13 @@
 (function(global) {
   
   var Util  = global.Util;
-  var DS    = global.DS || {};
+  var Miso    = global.Miso || {};
   
   module("Events");
 
   test("binding and firing an event", function() {
 
-    var ds = new DS.Dataset({
+    var ds = new Miso.Dataset({
       data: { columns : [ { name: "one", data: [1,2] } ] },
       strict: true,
       sync : true
@@ -26,7 +26,7 @@
   });
 
   test("unbinding event", function() {
-    var ds = new DS.Dataset({
+    var ds = new Miso.Dataset({
       data: { columns : [ { name: "one", data: [1,2] } ] },
       strict: true,
       sync : true

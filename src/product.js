@@ -1,10 +1,10 @@
 (function(global, _) {
 
   // shorthand
-  var DS = global.DS;
-  var Product = (DS.Product || function() {
+  var Miso = global.Miso;
+  var Product = (Miso.Product || function() {
 
-    DS.Product = function(options) {
+    Miso.Product = function(options) {
       options = options || (options = {});
       
       // save column name. This will be necessary later
@@ -29,10 +29,10 @@
       return this;
     };
 
-    return DS.Product;
+    return Miso.Product;
   })();
 
-  _.extend(Product.prototype, DS.Events, {
+  _.extend(Product.prototype, Miso.Events, {
 
     /**
     * @public
@@ -69,7 +69,7 @@
     }
   });
 
-  _.extend(DS.Dataset.prototype, {
+  _.extend(Miso.Dataset.prototype, {
 
     _columnsToArray : function(columns) {
       if (_.isUndefined(columns)) {
@@ -129,7 +129,7 @@
             columnObject = columns[i];
 
             for (var j= 0; j < columnObject.data.length; j++) {
-              if (DS.types[columnObject.type].compare(columnObject.data[j], max) > 0) {
+              if (Miso.types[columnObject.type].compare(columnObject.data[j], max) > 0) {
                 max = columnObject.numericAt(j);
               }
             }
@@ -140,7 +140,7 @@
           var typeOptions = columnObject.typeOptions;
 
           // return the coerced value for column type.
-          return DS.types[type].coerce(max, typeOptions);
+          return Miso.types[type].coerce(max, typeOptions);
         };
       }(columnObjects));
 
@@ -168,7 +168,7 @@
           for (var i= 0; i < columns.length; i++) {
             columnObject = columns[i];
             for (var j= 0; j < columnObject.data.length; j++) {
-              if (DS.types[columnObject.type].compare(columnObject.data[j], min) < 0) {
+              if (Miso.types[columnObject.type].compare(columnObject.data[j], min) < 0) {
                 min = columnObject.numericAt(j);
               }
             }
@@ -178,7 +178,7 @@
           var typeOptions = columnObject.typeOptions;
 
           // return the coerced value for column type.
-          return DS.types[type].coerce(min, typeOptions);
+          return Miso.types[type].coerce(min, typeOptions);
         };
       }(columnObjects));
 

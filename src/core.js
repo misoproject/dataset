@@ -1,17 +1,17 @@
 (function(global, _) {
 
   /* @exports namespace */
-  var DS = global.DS = {};
+  var Miso = global.Miso = {};
 
-  DS.typeOf = function( value ) {
-    var types = _.keys(DS.types),
+  Miso.typeOf = function( value ) {
+    var types = _.keys(Miso.types),
         chosenType;
 
     //move string to the end
     types.push(types.splice(_.indexOf(types, 'string'), 1)[0]);
 
     chosenType = _.find(types, function(type) {
-      return DS.types[type].test( value );
+      return Miso.types[type].test( value );
     });
 
     chosenType = _.isUndefined(chosenType) ? 'string' : chosenType;
@@ -19,7 +19,7 @@
     return chosenType;
   };
   
-  DS.types = {
+  Miso.types = {
     string : {
       name : "string",
       coerce : function(v) {

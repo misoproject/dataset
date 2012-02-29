@@ -1,7 +1,7 @@
 (function(global) {
   
   var Util  = global.Util;
-  var DS    = global.DS || {};  
+  var Miso  = global.Miso || {};  
 
   function verifyImport(obj, strictData) {
 
@@ -58,32 +58,32 @@
 
   module("Strict Importer");
   test("Basic Strict Import", 53, function() {
-    var importer = new DS.Importers.Local({
-      parser : DS.Parsers.Strict,
-      data : DS.alphabet_strict
+    var importer = new Miso.Importers.Local({
+      parser : Miso.Parsers.Strict,
+      data : Miso.alphabet_strict
     });
     importer.fetch({
       success : function(strictData) {
-        verifyImport(DS.alphabet_strict, strictData);
+        verifyImport(Miso.alphabet_strict, strictData);
       }
     });
   });
 
   test("Basic Strict Import through Dataset API", 54, function() {
-    var ds = new DS.Dataset({ 
-      data : DS.alphabet_strict, 
+    var ds = new Miso.Dataset({ 
+      data : Miso.alphabet_strict, 
       strict: true
     });
     _.when(ds.fetch()).then(function(){
-      verifyImport(DS.alphabet_strict, ds);
+      verifyImport(Miso.alphabet_strict, ds);
       equals(typeof ds.columns, "function", "columns is the function, not the columns obj");
     });
   });
 
   module("Coercion and type setting");
   test("Manual column type override", function() {
-    var ds = new DS.Dataset({
-      data : DS.alphabet_strict,
+    var ds = new Miso.Dataset({
+      data : Miso.alphabet_strict,
       strict: true,
       columnTypes : {
         name : 'number'
@@ -97,13 +97,13 @@
   });
 
   test("Manual column type override", function() {
-    var data = _.clone(DS.alphabet_strict);
+    var data = _.clone(Miso.alphabet_strict);
     data.columns[1].data = [];
     _(data.columns[0].data.length).times(function() {
       data.columns[1].data.push( moment() );
     });
 
-    var ds = new DS.Dataset({
+    var ds = new Miso.Dataset({
       data : data,
       strict: true,
       columnTypes : {
@@ -120,7 +120,7 @@
 
   test("Manual column type override with extra properties", function() {
 
-    var ds = new DS.Dataset({
+    var ds = new Miso.Dataset({
       data : [
         { 'character' : '12/31 2012' },
         { 'character' : '01/31 2011' }
@@ -139,21 +139,21 @@
   module("Obj Importer");
   test("Convert object to dataset", 57, function() {
 
-    var importer = new DS.Importers.Local({
-      parser : DS.Parsers.Obj,
-      data : DS.alphabet_obj
+    var importer = new Miso.Importers.Local({
+      parser : Miso.Parsers.Obj,
+      data : Miso.alphabet_obj
     });
 
     importer.fetch({
       success : function(strictData) {
-        verifyImport(DS.alphabet_obj, strictData);
+        verifyImport(Miso.alphabet_obj, strictData);
 
          // check all data
-         var keys = _.keys(DS.alphabet_obj[0]);
+         var keys = _.keys(Miso.alphabet_obj[0]);
         _.each(keys, function(key) {
           
           // get all row values
-          var values = _.pluck(DS.alphabet_obj, key);
+          var values = _.pluck(Miso.alphabet_obj, key);
 
           // get column values
           var pos = strictData._columnPositionByName[key];
@@ -168,18 +168,18 @@
   });
 
   test("Convert object to dataset through dataset API", 53, function() {
-    var ds = new DS.Dataset({ data : DS.alphabet_obj });
+    var ds = new Miso.Dataset({ data : Miso.alphabet_obj });
     _.when(ds.fetch()).then(function(){
-      verifyImport(DS.alphabet_obj, ds);
+      verifyImport(Miso.alphabet_obj, ds);
     });
   });
 
   module("Remote Importer");
   test("Basic json url fetch", 53, function() {
     var url = "data/alphabet_strict.json";
-    var importer = new DS.Importers.Remote({
+    var importer = new Miso.Importers.Remote({
       url : url,
-      parser : DS.Parsers.Strict,
+      parser : Miso.Parsers.Strict,
       jsonp : false
     });
     stop();
@@ -193,7 +193,7 @@
 
   test("Basic json url fetch through Dataset API", 53, function() {
     var url = "data/alphabet_strict.json";
-    var ds = new DS.Dataset({ 
+    var ds = new Miso.Dataset({ 
       url : url, 
       jsonp : false, 
       strict: true,
@@ -208,9 +208,9 @@
 
   test("Basic jsonp url fetch", 53, function() {
     var url = "data/alphabet_obj.json?callback=";
-    var importer = new DS.Importers.Remote({
+    var importer = new Miso.Importers.Remote({
       url : url,
-      parser : DS.Parsers.Obj,
+      parser : Miso.Parsers.Obj,
       jsonp : true,
       extract : function(raw) {
         return raw.data;
@@ -227,7 +227,7 @@
 
   test("Basic jsonp url fetch with Dataset API", 53, function() {
     var url = "data/alphabet_obj.json?callback=";
-    var ds = new DS.Dataset({ 
+    var ds = new Miso.Dataset({ 
       url : url, 
       jsonp : true, 
       extract: function(raw) {
@@ -245,10 +245,10 @@
   module("Delimiter Importer");
   test("Remote delimiter parsing test", function() {
     var url = "data/alphabet.csv";
-    var importer = new DS.Importers.Remote({
+    var importer = new Miso.Importers.Remote({
       url : url, 
       jsonp : false,
-      parser : DS.Parsers.Delimited,
+      parser : Miso.Parsers.Delimited,
       dataType: "text"
     });
     stop();
@@ -264,49 +264,49 @@
 
   test("Basic delimiter parsing test", 53, function() {
 
-    var importer = new DS.Importers.Local({
-      parser : DS.Parsers.Delimited,
-      data : window.DS.alphabet_csv
+    var importer = new Miso.Importers.Local({
+      parser : Miso.Parsers.Delimited,
+      data : window.Miso.alphabet_csv
     });
     
     importer.fetch({
       success : function(strictData) {
-        verifyImport(DS.alphabet_strict, strictData);
+        verifyImport(Miso.alphabet_strict, strictData);
       }
     });
   });
 
   test("Basic delimiter parsing test with Dataset API", 53, function() {
 
-    var ds = new DS.Dataset({ 
-      data : window.DS.alphabet_csv,
+    var ds = new Miso.Dataset({ 
+      data : window.Miso.alphabet_csv,
       delimiter : ","
     });
     _.when(ds.fetch()).then(function(){
-      verifyImport(DS.alphabet_strict, ds);
+      verifyImport(Miso.alphabet_strict, ds);
     });
   });
 
   test("Basic delimiter parsing test with custom separator", 53, function() {
-    var importer = new DS.Importers.Local({
-      data : window.DS.alphabet_customseparator,
+    var importer = new Miso.Importers.Local({
+      data : window.Miso.alphabet_customseparator,
       delimiter : "###",
-      parser : DS.Parsers.Delimited
+      parser : Miso.Parsers.Delimited
     });
     importer.fetch({
       success : function(strictData) {
-        verifyImport(DS.alphabet_strict, strictData);
+        verifyImport(Miso.alphabet_strict, strictData);
       }
     });
   });
 
   test("Basic delimiter parsing test with custom separator with Dataset API", 53, function() {
-    var ds = new DS.Dataset({ 
-      data : window.DS.alphabet_customseparator,
+    var ds = new Miso.Dataset({ 
+      data : window.Miso.alphabet_customseparator,
       delimiter : "###"
     });
     _.when(ds.fetch()).then(function(){
-      verifyImport(DS.alphabet_strict, ds);
+      verifyImport(Miso.alphabet_strict, ds);
     });
   });
 
@@ -324,7 +324,7 @@
 
     // ignoring id column, since that changes.
     for(var i = 1; i < d.length; i++) {
-      ok(_.isEqual(d._columns[i].data, obj._columns[i].data), "Expected: "+d._columns[i].data + " Got: " + window.DS.google_spreadsheet_strict._columns[i].data);
+      ok(_.isEqual(d._columns[i].data, obj._columns[i].data), "Expected: "+d._columns[i].data + " Got: " + window.Miso.google_spreadsheet_strict._columns[i].data);
     }
   }
 
@@ -334,9 +334,9 @@
       url : "https://spreadsheets.google.com/feeds/cells/0Asnl0xYK7V16dFpFVmZUUy1taXdFbUJGdGtVdFBXbFE/1/public/basic?alt=json-in-script",
       dataType: "jsonp",
       success: function(data) {
-        var parser = new DS.Parsers.GoogleSpreadsheet(data);
+        var parser = new Miso.Parsers.GoogleSpreadsheet(data);
         var strictData = parser.build();
-        verifyGoogleSpreadsheet(strictData, window.DS.google_spreadsheet_strict);
+        verifyGoogleSpreadsheet(strictData, window.Miso.google_spreadsheet_strict);
         start();
       }
     });
@@ -346,14 +346,14 @@
   test("Google spreadsheet import test", function() {
 
     
-    var importer = new DS.Importers.GoogleSpreadsheet({
+    var importer = new Miso.Importers.GoogleSpreadsheet({
       key : "0Asnl0xYK7V16dFpFVmZUUy1taXdFbUJGdGtVdFBXbFE",
       worksheet : "1"
     });
 
     importer.fetch({
       success : function(data) {
-        verifyGoogleSpreadsheet(data, window.DS.google_spreadsheet_strict);
+        verifyGoogleSpreadsheet(data, window.Miso.google_spreadsheet_strict);
         start();
       }
     });
@@ -366,13 +366,13 @@
     var key = "0Asnl0xYK7V16dFpFVmZUUy1taXdFbUJGdGtVdFBXbFE";
     var worksheet = "1";
 
-    var ds = new DS.Dataset({
+    var ds = new Miso.Dataset({
       google_spreadsheet : {
         key : key,
         worksheet: worksheet
       },
       ready : function() {
-        verifyGoogleSpreadsheet(this, window.DS.google_spreadsheet_strict);
+        verifyGoogleSpreadsheet(this, window.Miso.google_spreadsheet_strict);
         start();
       }
     });

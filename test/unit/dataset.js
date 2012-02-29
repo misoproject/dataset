@@ -1,7 +1,7 @@
 (function(global) {
   
   var Util  = global.Util;
-  var DS    = global.DS || {};
+  var Miso    = global.Miso || {};
 
   module("Dataset functions");
 
