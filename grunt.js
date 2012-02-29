@@ -14,7 +14,23 @@ config.init({
   concat : {
     'dist/miso.ds.js' : [
       '<banner>',
+      "src/core.js",
+      "src/sync.js",
+      "src/view.js",
+      "src/dataset.js",
+      "src/product.js",
+      "src/derived.js",
+      "src/importers.js",
+      "src/importers/google_spreadsheet.js",
+      "src/importers/delimited.js"
+    ],
+
+    'dist/miso.ds.deps.js' : [
+      '<banner>',
       "lib/moment.js",
+      "lib/underscore.js",
+      "lib/underscore.math.js",
+      "lib/underscore.deferred.js",
       "src/core.js",
       "src/sync.js",
       "src/view.js",
@@ -31,11 +47,16 @@ config.init({
     'dist/miso.ds.min.js' : [
       '<banner>',
       'dist/miso.ds.js'
+    ],
+
+    'dist/miso.ds.deps.min.js' : [
+      '<banner>',
+      'dist/miso.ds.deps.js'
     ]
   },
 
   qunit : {
-    urls : [ 'http://localhost:9292/test/index.html' ]
+    urls : [ 'http://localhost:9292/test/index.build.html' ]
   },
 
   lint : {
