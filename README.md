@@ -109,9 +109,11 @@ var ds = new DS.Dataset({
 
 Most of the time, your data will live somewhere else and you'll want to fetch it via a url. All the above formats would work except you would need to replace your `data` property with with a `url` property like so:
 
+```javascript
 var ds = new DS.Dataset({
   url : "http://myserver.com/data/mydata.json"
 });
+```
 
 #### Google Spreadsheet Importing
 
@@ -136,7 +138,7 @@ The import system can also easily be extended for custom data formats and other 
 
 Regardless of how you initialized your dataset, it needs to be fetched for the data to be available. To begin fetching your data, simply call `.fetch()` on it. 
 
-Note that if the data is fetched remotely, this is an asyncronous operation, meaning that the code following your fetch call may be attempting to access data that doesn't exist yet! Do remedy this you can do one of the following things:
+Note that if the data is fetched remotely, this is an asyncronous operation, meaning that the code following your fetch call may be attempting to access data that doesn't exist yet! To remedy this you can do one of the following things:
 
 ### Pass success/error callbacks:
 
@@ -278,7 +280,7 @@ The row object will look as follows:
 { columnName : 'value', … }
 ```
 
-Note that each row has a unique identifier assiged to it called `_id`. Do not attempt to change that value unless you're feeling destrictive.
+Note that each row has a unique identifier assiged to it called `_id`. Do not attempt to change that value unless you're feeling destructive.
 
 
 ## Data Modification
