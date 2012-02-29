@@ -2,29 +2,326 @@
 
 Dataset is a library that makes it easy to work with data on the client. Dataset makes it painless to import &amp; standardise datsets and then select &amp; manipulate data within them.
 
-Download Production :: Download Development
-
 ## Why Dataset
 
-Dataset is designed to solve common problems and patterns around client-side dataset manipulation and management. Unlike more general client-side model frameworks dataset is designed exclusively for working with matricies/tables of data. This allows dataset to provide a rich set of capabilities bit with this specific use case in mind as well as optimise for large numbers of rows in a standard format.
+Dataset is designed to solve common problems and patterns around client-side dataset manipulation and management:
 
-## What Dataset does
+* Importing data from distinct sources into a common format
+* Iterating over data
+* Computing basic products (min, max etc.)
+* Being able to subscribe to changes on the data
 
-### Importing
-Out of the box dataset can take local or remote files in almost any common format such as JSON, CSV, TSV as well as a growing library of APIs (Google Spreadsheets, NYTimes Congress, Github) & convert that data into a local dataset. 
+Unlike more general client-side model frameworks dataset is designed exclusively for working with matricies/tables of data. This allows dataset to provide a rich set of capabilities bit with this specific use case in mind as well as optimise for large numbers of rows in a standard format.
 
-The import system can also easily be extended for custom data formats and other APIs. Dataset also supports type coercion, making it trivial to convert strings to numbers or timestamps to `moment` objects. The type system itself can also be extended to support new rich data types as needed.
+## Download 
+
+### Including Dependancies
+
+[miso.ds.deps.js](https://github.com/misoproject/dataset/tree/master/dist/miso.ds.deps.js) - Download Production With Dependancies - 0.0.1
+
+[miso.ds.deps.min.js](https://github.com/misoproject/dataset/tree/master/dist/) - Download Development With Dependancies - 0.0.1
+
+### Without Dependancies
+
+The following builds do not have any of the dependancies built in. It is your own responsability to include them as appropriate script elements in your page.
+
+[miso.ds.js](https://github.com/misoproject/dataset/tree/master/dist/miso.ds.js) - Download Production No Dependancies - 0.0.1
+
+[miso.ds.min.js](https://github.com/misoproject/dataset/tree/master/dist/) - Download Development No Dependancies - 0.0.1
+
+### Dependancies
+
+Dataset has the following dependancies:
+
+* [Underscore.js 1.3.1](http://underscorejs.org/)
+* [Underscore.math.js (version unknown)](https://github.com/syntagmatic/underscore.math) 
+* [Underscore.deferred.js 0.1.2](https://github.com/wookiehangover/underscore.Deferred)
+* [moment.js 1.4.0](http://momentjs.com/) (for date and time parsing)
+
+
+## Creating a Dataset
+
+To begin working with your dataset, you first need to import your data. You can import either **local** data (in the form of a variable that happens to contain your data) or **remote** data (in the form of a url that we'll fetch from.)
+
+### Local Importing
+
+Out of the box Dataset can take local data objects or remote urls and import data in almost any common format.
+
+
+* JSON (including jsonp)
+* CSV
+* TSV (Any delimiter is acceptable, including tabs) 
+
+There is also a growing library of custom data importers such as: 
+
+* Google Spreadsheets
+* NYTimes Congress
+* Github) & convert that data into a local dataset. 
+
+#### Importing from a local object array
+
+If you have an array of json objects, you can easily convert them to a Dataset like so:
 
 ```javascript
-  new DS.Dataset({ url : 'http://example.com/feed.json' });
+var myData = [
+  { state : "Alabama", population : 4802740 },
+  { state : "Massachusetts", population : 6587536 }
+];
 
-  new DS.Dataset({
-    data : localJson,
-    coerceColumns : {
-      'timestamp' : { type : 'time', format : 'MM/DD YYYY' },
-      'total' : { type : 'numeric' }
-    }
-  });
+var ds = new DS.Dataset({
+  data : myData
+});
+```
+
+#### Importing from a local "strict" format object
+
+If you happen to have your data preprocessed in what we call a "strict" format, you can speed up your import slightly by initializing your Dataset with the strict flag:
+
+```javascript
+var myData = {
+  columns : [
+    { name : "state", data : ["Alabama", "Massachusetts"] },
+    { name : "population", data : [4802740, 6587536] }
+  ]
+}
+
+var ds = new DS.Dataset({
+  data : myData,
+  strict: true
+});
+```
+
+#### Importing from a local delimited string format
+
+If for some reason you actually have all your data as a delimited string on the client side (which is an unlikely but possible,) you can import that into a dataset object too.
+
+```javascript
+var mydata = "state,population\n"+
+			 "Alabala,4802740\n" +
+			 "Massachusetts,6587536";
+var ds = new DS.Dataset({
+  data : myData,
+  delimiter : ","
+});
+```
+
+### Remote Importing
+
+Most of the time, your data will live somewhere else and you'll want to fetch it via a url. All the above formats would work except you would need to replace your `data` property with with a `url` property like so:
+
+var ds = new DS.Dataset({
+  url : "http://myserver.com/data/mydata.json"
+});
+
+#### Google Spreadsheet Importing
+
+If you have a **published** Google Spreadsheet that you would like to import data from, you can do so with the following format:
+
+```javascript
+var ds = new DS.Dataset({
+  google_spreadsheet : {
+    key : "0Asnl0xYK7V16dFpFVmZUUy1taXdFbUJGdGtVdFBXbFE",
+    worksheet: "1"
+  }
+});
+```
+The google spreadsheet importer is utilizing the format specified here:
+[http://code.google.com/apis/gdata/samples/spreadsheet_sample.html](http://code.google.com/apis/gdata/samples/spreadsheet_sample.html)
+
+### Custom Importers
+
+The import system can also easily be extended for custom data formats and other APIs. See the "Write Your Own Importers" section for more information.
+
+## Fetching the Data
+
+Regardless of how you initialized your dataset, it needs to be fetched for the data to be available. To begin fetching your data, simply call `.fetch()` on it. 
+
+Note that if the data is fetched remotely, this is an asyncronous operation, meaning that the code following your fetch call may be attempting to access data that doesn't exist yet! Do remedy this you can do one of the following things:
+
+### Pass success/error callbacks:
+
+```javascript
+ds.fetch({
+  success : function() {
+    // do things here after data successfully fetched.
+    // note 'this' references the dataset.
+  },
+  
+  error : function() {
+    // do things here in case your data fails.
+  }
+});
+```
+
+### Using Deferreds
+
+If you have more than one dataset you need to wait on, or you might be a fan of using deferreds, you can use them as follows:
+
+```javascript
+var ds1 = new DS.Dataset({ data : myData1 }),
+    ds2 = new DS.Dataset({ data : myData2 });
+    
+_.when(ds1.fetch(), ds2.fetch()).then(function() {
+  // do things when both datasets are fetched.
+  // note 'this' is NOT set to the dataset here.
+});
+```
+
+### Typing 
+
+#### Built in Types
+
+Dataset supports the following prebuilt data types:
+
+* `number`
+* `string`
+* `boolean`
+* `time`
+
+#### Overriding Detected Types
+
+Dataset will attempt to detect what the type of your data is. However, if any of your columns are of a `time` format, it's much more efficient for you to specify that directly as follows:
+
+The format required is:
+
+```javascript:
+columTypes : {
+  'columnName' : { type : '<known type (see Types Sections)>' … <any additional type required options here.>]
+}
+```
+
+Dataset will take care of the actual type coercion, making it trivial to convert strings to numbers or timestamps to `moment` objects. For example, coercing the timestamp column into a time column and the total column to a numeric type would look like so:
+
+```javascript
+
+new DS.Dataset({
+  url : "http://myserver.com/data/data.json",
+  columnTypes : {
+    'timestamp' : { type : 'time', format : 'MM/DD YYYY' },
+    'total' : { type : 'numeric' }
+  }
+});
+```
+
+#### Custom Types
+
+The type system itself can also be extended to support new rich data types as needed. To read more about that, see "Adding your own data types."
+
+## Accessing Data
+
+### Columns
+
+A column has the following properties:
+
+* `name` - the column name.
+* `type` - the column type.
+* `data` - the actual data of the column. This is an array.
+* `_id`  - a unique column identifier.
+
+Again, it is not recommended to modify the data in the column directly as this will not go through the event system. More on that further down.
+
+#### Getting a Column By Name
+
+```javascript
+ds.column(columnName);
+```
+
+This returns the actual column object.
+
+#### Iterating Over Columns
+
+```javascript
+ds.eachColumn(function(columnName) {
+  // do what you need here.
+});
+```
+
+#### Operations on a column:
+
+##### sum
+
+##### min
+
+##### max
+
+### Rows
+
+#### Accessing a Specific Row
+
+There are two ways to access rows in Dataset:
+
+* By their position (as in, the 3rd row.)
+  
+  ```javascript
+  ds.rowByPosition(index);
+  ```
+
+* By their unique identifier (assigned to each row during the data import.)
+  
+  ```javascript
+  ds.rowById(rowId);
+  ```
+
+#### Iterating Over Rows
+
+```javascript
+ds.each(function(row) {
+
+});
+```
+
+Note that the row object is not a direct reference to your actual data row (as in, if you modify it, it won't actually trigger a change in your dataset.) To change your dataset, you need to use the `update` method.
+
+The row object will look as follows:
+
+```javascript
+{ columnName : 'value', … }
+```
+
+Note that each row has a unique identifier assiged to it called `_id`. Do not attempt to change that value unless you're feeling destrictive.
+
+
+## Data Modification
+
+### Rows
+
+#### Adding a Row
+
+#### Removing a Row
+
+#### Updating Rows
+
+
+## Sorting
+
+You can sort your Dataset by specifying a comparator on your constructor or at any later point like so:
+
+```javascript
+// initialize a new dataset
+var ds = new DS.Dataset({
+  data: { columns : [ 
+    { name : "one",   data : [10, 2, 3, 14, 3, 4] },
+    { name : "two",   data : [4,  5, 6, 1,  1, 1] },
+    { name : "three", data : [7,  8, 9, 1,  1, 1] } 
+  ] },
+  strict: true
+});
+
+// define a comparator
+ds.comparator = function(r1, r2) {
+  if (r1.one > r2.one) {return 1;}
+  if (r1.one < r2.one) {return -1;}
+  return 0;
+};
+
+_.when(ds.fetch(), function(){
+  ds.sort();
+  
+  // your data now looks like so:
+  // [2,3,3,4,10,14]
+  // [5,6,1,1,4,1]
+  // [8,9,1,1,7,1]
+});
 ```
 
 ### Selection
