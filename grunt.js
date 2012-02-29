@@ -56,7 +56,9 @@ config.init({
   },
 
   qunit : {
-    urls : [ 'http://localhost:9292/test/index.build.html' ]
+    urls : [ 
+      'http://localhost:9292/test/index.html'
+    ]
   },
 
   lint : {
@@ -123,4 +125,4 @@ config.init({
 });
 
 // Default task.
-task.registerTask('default', 'lint concat min');
+task.registerTask('default', 'lint qunit concat min');
