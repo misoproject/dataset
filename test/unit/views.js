@@ -34,7 +34,43 @@
     var column = ds.column("one");
     equals(column.sum(), 6);
   });
-  
+
+  test("Column median", function() {
+    var ds = new Miso.Dataset({
+      data : {
+        columns : [
+          { name : 'vals', data : [1,2,3,4,5,6,7,8,9,10] },
+          { name : 'valsrandomorder', data : [10,2,1,5,3,8,9,6,4,7] },
+          { name : 'randomvals', data : [19,4,233,40,10,39,23,47,5,22] }
+        ]
+      },
+      strict : true
+    });
+    _.when(ds.fetch()).then(function(){
+      equals(ds.column('vals').median(), 5.5);
+      equals(ds.column('valsrandomorder').median(), 5.5); 
+      equals(ds.column('randomvals').median(), 22.5); 
+    });
+  });
+
+  test("Column mean", function() {
+    var ds = new Miso.Dataset({
+      data : {
+        columns : [
+          { name : 'vals', data : [1,2,3,4,5,6,7,8,9,10] },
+          { name : 'valsrandomorder', data : [10,2,1,5,3,8,9,6,4,7] },
+          { name : 'randomvals', data : [19,4,233,40,10,39,23,47,5,22] }
+        ]
+      },
+      strict : true
+    });
+    _.when(ds.fetch()).then(function(){
+      equals(ds.column('vals').mean(), 5.5);
+      equals(ds.column('valsrandomorder').mean(), 5.5); 
+      equals(ds.column('randomvals').mean(), 44.2); 
+    });
+  });
+
   module("Views");
 
   test("Basic View creation", function() {

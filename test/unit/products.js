@@ -214,6 +214,83 @@
     });
   });
 
+  test("Basic Mean Product", function() {
+    var ds = new Miso.Dataset({
+      data : {
+        columns : [
+          { name : 'vals', data : [1,2,3,4,5,6,7,8,9,10] },
+          { name : 'valsrandomorder', data : [10,2,1,5,3,8,9,6,4,7] },
+          { name : 'randomvals', data : [19,4,233,40,10,39,23,47,5,22] }
+        ]
+      },
+      strict : true,
+      sync : true
+    });
+
+    _.when(ds.fetch()).then(function() {
+      var m = ds.mean('vals');
+      var m2 = ds.mean('valsrandomorder');
+      var m3 = ds.mean(['vals', 'valsrandomorder']);
+
+      equals(m.val(), 5.5);
+      equals(m2.val(), 5.5);
+      equals(m3.val(), 5.5);
+      equals(ds.mean(['vals', 'valsrandomorder', 'randomvals']).val(), 18.4);
+
+      m.bind("change", function(s) {
+        equals(s.deltas[0].old, 5.5);
+        equals(this.val(), 6.4);
+      });
+
+      m2.bind("change", function(s) {
+        equals(s.deltas[0].old, 5.5);
+        equals(this.val(), 6.4);
+      });
+
+      m3.bind("change", function(s) {
+        equals(s.deltas[0].old, 5.5);
+        equals(this.val(), 5.95);
+      });
+
+      ds.update(ds._rowIdByPosition[0], { vals : 10, valusrandomorder : 10 });
+    });
+  });
+
+  test("Basic Mean Product Non Syncable", function() {
+    var ds = new Miso.Dataset({
+      data : {
+        columns : [
+          { name : 'vals', data : [1,2,3,4,5,6,7,8,9,10] },
+          { name : 'valsrandomorder', data : [10,2,1,5,3,8,9,6,4,7] },
+          { name : 'randomvals', data : [19,4,233,40,10,39,23,47,5,22] }
+        ]
+      },
+      strict : true
+    });
+
+    _.when(ds.fetch()).then(function() {
+
+      var m = ds.mean('vals');
+      var m2 = ds.mean('valsrandomorder');
+      var m3 = ds.mean(['vals', 'valsrandomorder']);
+      var m4 = ds.mean(['vals', 'valsrandomorder', 'randomvals']);
+
+      equals(m, 5.5);
+      equals(m2, 5.5);
+      equals(m3, 5.5);
+      equals(m4, 18.4);
+
+      ds.update(ds._rowIdByPosition[0], { vals : 10, valusrandomorder : 10 });
+
+      equals(m, 5.5);
+      equals(m2, 5.5);
+      equals(m3, 5.5);
+      equals(m4, 18.4);
+    });
+  });
+
+  // TODO: add time mean product here!!!g
+
   module("Products :: Sync");
 
   test("Basic Sync Recomputation", function() {

@@ -30,6 +30,14 @@
       return _.sum(this.data);
     },
 
+    mean : function() {
+      return _.mean(this.data);
+    },
+
+    median : function() {
+      return _.median(this.data);
+    },
+
     max : function() {
       var max = -Infinity;
       for (var j = 0; j < this.data.length; j++) {
