@@ -8,17 +8,17 @@
   DS.Importers.Local = function(options) {
     options || (options = {});
 
-    this.extract = options.extract || this.extract;
+    this.dataset = options.dataset;
+    this.parser = options.dataset.parser;
+    this.data = options.data || null;
 
-    //Because this is the local parser we already have
-    //the data by this point
-    this.data = options.data;
+    this.extract = options.extract || this.extract;
   };
 
   _.extend(DS.Importers.Local.prototype, DS.Importers.prototype, {
     fetch : function(options) {
-      var parsedData = options.parser.build( this.extract(this.data) );
-      options.success(parsedData);
+      var data = options.data ? options.data : this.data;
+      options.success( this.extract(data) );
     }
   });
 

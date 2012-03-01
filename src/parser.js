@@ -7,7 +7,24 @@
 
   _.extend(DS.Parsers.prototype, {
     parse : function() {},
-    preProcess : function() {},
+
+    //These are the methods that will be used to determine
+    //how to update a dataset when fetch() is called after the
+    //first time
+    updateStrategies : {
+
+      //Update existing values, used the pass column to match 
+      //incoming data to existing rows.
+      againstColumn : function() {
+
+      },
+
+      //Always blindly add new rows
+      blindAddition : function() {
+
+      }
+    },
+
     build : function(options) {
       var d = {};
 

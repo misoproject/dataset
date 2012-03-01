@@ -98,13 +98,15 @@ Version 0.0.1.2
           this.importer = DS.Importers.Local;
         }
       }
-      console.log('!!!!', this);
+
+      //Pass the dataset ref into the parser & importer
+      options.dataset = this;
 
       // initialize importer and parser
       this.parser = new this.parser(options);
       this.importer = new this.importer(options);
-      console.log('pp', this.parser);
 
+    
       // save comparator if we have one
       if (options.comparator) {
         this.comparator = options.comparator;  
@@ -119,6 +121,11 @@ Version 0.0.1.2
       // implementation, pass it as an option
       if (options.deferred) {
         this.deferred = options.deferred;
+      }
+
+      //If the data has been passed in we kick off a fetch to process it
+      if (options.data) {
+        this.fetch({data : options.data});
       }
     },
 
@@ -156,47 +163,46 @@ Version 0.0.1.2
         throw "No importer defined"
       }
 
-      this.importer.fetch({
+      this.importer.fetch(
+        _.extend({
+          success: _.bind(function(d) {
 
-        parser : this.parser,
+            d = this.parser.build(d)
+            _.extend(this, d);
 
-        success: _.bind(function(d) {
+            // if a comparator was defined, sort the data
+            if (this.comparator) {
+              this.sort();
+            }
 
-          //Take the return from the parser and apply it to our new dataset
-          _.extend(this, d);
+            // call ready method
+            if (this.ready) {
+              this.ready.call(this);
+            }
 
-          // if a comparator was defined, sort the data
-          if (this.comparator) {
-            this.sort();
-          }
+            // call success method if any passed
+            if (options.success) {
+              options.success.call(this);
+            }
 
-          // call ready method
-          if (this.ready) {
-            this.ready.call(this);
-          }
+            // resolve deferred
+            dfd.resolve(this);
 
-          // call success method if any passed
-          if (options.success) {
-            options.success.call(this);
-          }
+          }, this),
 
-          // resolve deferred
-          dfd.resolve(this);
+          error : _.bind(function(e) {
 
-        }, this),
+            // call error if any passed
+            if (options.error) {
+              options.error.call(this);
+            }
 
-        error : _.bind(function(e) {
+            // reject deferred
+            dfd.reject(e);
 
-          // call error if any passed
-          if (options.error) {
-            options.error.call(this);
-          }
-
-          // reject deferred
-          dfd.reject(e);
-
-        }, this)
-        });
+          }, this)
+        }, options)
+      );
 
       return dfd.promise();
     },
