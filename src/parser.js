@@ -6,6 +6,21 @@
   DS.Parsers = function() {};
 
   _.extend(DS.Parsers.prototype, {
+    parse : function() {},
+    preProcess : function() {},
+    build : function(options) {
+      var d = {};
+
+      this._buildColumns(d);
+      this._setTypes(d, this.options);
+      this._detectTypes(d);
+      this._coerceTypes(d);
+      this._cacheColumns(d);
+      this._cacheRows(d);
+
+      return d;
+    },
+
 
     /**
     * Creates an internal representation of a column based on
@@ -25,19 +40,6 @@
           data : data
         });
       }
-    },
-
-    build : function(options) {
-      var d = {};
-
-      this._buildColumns(d);
-      this._setTypes(d, this.options);
-      this._detectTypes(d);
-      this._coerceTypes(d);
-      this._cacheColumns(d);
-      this._cacheRows(d);
-
-      return d;
     },
 
     _coerceTypes : function(d) {
@@ -184,13 +186,5 @@
       return d;
     },
 
-
-    /**
-    * By default we are assuming that our data is in
-    * the correct form from the fetching.
-    */
-    parse : function(data) {
-      return data;
-    }
   });
 }(this, _));

@@ -137,37 +137,7 @@
   });
 
   module("Obj Importer");
-  test("Convert object to dataset", 57, function() {
-
-    var importer = new DS.Importers.Local({
-      parser : DS.Parsers.Obj,
-      data : DS.alphabet_obj
-    });
-
-    importer.fetch({
-      success : function(strictData) {
-        verifyImport(DS.alphabet_obj, strictData);
-
-         // check all data
-         var keys = _.keys(DS.alphabet_obj[0]);
-        _.each(keys, function(key) {
-          
-          // get all row values
-          var values = _.pluck(DS.alphabet_obj, key);
-
-          // get column values
-          var pos = strictData._columnPositionByName[key];
-          var colVals = strictData._columns[pos].data;
-          ok(_.isEqual(values, colVals), 
-            "data is correct for column " + 
-            strictData._columnPositionByName[key].name
-          );
-        });
-      }
-    });
-  });
-
-  test("Convert object to dataset through dataset API", 53, function() {
+  test("Convert object to dataset", 53, function() {
     var ds = new DS.Dataset({ data : DS.alphabet_obj });
     _.when(ds.fetch()).then(function(){
       verifyImport(DS.alphabet_obj, ds);

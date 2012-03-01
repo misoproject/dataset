@@ -83,18 +83,8 @@ Version 0.0.1.2
         }
       }
 
-      // set up some base options for importer.
-      var importerOptions = _.extend({}, 
-        options,
-        { parser : this.parser }
-      );
-
       if (options.delimiter) {
-        importerOptions.dataType = "text";
-      }
-
-      if (options.google_spreadsheet) {
-        _.extend(importerOptions, options.google_spreadsheet);
+        options.dataType = "text";
       }
 
       // initialize the proper importer
@@ -108,9 +98,12 @@ Version 0.0.1.2
           this.importer = DS.Importers.Local;
         }
       }
+      console.log('!!!!', this);
 
-      // initialize actual new importer.
-      this.importer = new this.importer(importerOptions);
+      // initialize importer and parser
+      this.parser = new this.parser(options);
+      this.importer = new this.importer(options);
+      console.log('pp', this.parser);
 
       // save comparator if we have one
       if (options.comparator) {
@@ -159,46 +152,51 @@ Version 0.0.1.2
       
       var dfd = this.deferred || new _.Deferred();
 
-      if (this.importer !== null) {
-
-        this.importer.fetch({
-          
-          success: _.bind(function(d) {
-            _.extend(this, d);
-
-            // if a comparator was defined, sort the data
-            if (this.comparator) {
-              this.sort();
-            }
-
-            // call ready method
-            if (this.ready) {
-              this.ready.call(this);
-            }
-
-            // call success method if any passed
-            if (options.success) {
-              options.success.call(this);
-            }
-
-            // resolve deferred
-            dfd.resolve(this);
-
-          }, this),
-
-          error : _.bind(function(e) {
-
-            // call error if any passed
-            if (options.error) {
-              options.error.call(this);
-            }
-
-            // reject deferred
-            dfd.reject(e);
-
-          }, this)
-        });
+      if ( _.isNull(this.importer) ) {
+        throw "No importer defined"
       }
+
+      this.importer.fetch({
+
+        parser : this.parser,
+
+        success: _.bind(function(d) {
+
+          //Take the return from the parser and apply it to our new dataset
+          _.extend(this, d);
+
+          // if a comparator was defined, sort the data
+          if (this.comparator) {
+            this.sort();
+          }
+
+          // call ready method
+          if (this.ready) {
+            this.ready.call(this);
+          }
+
+          // call success method if any passed
+          if (options.success) {
+            options.success.call(this);
+          }
+
+          // resolve deferred
+          dfd.resolve(this);
+
+        }, this),
+
+        error : _.bind(function(e) {
+
+          // call error if any passed
+          if (options.error) {
+            options.error.call(this);
+          }
+
+          // reject deferred
+          dfd.reject(e);
+
+        }, this)
+        });
 
       return dfd.promise();
     },

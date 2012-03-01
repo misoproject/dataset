@@ -44,7 +44,8 @@
       return d;
     },
 
-    build : function(options) {
+    build : function(data, options) {
+      this._data = data;
       var d = {};
 
       this._buildColumns(d);
