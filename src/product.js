@@ -97,11 +97,7 @@
 
       var sumFunc = (function(columns){
         return function() {
-          var sum = 0;
-          for (var i= 0; i < columns.length; i++) {
-            sum += columns[i].sum();
-          }
-          return sum;
+         return _.sum(_.map(columns, function(c) { return c.sum(); }));
         };
       }(columnObjects));
 
@@ -119,20 +115,12 @@
 
       var maxFunc = (function(columns) {
         return function() {
-          var max = -Infinity, columnObject;
-          for (var i= 0; i < columns.length; i++) {
-            columnObject = columns[i];
 
-            for (var j= 0; j < columnObject.data.length; j++) {
-              if (Miso.types[columnObject.type].compare(columnObject.data[j], max) > 0) {
-                max = columnObject.numericAt(j);
-              }
-            }
-          }
+          var max = _.max(_.map(columns, function(c) { return c.max(); }));
           
           // save types and type options to later coerce
-          var type = columnObject.type;
-          var typeOptions = columnObject.typeOptions;
+          var type = columns[0].type;
+          var typeOptions = columns[0].typeOptions;
 
           // return the coerced value for column type.
           return Miso.types[type].coerce(max, typeOptions);
@@ -154,18 +142,12 @@
       
       var minFunc = (function(columns) {
         return function() {
-          var min = Infinity, columnObject;
-          for (var i= 0; i < columns.length; i++) {
-            columnObject = columns[i];
-            for (var j= 0; j < columnObject.data.length; j++) {
-              if (Miso.types[columnObject.type].compare(columnObject.data[j], min) < 0) {
-                min = columnObject.numericAt(j);
-              }
-            }
-          }
+
+          var min = _.min(_.map(columns, function(c) { return c.min(); }));
+
            // save types and type options to later coerce
-          var type = columnObject.type;
-          var typeOptions = columnObject.typeOptions;
+          var type = columns[0].type;
+          var typeOptions = columns[0].typeOptions;
 
           // return the coerced value for column type.
           return Miso.types[type].coerce(min, typeOptions);
@@ -192,9 +174,13 @@
           });
           
           vals = _.flatten(vals);
+          
           // save types and type options to later coerce
           var type = columns[0].type;
           var typeOptions = columns[0].typeOptions;
+
+          // convert the values to their appropriate numeric value
+          vals = _.map(vals, function(v) { return Miso.types[type].numeric(v); });
 
           // return the coerced value for column type.
           return Miso.types[type].coerce(_.mean(vals), typeOptions);   
