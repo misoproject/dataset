@@ -95,7 +95,6 @@
     }));
 
     ok(ds.max(ds.columnNames()) === 9);
-
   });
 
   test("Time Max Product", function() {
@@ -286,6 +285,32 @@
       equals(m2, 5.5);
       equals(m3, 5.5);
       equals(m4, 18.4);
+    });
+  });
+
+  test("Basic Time Mean Product", function() {
+    var ds = new Miso.Dataset({
+      data : [
+        { "one" : 1,  "t" : "2010/01/01" },
+        { "one" : 5,  "t" : "2010/01/15" },
+        { "one" : 10, "t" : "2010/01/30" }
+      ],
+      columnTypes : {
+        "t" : { type : "time", format : 'YYYY/MM/DD' }
+      },
+      sync: true
+    });
+
+    _.when(ds.fetch()).then(function() {
+      var meantime = ds.mean("t");
+      equals(meantime.val().format("YYYYMMDD"), moment("2010/01/15").format("YYYYMMDD"));
+
+      meantime.bind("change", function() {
+        equals(meantime.val().format("YYYYMMDD"), moment("2010/01/10").format("YYYYMMDD"));        
+      });
+
+      ds.update(ds._rowIdByPosition[2], { t : "2010/01/20" }, { silent : true });
+      ds.update(ds._rowIdByPosition[1], { t : "2010/01/10" });
     });
   });
 

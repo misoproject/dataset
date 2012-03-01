@@ -3,7 +3,7 @@
   /* @exports namespace */
   var Miso = global.Miso = {};
 
-  Miso.typeOf = function( value ) {
+  Miso.typeOf = function(value, options) {
     var types = _.keys(Miso.types),
         chosenType;
 
@@ -11,7 +11,7 @@
     types.push(types.splice(_.indexOf(types, 'string'), 1)[0]);
 
     chosenType = _.find(types, function(type) {
-      return Miso.types[type].test( value );
+      return Miso.types[type].test(value, options);
     });
 
     chosenType = _.isUndefined(chosenType) ? 'string' : chosenType;
@@ -105,7 +105,7 @@
       _regexp: function(format) {
         //memoise
         if (this._regexpTable[format]) {
-          return this._regexpTable[format];
+          return new RegExp(this._regexpTable[format], 'g');
         }
 
         //build the regexp for substitutions
@@ -114,7 +114,13 @@
           regexp = regexp.replace(pair[0], pair[1]);
         }, this);
 
-        return this._regexpTable[format] = new RegExp(regexp, 'g');
+        // escape all forward slashes
+        regexp = regexp.split("/").join("\\/");
+
+        // save the string of the regexp, NOT the regexp itself.
+        // For some reason, this resulted in inconsistant behavior
+        this._regexpTable[format] = regexp; 
+        return new RegExp(this._regexpTable[format], 'g');
       },
 
       coerce : function(v, options) {
@@ -122,7 +128,7 @@
         // if string, then parse as a time
         if (_.isString(v)) {
           var format = options.format || this.format;
-          return moment(v, format);   
+          return moment(v, options.format);   
         } else if (_.isNumber(v)) {
           return moment(v);
         } else {
@@ -131,10 +137,12 @@
 
       },
 
-      test : function(v, format) {
+      test : function(v, options) {
+        options = options || {};
         if (_.isString(v) ) {
-          format = format || this.format;
-          return this._regexp(format).test(v);
+          var format = options.format || this.format,
+              regex = this._regexp(format);
+          return regex.test(v);
         } else {
           //any number or moment obj basically
           return true;

@@ -265,8 +265,18 @@ Version 0.0.1.2
         if (filter(row)) {
           _.each(this._columns, function(c) {
             if (_.indexOf(newKeys, c.name) !== -1) {
-              if ((c.type !== 'untyped') && (c.type !== Miso.typeOf(newProperties[c.name]))) {
-                throw("incorrect value '"+newProperties[c.name]+"' of type "+Miso.typeOf(newProperties[c.name])+" passed to column with type "+c.type);
+
+              // test if the value passes the type test
+              var Type = Miso.types[c.type];
+              
+              if (Type) {
+                if (Miso.typeOf(newProperties[c.name], c.typeOptions) === c.type) {
+                  newProperties[c.name] = Type.coerce(newProperties[c.name], c.typeOptions);
+                } else {
+                  throw("incorrect value '" + newProperties[c.name] + 
+                        "' of type " + Miso.typeOf(newProperties[c.name], c.typeOptions) +
+                        " passed to column with type " + c.type);  
+                }
               }
               c.data[rowIndex] = newProperties[c.name];
             }
