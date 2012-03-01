@@ -2937,6 +2937,26 @@
     */
     _add : function(row, options) {
       
+      // first coerce all the values appropriatly
+      _.each(row, function(value, key) {
+        var column = this.column(key),
+            Type = Miso.types[column.type];
+
+        // test if value matches column type
+        if (Type.test(row[column.name], column.typeOptions)) {
+          
+          // if so, coerce it.
+          row[column.name] = Type.coerce(row[column.name], column.typeOptions);
+
+        } else {
+          throw("incorrect value '" + row[column.name] + 
+                "' of type " + Miso.typeOf(row[column.name], column.typeOptions) +
+                " passed to column with type " + column.type);  
+        
+        }
+      }, this);
+
+      // if we don't have a comparator, just append them at the end.
       if (_.isUndefined(this.comparator)) {
         
         // add all data
@@ -2947,7 +2967,9 @@
         // add row indeces to the cache
         this._rowIdByPosition.push(row._id);
         this._rowPositionById[row._id] = this._rowIdByPosition.length;
-          
+      
+      // otherwise insert them in the right place. This is a somewhat
+      // expensive operation.    
       } else {
         
         var insertAt = function(at, value, into) {
