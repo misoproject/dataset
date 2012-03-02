@@ -31,9 +31,6 @@ Version 0.0.1.2
   *   columnTypes : {
   *     name : typeName || { type : name, ...additionalProperties }
   *   }
-  *   google_spreadsheet: {
-  *     key : "", worksheet(optional) : ""
-  *   },
   *   sorted : true (optional) - If the dataset is already sorted, pass true
   *     so that we don't trigger a sort otherwise.
   *   comparator : function (optional) - takes two rows and returns 1, 0, or -1  if row1 is
@@ -78,8 +75,6 @@ Version 0.0.1.2
           this.parser = DS.Parsers.Strict;
         } else if (options.delimiter) {
           this.parser = DS.Parsers.Delimited;
-        } else if (options.google_spreadsheet) {
-          this.parser = DS.Parsers.GoogleSpreadsheet;
         }
       }
 
@@ -91,16 +86,10 @@ Version 0.0.1.2
       if (this.importer === null) {
         if (options.url) {
           this.importer = DS.Importers.Remote;
-        } else if (options.google_spreadsheet) {
-          this.importer = DS.Importers.GoogleSpreadsheet;
-          delete options.google_spreadsheet;
         } else {
           this.importer = DS.Importers.Local;
         }
       }
-
-      //Pass the dataset ref into the parser & importer
-      options.dataset = this;
 
       // initialize importer and parser
       this.parser = new this.parser(options);
@@ -123,10 +112,8 @@ Version 0.0.1.2
         this.deferred = options.deferred;
       }
 
-      //If the data has been passed in we kick off a fetch to process it
-      if (options.data) {
-        this.fetch({data : options.data});
-      }
+      console.log('test', this.columns, this.data);
+
     },
 
     /**
@@ -163,48 +150,128 @@ Version 0.0.1.2
         throw "No importer defined"
       }
 
-      this.importer.fetch(
-        _.extend({
-          success: _.bind(function(d) {
+      this.importer.fetch({
+        success: _.bind(function( data ) {
 
-            d = this.parser.build(d)
-            _.extend(this, d);
+          this.apply( data )
 
-            // if a comparator was defined, sort the data
-            if (this.comparator) {
-              this.sort();
-            }
+          // if a comparator was defined, sort the data
+          if (this.comparator) {
+            this.sort();
+          }
 
-            // call ready method
-            if (this.ready) {
-              this.ready.call(this);
-            }
+          if (this.ready) {
+            this.ready.call(this);
+          }
 
-            // call success method if any passed
-            if (options.success) {
-              options.success.call(this);
-            }
+          if (options.success) {
+            options.success.call(this);
+          }
 
-            // resolve deferred
-            dfd.resolve(this);
+          dfd.resolve(this);
 
-          }, this),
+        }, this),
 
-          error : _.bind(function(e) {
+        error : _.bind(function(e) {
+          if (options.error) {
+            options.error.call(this);
+          }
 
-            // call error if any passed
-            if (options.error) {
-              options.error.call(this);
-            }
-
-            // reject deferred
-            dfd.reject(e);
-
-          }, this)
-        }, options)
-      );
+          dfd.reject(e);
+        }, this)
+      });
 
       return dfd.promise();
+    },
+
+    //These are the methods that will be used to determine
+    //how to update a dataset when fetch() is called after the
+    //first time
+    applications : {
+
+      //Update existing values, used the pass column to match 
+      //incoming data to existing rows.
+      againstColumn : function() {
+
+      },
+
+      //Always blindly add new rows
+      blind : function( data ) {
+        _.each(data, function( columnData , columnName ) {
+          var col = this._column( columnName )
+          col.data = col.data.concat( columnData ); 
+        }, this);
+      }
+    },
+
+    //Takes a dataset and some data and applies one to the other
+    apply : function( data ) {
+      data = this.parser.parse( data );
+      console.log('parsed', data);
+
+      if ( _.isUndefined( this._columns ) ) {
+        this._columns = [];
+        this.buildColumns( data.columns );
+        this._addIdColumn( data.data.length );
+        this._cacheColumns();
+        this.applications.blind.call( this, data.data );
+      } else {
+
+      }
+      // this._cacheRows(d);
+    },
+
+    buildColumns : function( columnNames ) {
+      _.each(columnNames, function( column ) {
+        this._columns.push( this._buildColumn(column, null) );
+      }, this);
+    },
+
+    //Creates an internal representation of a column
+    _buildColumn : function(name, type, data) {
+      // if all properties were passed as an object rather
+      // than separatly
+      if (_.isObject(name) && arguments.length === 1) {
+        return new DS.Column(name);  
+      } else {
+        return new DS.Column({
+          name : name,
+          type : type,
+          data : data
+        });
+      }
+    },
+
+    /**
+    * Used by internal importers to cache the columns and their
+    * positions in a fast hash lookup.
+    */
+    _cacheColumns : function() {
+      this._columnPositionByName = {};
+
+      // TODO: should we cache by _id?
+      _.each(this._columns, function(column, index) {
+        this._columnPositionByName[column.name] = index;
+      }, this);
+    },
+
+    /**
+    * Adds an id column to the column definition. If a count
+    * is provided, also generates unique ids.
+    * @param d {object} the data object to modify
+    * @param count {number} the number of ids to generate.
+    */
+    _addIdColumn : function( count ) {
+      // if we have any data, generate actual ids.
+      var ids = [];
+      if (count && count > 0) {
+        _.times(count, function() {
+          ids.push(_.uniqueId());
+        });
+      }
+      this._columns.unshift(
+        this._buildColumn("_id", "number", ids)
+      );
     },
 
     /**

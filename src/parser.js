@@ -3,27 +3,16 @@
   var DS = (global.DS || (global.DS = {}));
 
   // ------ data parsers ---------
-  DS.Parsers = function() {};
+  DS.Parsers = function( options ) {
+    this.options = options || {};
+  };
 
   _.extend(DS.Parsers.prototype, {
+
+    //this is the main function for the parser,
+    //it must return an object with the columns names
+    //and the data in columns
     parse : function() {},
-
-    //These are the methods that will be used to determine
-    //how to update a dataset when fetch() is called after the
-    //first time
-    updateStrategies : {
-
-      //Update existing values, used the pass column to match 
-      //incoming data to existing rows.
-      againstColumn : function() {
-
-      },
-
-      //Always blindly add new rows
-      blindAddition : function() {
-
-      }
-    },
 
     build : function(options) {
       var d = {};
@@ -36,27 +25,6 @@
       this._cacheRows(d);
 
       return d;
-    },
-
-
-    /**
-    * Creates an internal representation of a column based on
-    * the form expected by our strict json.
-    * @param {string} name The column name
-    * @param {string} type The type of the data in the column
-    */
-    _buildColumn : function(name, type, data) {
-      // if all properties were passed as an object rather
-      // than separatly
-      if (_.isObject(name) && arguments.length === 1) {
-        return new DS.Column(name);  
-      } else {
-        return new DS.Column({
-          name : name,
-          type : type,
-          data : data
-        });
-      }
     },
 
     _coerceTypes : function(d) {
@@ -134,23 +102,6 @@
     },
 
     /**
-    * Used by internal importers to cache the columns and their
-    * positions in a fast hash lookup.
-    * @param d {object} the data object to append cache to.
-    */
-    _cacheColumns : function(d) {
-      d._columnPositionByName = {};
-
-      // cache columns by their column names
-      // TODO: should we cache by _id?
-      _.each(d._columns, function(column, index) {
-        d._columnPositionByName[column.name] = index;
-      });
-
-      return d;
-    },
-
-    /**
     * Used by internal importers to cache the rows 
     * in quick lookup tables for any id based operations.
     * @param d {object} the data object to append cache to.
@@ -182,26 +133,6 @@
       return d;
     },
 
-    /**
-    * Adds an id column to the column definition. If a count
-    * is provided, also generates unique ids.
-    * @param d {object} the data object to modify
-    * @param count {number} the number of ids to generate.
-    */
-    _addIdColumn : function(d, count) {
-      // if we have any data, generate actual ids.
-      var ids = [];
-      if (count && count > 0) {
-        _.times(count, function() {
-          ids.push(_.uniqueId());
-        });
-      }
-      d._columns.unshift(
-        this._buildColumn("_id", "number", ids)
-      );
-
-      return d;
-    },
-
+   
   });
 }(this, _));

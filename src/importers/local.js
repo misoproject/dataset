@@ -8,10 +8,7 @@
   DS.Importers.Local = function(options) {
     options || (options = {});
 
-    this.dataset = options.dataset;
-    this.parser = options.dataset.parser;
     this.data = options.data || null;
-
     this.extract = options.extract || this.extract;
   };
 
