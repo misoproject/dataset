@@ -25,10 +25,7 @@ Version 0.0.1.2
   *   extract : "function to apply to JSON before internal interpretation, optional"
   *   ready : the callback function to act on once the data is fetched. Isn't reuired for local imports
   *           but is required for remote url fetching.
-  *   columnNames : {
-  *     oldName : newName
-  *   },
-  *   columnTypes : {
+  *   columns: {
   *     name : typeName || { type : name, ...additionalProperties }
   *   }
   *   sorted : true (optional) - If the dataset is already sorted, pass true
@@ -112,7 +109,10 @@ Version 0.0.1.2
         this.deferred = options.deferred;
       }
 
-      console.log('test', this.columns, this.data);
+      //build any columns present in the constructor
+      if ( options.columns ) {
+        this._buildColumns( options.columns );
+      }
 
     },
 
@@ -155,6 +155,9 @@ Version 0.0.1.2
 
           this.apply( data )
 
+          //so we know there has been a successful fetch before
+          this.fetched = true;
+
           // if a comparator was defined, sort the data
           if (this.comparator) {
             this.sort();
@@ -185,8 +188,7 @@ Version 0.0.1.2
     },
 
     //These are the methods that will be used to determine
-    //how to update a dataset when fetch() is called after the
-    //first time
+    //how to update a dataset's data when fetch() is called
     applications : {
 
       //Update existing values, used the pass column to match 
@@ -206,59 +208,135 @@ Version 0.0.1.2
 
     //Takes a dataset and some data and applies one to the other
     apply : function( data ) {
-      data = this.parser.parse( data );
-      console.log('parsed', data);
+      parsed = this.parser.parse( data );
 
-      if ( _.isUndefined( this._columns ) ) {
-        this._columns = [];
-        this.buildColumns( data.columns );
-        this._addIdColumn( data.data.length );
-        this._cacheColumns();
-        this.applications.blind.call( this, data.data );
+      if ( !this.fetched ) {
+        this._buildColumns( parsed.columns );
+        this._addIdColumn( parsed.data[ parsed.columns[0] ].length );
+        this._detectColumnTypes( parsed.data );
+        this.applications.blind.call( this, parsed.data );
+        this._cacheRows();
       } else {
 
       }
       // this._cacheRows(d);
     },
 
-    buildColumns : function( columnNames ) {
-      _.each(columnNames, function( column ) {
-        this._columns.push( this._buildColumn(column, null) );
+    _detectColumnTypes : function( data ) {
+      _.each(data, function( columnData, columnName ) {
+        var column = this._column( columnName );
+        // check if the column already has a type defined.
+        if ( column.type ) { return; }
+
+        // compute the type by assembling a sample of computed types
+        // and then squashing it to create a unique subset.
+        var type = _.inject(columnData.slice(0, 5), function(memo, value) {
+
+          var t = DS.typeOf(value);
+
+          if (value !== "" && memo.indexOf(t) === -1 && !_.isNull(value)) {
+            memo.push(t);
+          }
+          return memo;
+        }, []);
+
+        // if we only have one type in our sample, save it as the type
+        if (type.length === 1) {
+          column.type = type[0];
+        } else if (type.length === 0) {
+          column.type = "number";
+        } else {
+          throw new Error("This column seems to have mixed types");
+        }
+
       }, this);
     },
 
-    //Creates an internal representation of a column
-    _buildColumn : function(name, type, data) {
+    _buildColumns : function( columns ) {
+      _.each(columns, function( column ) {
+        this._buildColumn(column);
+      }, this);
+    },
+
+    _buildColumn : function(name, type, data, unshift) {
+      var column, position;
+
+      //create the column array if it hasn't already
+      if ( !this._columns ) { 
+        this._columns = [];
+        this._columnPositionByName = {};
+      }
+
+      //don't create a column that already exists
+      if ( this._columnPositionByName[name] ) {
+        return false;
+      }
+
       // if all properties were passed as an object rather
       // than separatly
       if (_.isObject(name) && arguments.length === 1) {
-        return new DS.Column(name);  
+        column = new DS.Column(name);  
+
       } else {
-        return new DS.Column({
+        column = new DS.Column({
           name : name,
           type : type,
           data : data
         });
       }
+
+      this._addColumn(column, unshift);
+      return column;
+    },
+
+    _addColumn : function(column, unshift) {
+      if ( unshift ) {
+        this._columns.unshift( column );
+        position = 0;
+        _.each(this._columnPositionByName, function(val, key) {
+          this._columnPositionByName[key] = val+1;
+        }, this);
+
+      } else {
+        this._columns.push( column );
+        position = this._columns.length - 1;
+      }
+      this._columnPositionByName[column.name] = position;
     },
 
     /**
-    * Used by internal importers to cache the columns and their
-    * positions in a fast hash lookup.
+    * Used by internal importers to cache the rows 
+    * in quick lookup tables for any id based operations.
     */
-    _cacheColumns : function() {
-      this._columnPositionByName = {};
+    _cacheRows : function() {
 
-      // TODO: should we cache by _id?
-      _.each(this._columns, function(column, index) {
-        this._columnPositionByName[column.name] = index;
-      }, this);
+      this._rowPositionById = {};
+      this._rowIdByPosition = [];
+
+      // cache the row id positions in both directions.
+      // iterate over the _id column and grab the row ids
+      _.each(this._columns[this._columnPositionByName._id].data, function(id, index) {
+        this._rowPositionById[id] = index;
+        this._rowIdByPosition.push(id);
+      }, this);  
+
+      // cache the total number of rows. There should be same 
+      // number in each column's data
+      var rowLengths = _.uniq( _.map(this._columns, function(column) { 
+        return column.data.length;
+      }));
+
+      if (rowLengths.length > 1) {
+        throw new Error("Row lengths need to be the same. Empty values should be set to null." + _.map(this._columns, function(c) { return c.data + "|||" ; }));
+      } else {
+        this.length = rowLengths[0];
+      }
+
     },
 
     /**
     * Adds an id column to the column definition. If a count
     * is provided, also generates unique ids.
-    * @param d {object} the data object to modify
     * @param count {number} the number of ids to generate.
     */
     _addIdColumn : function( count ) {
@@ -269,9 +347,7 @@ Version 0.0.1.2
           ids.push(_.uniqueId());
         });
       }
-      this._columns.unshift(
-        this._buildColumn("_id", "number", ids)
-      );
+      this._buildColumn("_id", "number", ids, true)
     },
 
     /**

@@ -17,7 +17,6 @@
     ds.fetch({
       success: function() {
         equals(this instanceof DS.Dataset, true);
-        console.log(this, this.columnNames() );
         ok(_.isEqual(this.columnNames(), ["one", "two", "three"]));
       }
     });
