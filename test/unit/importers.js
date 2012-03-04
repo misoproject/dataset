@@ -56,16 +56,16 @@
     ok(strictData._columns[4].type === "number", "numeric_value is numeric type");
   }
 
-  // test("Basic Strict Import through Dataset API", 54, function() {
-    // var ds = new DS.Dataset({ 
-      // data : DS.alphabet_strict, 
-      // strict: true
-    // });
-    // _.when(ds.fetch()).then(function(){
-      // verifyImport(DS.alphabet_strict, ds);
-      // equals(typeof ds.columns, "function", "columns is the function, not the columns obj");
-    // });
-  // });
+  test("Basic Strict Import through Dataset API", 54, function() {
+    var ds = new DS.Dataset({ 
+      data : DS.alphabet_strict, 
+      strict: true
+    });
+    _.when(ds.fetch()).then(function(){
+      verifyImport(DS.alphabet_strict, ds);
+      equals(typeof ds.columns, "function", "columns is the function, not the columns obj");
+    });
+  });
 
   module("Column creation, coercion &amp; type setting");
 

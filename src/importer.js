@@ -8,8 +8,6 @@
   */
   DS.Importers.prototype.extract = function(data) {
     data = _.clone(data);
-    data._columns = data.columns;
-    delete data.columns;
     return data;
   };
 

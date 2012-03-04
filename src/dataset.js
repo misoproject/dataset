@@ -70,6 +70,7 @@ Version 0.0.1.2
       if (_.isUndefined(options.parser)) {
         if (options.strict) {
           this.parser = DS.Parsers.Strict;
+          console.log('strict!', this.parser);
         } else if (options.delimiter) {
           this.parser = DS.Parsers.Delimited;
         }

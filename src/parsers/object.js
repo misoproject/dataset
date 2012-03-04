@@ -11,10 +11,6 @@
   _.extend(DS.Parsers.Obj.prototype, DS.Parsers.prototype, {
 
     parse : function( data ) {
-      return this._extract( data );
-    },
-    
-    _extract : function( data ) {
       var columns = _.keys(data[0]),
           columnData = {};
 
@@ -35,22 +31,8 @@
         columns : columns,
         data : columnData 
       }
-    },
+    }
 
-    // build : function(data, options) {
-      // this._data = data;
-      // var d = {};
-
-      // this._buildColumns(d);
-      // // column caching happens inside of build columns this time
-      // // so that rows know which column their values belong to
-      // // before we build the data.
-      // this._setTypes(d, this.options);
-      // this._detectTypes(d);
-      // this._coerceTypes(d);
-      // this._cacheRows(d);
-      // return d;
-    // }
   });
 
 }(this, _));
