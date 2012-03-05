@@ -129,7 +129,6 @@
       ]
     });
     _.when(ds.fetch()).then(function(){
-    console.log('ds!', ds);
       ok(ds._column('character').type === "time", "character column has a type of time");
       // verify format was properly coerced
       equals(ds._column('character').data[0].valueOf(), moment("12/31 2012", "MM/DD YYYY"));
@@ -161,20 +160,20 @@
     // });
   // });
 
-  // test("Basic json url fetch through Dataset API", 53, function() {
-    // var url = "data/alphabet_strict.json";
-    // var ds = new DS.Dataset({ 
-      // url : url, 
-      // jsonp : false, 
-      // strict: true,
-      // ready : function() {
-        // verifyImport({}, this);   
-        // start();
-      // }
-    // });
-    // ds.fetch();
-    // stop();
-  // });
+  test("Basic json url fetch through Dataset API", 53, function() {
+    var url = "data/alphabet_strict.json";
+    var ds = new DS.Dataset({ 
+      url : url, 
+      jsonp : false, 
+      strict: true,
+      ready : function() {
+        verifyImport({}, this);   
+        start();
+      }
+    });
+    ds.fetch();
+    stop();
+  });
 
   // test("Basic jsonp url fetch", 53, function() {
     // var url = "data/alphabet_obj.json?callback=";
@@ -195,22 +194,22 @@
     // });
   // });
 
-  // test("Basic jsonp url fetch with Dataset API", 53, function() {
-    // var url = "data/alphabet_obj.json?callback=";
-    // var ds = new DS.Dataset({ 
-      // url : url, 
-      // jsonp : true, 
-      // extract: function(raw) {
-        // return raw.data;
-      // },
-      // ready : function() {
-        // verifyImport({}, this); 
-        // start();
-      // }
-    // });
-    // ds.fetch();
-    // stop();
-  // });
+  test("Basic jsonp url fetch with Dataset API", 53, function() {
+    var url = "data/alphabet_obj.json?callback=";
+    var ds = new DS.Dataset({ 
+      url : url, 
+      jsonp : true, 
+      extract: function(raw) {
+        return raw.data;
+      },
+      ready : function() {
+        verifyImport({}, this); 
+        start();
+      }
+    });
+    ds.fetch();
+    stop();
+  });
     
   // module("Delimiter Importer");
   // test("Remote delimiter parsing test", function() {

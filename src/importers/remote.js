@@ -7,13 +7,9 @@
   */
   DS.Importers.Remote = function(options) {
     options = options || {};
+
     this._url = options.url;
-
-    if (options.extract) {
-      this.extract = options.extract;
-    }
-
-    this.parser = options.parser || DS.Parsers.Obj;
+    this.extract = options.extract || this.extract;
 
     // Default ajax request parameters
     this.params = {
@@ -30,14 +26,7 @@
       // we are assuming the parsed version of the data will
       // be an array of objects.
       var callback = _.bind(function(data) {
-        data = this.extract(data);
-
-        // create a new parser and pass the parsed data in
-        this.parser = new this.parser(data, options);
-
-        var parsedData = this.parser.build();
-        options.success(parsedData);
-
+        options.success( this.extract(data) );
       }, this);
 
       // make ajax call to fetch remote url.
