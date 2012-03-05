@@ -158,9 +158,6 @@ Version 0.0.1.2
 
           this.apply( data );
 
-          //so we know there has been a successful fetch before
-          this.fetched = true;
-
           // if a comparator was defined, sort the data
           if (this.comparator) {
             this.sort();
