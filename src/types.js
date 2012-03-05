@@ -137,6 +137,7 @@
       },
 
       coerce : function(v, options) {
+        console.log('typecoerce', options);
         options = options || {};
         // if string, then parse as a time
         if (_.isString(v)) {

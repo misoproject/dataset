@@ -206,7 +206,7 @@ Version 0.0.1.2
         _.each(data, function( columnData , columnName ) {
           var col = this._column( columnName );
           col.data = col.data.concat( _.map(columnData, function(datum) {
-            return DS.types[col.type].coerce(datum, this.typeOptions);
+            return DS.types[col.type].coerce(datum, col);
           }, this) );
         }, this);
       }

@@ -3,9 +3,8 @@
   var DS = global.DS;
 
   DS.Column = function(options) {
+    _.extend(this, options);
     this._id = options.id || _.uniqueId();
-    this.name = options.name;
-    this.type = options.type;
     this.data = options.data || [];
     return this;
   };
@@ -22,7 +21,7 @@
 
     coerce : function() {
       this.data = _.map(this.data, function(datum) {
-        return DS.types[this.type].coerce(datum, this.typeOptions);
+        return DS.types[this.type].coerce(datum, this);
       }, this);
     },
 

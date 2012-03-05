@@ -76,7 +76,6 @@
         { name : 'testTwo', type: 'time' }
       ] 
     });
-    console.log('ds!', ds);
     ok(ds._column('testOne').name === 'testOne', 'testOne column created');
     ok(ds._column('testTwo').name === 'testTwo', 'testTwo column created');
     ok(ds._column('testTwo').type === 'time', 'testTwo column has time type');
@@ -96,45 +95,46 @@
     });
   });
 
-  // test("Manual column type override", function() {
-    // var data = _.clone(DS.alphabet_strict);
-    // data.columns[1].data = [];
-    // _(data.columns[0].data.length).times(function() {
-      // data.columns[1].data.push( moment() );
-    // });
+  test("Manual column type override", function() {
+    var data = _.clone(DS.alphabet_strict);
+    data.columns[1].data = [];
+    _(data.columns[0].data.length).times(function() {
+      data.columns[1].data.push( moment() );
+    });
 
-    // var ds = new DS.Dataset({
-      // data : data,
-      // strict: true,
-      // columnTypes : {
-        // character : 'time'
-      // }
-    // });
+    var ds = new DS.Dataset({
+      data : data,
+      strict: true,
+      columns: [
+        { name : 'name', type : 'time' }
+      ]
+    });
 
-    // _.when(ds.fetch()).then(function(){
-      // ok(ds._columns[1].type === "time", "name column has a type of time");
-      // //nasty check that it's a moment bject
-      // ok(ds._columns[1].data[0].version === moment().version, "is a moment object");
-    // });
-  // });
+    _.when(ds.fetch()).then(function(){
+      ok(ds._column('name').type === "time", "name column has a type of time");
+      //nasty check that it's a moment bject
+      ok(ds._column('name').data[0].version === moment().version, "is a moment object");
+    });
+  });
 
-  // test("Manual column type override with extra properties", function() {
+  test("Manual column type override with extra properties", function() {
 
-    // var ds = new DS.Dataset({
-      // data : [
-        // { 'character' : '12/31 2012' },
-        // { 'character' : '01/31 2011' }
-      // ],
-      // columnTypes : {
-        // character : { type : 'time', format : 'MM/DD YYYY' }
-      // }
-    // });
-    // _.when(ds.fetch()).then(function(){
-      // ok(ds._columns[1].type === "time", "character column has a type of time");
-      // // verify format was properly coerced
-      // equals(ds._columns[1].data[0].valueOf(), moment("12/31 2012", "MM/DD YYYY"));
-    // });
-  // });
+    var ds = new DS.Dataset({
+      data : [
+        { 'character' : '12/31 2012' },
+        { 'character' : '01/31 2011' }
+      ],
+      columns : [
+        { name : 'character', type : 'time', format : 'MM/DD YYYY' }
+      ]
+    });
+    _.when(ds.fetch()).then(function(){
+    console.log('ds!', ds);
+      ok(ds._column('character').type === "time", "character column has a type of time");
+      // verify format was properly coerced
+      equals(ds._column('character').data[0].valueOf(), moment("12/31 2012", "MM/DD YYYY"));
+    });
+  });
 
   module("Obj Importer");
   test("Convert object to dataset", 53, function() {
