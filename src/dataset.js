@@ -288,8 +288,8 @@ Version 0.0.1.2
 
       if (this.syncable && (!options || !options.silent)) {
         var ev = this._buildEvent( deltas );
+        this.trigger('update', ev );
         this.trigger('change', ev );
-        this.trigger('remove', ev );
       }
 
     }
