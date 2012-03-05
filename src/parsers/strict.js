@@ -22,7 +22,7 @@
       return {
         columns : columnNames,
         data : columnData 
-      }
+      };
     }
 
   });

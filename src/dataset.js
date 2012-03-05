@@ -150,13 +150,13 @@ Version 0.0.1.2
       var dfd = this.deferred || new _.Deferred();
 
       if ( _.isNull(this.importer) ) {
-        throw "No importer defined"
+        throw "No importer defined";
       }
 
       this.importer.fetch({
         success: _.bind(function( data ) {
 
-          this.apply( data )
+          this.apply( data );
 
           //so we know there has been a successful fetch before
           this.fetched = true;
@@ -213,7 +213,7 @@ Version 0.0.1.2
 
     //Takes a dataset and some data and applies one to the other
     apply : function( data ) {
-      parsed = this.parser.parse( data );
+      var parsed = this.parser.parse( data );
 
       if ( !this.fetched ) {
         this._buildColumns( _.map(parsed.columns, function( name ) {
@@ -225,7 +225,8 @@ Version 0.0.1.2
         this.applications.blind.call( this, parsed.data );
         this._cacheRows();
       } else {
-
+        //TODO append functionality here
+        return true;//so I can keep this block and lint ewwww
       }
       // this._cacheRows(d);
     },
@@ -271,7 +272,7 @@ Version 0.0.1.2
         return false; 
       }
 
-      var column = new DS.Column( column );
+      column = new DS.Column( column );
 
       this._addColumn(column, unshift);
       return column;
@@ -336,7 +337,7 @@ Version 0.0.1.2
           ids.push(_.uniqueId());
         });
       }
-      this._buildColumn({ name: "_id", type : "number", data : ids }, true)
+      this._buildColumn({ name: "_id", type : "number", data : ids }, true);
     },
 
     /**

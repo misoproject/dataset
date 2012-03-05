@@ -9,7 +9,7 @@
       { one : 2, two : 5, three : 8 },
       { one : 3, two : 6, three : 9 }
     ]
-  } 
+  };
 
   module("Fetching");
   test("Basic fetch + success callback", function() {
@@ -34,7 +34,7 @@
     dsObj.ready = function() {
       equals(this instanceof DS.Dataset, true);
       ok(_.isEqual(this.columnNames(), ["one", "two", "three"]));
-    }
+    };
     var ds = new DS.Dataset(dsObj).fetch();
   });
 

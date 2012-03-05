@@ -6,7 +6,7 @@
   * a data object and passing it appropriately.
   */
   DS.Importers.Local = function(options) {
-    options || (options = {});
+    options = options || {};
 
     this.data = options.data || null;
     this.extract = options.extract || this.extract;

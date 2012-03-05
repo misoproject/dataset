@@ -30,7 +30,7 @@
       return {
         columns : columns,
         data : columnData 
-      }
+      };
     }
 
   });
