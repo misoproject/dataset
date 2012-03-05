@@ -51,7 +51,8 @@
           max = this.numericAt(j);
         }
       }
-      return max;
+
+      return Miso.types[this.type].coerce(max, this.typeOptions);
     },
 
     min : function() {
@@ -61,7 +62,7 @@
           min = this.numericAt(j);
         }
       }
-      return min;
+      return Miso.types[this.type].coerce(min, this.typeOptions);
     }
   });
 
