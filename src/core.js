@@ -87,7 +87,7 @@
         return (n1 < n2 ? -1 : 1);
       },
       numeric : function(value) {
-        return value;
+        return +value;
       }
     },
 
