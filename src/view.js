@@ -6,6 +6,7 @@
     this._id = options.id || _.uniqueId();
     this.name = options.name;
     this.type = options.type;
+    this.typeOptions = options.typeOptions || {};
     this.data = options.data || [];
     return this;
   };
