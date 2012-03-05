@@ -608,6 +608,13 @@
         }
       }
 
+      // check last two rows, they seem to always be off sync.
+      if (this.comparator(
+          this.rowByPosition(this.length - 2), 
+          this.rowByPosition(this.length - 1)) > 0) {
+        swap(this.length - 1,this.length - 2);
+      }
+
       if (this.syncable) {
         this.trigger("sort");  
       }
