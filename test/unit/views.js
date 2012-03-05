@@ -362,10 +362,11 @@ module("Views :: Syncing");
     var ds = Util.baseSyncingSample();
     var view = ds.where({ column : 'one' });
 
+    var l = ds.length;
     ds.remove(function(row) {
       return (row.one === 1);
     });
-
+    equals(ds.length, l-1);
     ok(view.length === 2, "row was removed from view");
     ok(ds.length === 2, "row was removed from dataset");
 
@@ -474,12 +475,12 @@ module("Views :: Syncing");
       return 0;
     };
 
-    _.when(ds.fetch(), function(){
+    _.when(ds.fetch()).then(function(){
       ds.sort();
 
-      ok(_.isEqual(ds._columns[1].data, [2,3,3,4,10,14]));
-      ok(_.isEqual(ds._columns[2].data, [5,6,1,1,4,1]));
-      ok(_.isEqual(ds._columns[3].data, [8,9,1,1,7,1]));
+      ok(_.isEqual(ds._columns[1].data, [2,3,3,4,10,14]),ds._columns[1].data);
+      ok(_.isEqual(ds._columns[2].data, [5,6,1,1,4,1])  ,ds._columns[2].data);
+      ok(_.isEqual(ds._columns[3].data, [8,9,1,1,7,1])  ,ds._columns[3].data);
     });
 
   });
@@ -499,12 +500,12 @@ module("Views :: Syncing");
       if (r1.one < r2.one) {return 1;}
       return 0;
     };
-    _.when(ds.fetch(), function(){
+    _.when(ds.fetch()).then(function(){
       ds.sort();
       
-      ok(_.isEqual(ds._columns[1].data, [2,3,3,4,10,14].reverse()));
-      ok(_.isEqual(ds._columns[2].data, [5,6,1,1,4,1].reverse()));
-      ok(_.isEqual(ds._columns[3].data, [8,9,1,1,7,1].reverse()));
+      ok(_.isEqual(ds._columns[1].data, [2,3,3,4,10,14].reverse()), ds._columns[1].data);
+      ok(_.isEqual(ds._columns[2].data, [5,6,1,1,4,1].reverse()), ds._columns[2].data);
+      ok(_.isEqual(ds._columns[3].data, [8,9,1,1,7,1].reverse()), ds._columns[3].data);
     });
   });
 
@@ -522,10 +523,10 @@ module("Views :: Syncing");
       },
       strict: true
     });
-    _.when(ds.fetch(), function(){
-      ok(_.isEqual(ds._columns[1].data, [2,3,3,4,10,14].reverse()));
-      ok(_.isEqual(ds._columns[2].data, [5,6,1,1,4,1].reverse()));
-      ok(_.isEqual(ds._columns[3].data, [8,9,1,1,7,1].reverse()));
+    _.when(ds.fetch()).then(function(){
+      ok(_.isEqual(ds._columns[1].data, [2,3,3,4,10,14].reverse()), ds._columns[1].data);
+      ok(_.isEqual(ds._columns[2].data, [5,6,1,1,4,1].reverse()), ds._columns[2].data);
+      ok(_.isEqual(ds._columns[3].data, [8,9,1,1,7,1].reverse()), ds._columns[3].data);
     });
   });
 
@@ -543,11 +544,12 @@ module("Views :: Syncing");
       },
       strict: true
     });
-    _.when(ds.fetch(), function(){
+    _.when(ds.fetch()).then(function(){
+      var l = ds.length;
       ds.add({
         one : 5, two: 5, three: 5
       });
-
+      equals(ds.length, l+1);
       ok(_.isEqual(ds._columns[1].data, [2,3,3,4,5,10,14]));
       ok(_.isEqual(ds._columns[2].data, [5,6,1,1,5,4,1]));
       ok(_.isEqual(ds._columns[3].data, [8,9,1,1,5,7,1]));
@@ -569,7 +571,7 @@ module("Views :: Syncing");
       strict: true
     });
 
-    _.when(ds.fetch(), function(){
+    _.when(ds.fetch()).then(function(){
       ds.add({
         one : 5, two: 5, three: 5
       });
