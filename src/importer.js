@@ -4,7 +4,11 @@
   DS.Importers = function(data, options) {};
 
   /**
-  * Simple base parse method, passing data through
+  * Simple base extract method, passing data through
+  * If your importer needs to extract the data from the
+  * returned payload before converting it to
+  * a dataset, overwrite this method to return the
+  * actual data object.
   */
   DS.Importers.prototype.extract = function(data) {
     data = _.clone(data);
