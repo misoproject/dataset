@@ -70,7 +70,6 @@ Version 0.0.1.2
       if (_.isUndefined(options.parser)) {
         if (options.strict) {
           this.parser = DS.Parsers.Strict;
-          console.log('strict!', this.parser);
         } else if (options.delimiter) {
           this.parser = DS.Parsers.Delimited;
         }
@@ -224,9 +223,7 @@ Version 0.0.1.2
         this._addIdColumn( parsed.data[ parsed.columns[0] ].length );
         this._detectColumnTypes( parsed.data );
         this.applications.blind.call( this, parsed.data );
-        console.log('bfcache', this);
         this._cacheRows();
-        console.log('pfcache', this);
       } else {
 
       }
@@ -250,7 +247,6 @@ Version 0.0.1.2
           }
           return memo;
         }, []);
-        console.log(columnName, type);
 
         // if we only have one type in our sample, save it as the type
         if (type.length === 1) {
@@ -270,12 +266,10 @@ Version 0.0.1.2
     },
 
     _buildColumn : function(column, unshift) {
-      console.log('ibc', column);
       //don't create a column that already exists
       if ( !_.isUndefined(this._columnPositionByName[column.name]) ) { 
         return false; 
       }
-      console.log('bc', column);
 
       var column = new DS.Column( column );
 
@@ -318,7 +312,6 @@ Version 0.0.1.2
       // cache the total number of rows. There should be same 
       // number in each column's data
       var rowLengths = _.uniq( _.map(this._columns, function(column) { 
-        console.log(column, column.data.length);
         return column.data.length;
       }));
 
