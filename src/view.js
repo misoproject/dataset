@@ -32,11 +32,16 @@
     },
 
     mean : function() {
-      return _.mean(this.data);
+      var m = 0;
+      for (var j = 0; j < this.data.length; j++) {
+        m += this.numericAt(j);
+      }
+      m /= this.data.length;
+      return Miso.types[this.type].coerce(m, this.typeOptions);
     },
 
     median : function() {
-      return _.median(this.data);
+      return Miso.types[this.type].coerce(_.median(this.data), this.typeOptions);
     },
 
     max : function() {
