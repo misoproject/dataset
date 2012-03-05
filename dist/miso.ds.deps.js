@@ -1,5 +1,5 @@
 /**
-* Miso.Dataset - v0.1.0 - 3/1/2012
+* Miso.Dataset - v0.1.0 - 3/5/2012
 * http://github.com/alexgraul/Dataset
 * Copyright (c) 2012 Alex Graul, Irene Ros;
 * Licensed MIT, GPL
@@ -2276,7 +2276,7 @@
         return (n1 < n2 ? -1 : 1);
       },
       numeric : function(value) {
-        return value;
+        return +value;
       }
     },
 
@@ -2516,6 +2516,7 @@
     this._id = options.id || _.uniqueId();
     this.name = options.name;
     this.type = options.type;
+    this.typeOptions = options.typeOptions || {};
     this.data = options.data || [];
     return this;
   };
@@ -2541,11 +2542,16 @@
     },
 
     mean : function() {
-      return _.mean(this.data);
+      var m = 0;
+      for (var j = 0; j < this.data.length; j++) {
+        m += this.numericAt(j);
+      }
+      m /= this.data.length;
+      return Miso.types[this.type].coerce(m, this.typeOptions);
     },
 
     median : function() {
-      return _.median(this.data);
+      return Miso.types[this.type].coerce(_.median(this.data), this.typeOptions);
     },
 
     max : function() {
@@ -2555,7 +2561,8 @@
           max = this.numericAt(j);
         }
       }
-      return max;
+
+      return Miso.types[this.type].coerce(max, this.typeOptions);
     },
 
     min : function() {
@@ -2565,7 +2572,7 @@
           min = this.numericAt(j);
         }
       }
-      return min;
+      return Miso.types[this.type].coerce(min, this.typeOptions);
     }
   });
 
@@ -3111,6 +3118,13 @@
         }
       }
 
+      // check last two rows, they seem to always be off sync.
+      if (this.comparator(
+          this.rowByPosition(this.length - 2), 
+          this.rowByPosition(this.length - 1)) > 0) {
+        swap(this.length - 1,this.length - 2);
+      }
+
       if (this.syncable) {
         this.trigger("sort");  
       }
@@ -3364,8 +3378,8 @@ Version 0.0.1.2
       });
       if (this.syncable && (!options || !options.silent)) {
         var ev = this._buildEvent( deltas );
-        this.trigger('change', ev );
         this.trigger('remove', ev );
+        this.trigger('change', ev );
       }
     },
 
@@ -3409,8 +3423,8 @@ Version 0.0.1.2
 
       if (this.syncable && (!options || !options.silent)) {
         var ev = this._buildEvent( deltas );
+        this.trigger('update', ev );
         this.trigger('change', ev );
-        this.trigger('remove', ev );
       }
 
     }
