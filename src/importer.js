@@ -1,7 +1,7 @@
 (function(global, _) {
-  var DS = (global.DS || (global.DS = {}));
+  var Miso = (global.Miso || (global.Miso = {}));
 
-  DS.Importers = function(data, options) {};
+  Miso.Importers = function(data, options) {};
 
   /**
   * Simple base extract method, passing data through
@@ -10,7 +10,7 @@
   * a dataset, overwrite this method to return the
   * actual data object.
   */
-  DS.Importers.prototype.extract = function(data) {
+  Miso.Importers.prototype.extract = function(data) {
     data = _.clone(data);
     return data;
   };

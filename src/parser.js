@@ -1,13 +1,13 @@
 (function(global, _) {
 
-  var DS = (global.DS || (global.DS = {}));
+  var Miso = (global.Miso || (global.Miso = {}));
 
   // ------ data parsers ---------
-  DS.Parsers = function( options ) {
+  Miso.Parsers = function( options ) {
     this.options = options || {};
   };
 
-  _.extend(DS.Parsers.prototype, {
+  _.extend(Miso.Parsers.prototype, {
 
     //this is the main function for the parser,
     //it must return an object with the columns names

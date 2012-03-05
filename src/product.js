@@ -1,10 +1,10 @@
 (function(global, _) {
 
   // shorthand
-  var DS = global.DS;
-  var Product = (DS.Product || function() {
+  var Miso = global.Miso;
+  var Product = (Miso.Product || function() {
 
-    DS.Product = function(options) {
+    Miso.Product = function(options) {
       options = options || (options = {});
       
       // save column name. This will be necessary later
@@ -25,14 +25,14 @@
         };
       }
 
-      this.value = this.func({ silent : true });
+      this.func({ silent : true });
       return this;
     };
 
-    return DS.Product;
+    return Miso.Product;
   })();
 
-  _.extend(Product.prototype, DS.Events, {
+  _.extend(Product.prototype, Miso.Events, {
 
     /**
     * @public
@@ -40,7 +40,7 @@
     * the value based on the column its closed on.
     */
     sync : function(event) {
-      this.value = this.func();
+      this.func();
     },
 
     /**
@@ -69,47 +69,45 @@
     }
   });
 
-  _.extend(DS.Dataset.prototype, {
+  _.extend(Miso.Dataset.prototype, {
 
-    _columnsToArray : function(columns) {
+    _findColumns : function(columns) {
+      var columnObjects = [];
+
+      // if no column names were specified, get all column names.
       if (_.isUndefined(columns)) {
         columns = this.columnNames();
       }
-      columns = _.isArray(columns) ? columns : [columns];
-      // verify this is an appropriate type for this function
-      
-      return columns;
-    },
 
-    _toColumnObjects : function(columns) {
-      var columnObjects = [];
+      // convert columns to an array in case we only got one column name.
+      columns = _.isArray(columns) ? columns : [columns];
+
+      // assemble actual column objecets together.
       _.each(columns, function(column) {
         column = this._columns[this._columnPositionByName[column]];
         columnObjects.push(column);
       }, this);
+
       return columnObjects;
     },
 
     sum : function(columns, options) {
       options = options || {};
-      columns = this._columnsToArray(columns);
-      var columnObjects = this._toColumnObjects(columns);
+      var columnObjects = this._findColumns(columns);
 
       var sumFunc = (function(columns){
         return function() {
-          var sum = 0;
-          for (var i= 0; i < columns.length; i++) {
-            sum += columns[i].sum();
-          }
-          return sum;
+          // check column types, can't sum up time.
+          _.each(columns, function(col) {
+            if (col.type === Miso.types.time.name) {
+              throw new Error("Can't sum up time");
+            }
+          });
+          return _.sum(_.map(columns, function(c) { return c.sum(); }));
         };
       }(columnObjects));
 
-      if (this.syncable) {
-        return this.calculated(columnObjects, sumFunc);
-      } else {
-        return sumFunc();
-      }
+      return this.calculated(columnObjects, sumFunc);
     },
 
     /**
@@ -119,36 +117,23 @@
     */    
     max : function(columns, options) {
       options = options || {};
-      columns = this._columnsToArray(columns);
-      var columnObjects = this._toColumnObjects(columns);
+      var columnObjects = this._findColumns(columns);
 
       var maxFunc = (function(columns) {
         return function() {
-          var max = -Infinity, columnObject;
-          for (var i= 0; i < columns.length; i++) {
-            columnObject = columns[i];
 
-            for (var j= 0; j < columnObject.data.length; j++) {
-              if (DS.types[columnObject.type].compare(columnObject.data[j], max) > 0) {
-                max = columnObject.numericAt(j);
-              }
-            }
-          }
+          var max = _.max(_.map(columns, function(c) { return c.max(); }));
           
           // save types and type options to later coerce
-          var type = columnObject.type;
-          var typeOptions = columnObject.typeOptions;
+          var type = columns[0].type;
+          var typeOptions = columns[0].typeOptions;
 
           // return the coerced value for column type.
-          return DS.types[type].coerce(max, typeOptions);
+          return Miso.types[type].coerce(max, typeOptions);
         };
       }(columnObjects));
 
-      if (this.syncable) {
-        return this.calculated(columnObjects, maxFunc);  
-      } else {
-        return maxFunc();
-      }
+      return this.calculated(columnObjects, maxFunc);  
       
     },
 
@@ -159,35 +144,23 @@
     */    
     min : function(columns, options) {
       options = options || {};
-      columns = this._columnsToArray(columns);
-      var columnObjects = this._toColumnObjects(columns);
+      var columnObjects = this._findColumns(columns);
       
       var minFunc = (function(columns) {
         return function() {
-          var min = Infinity, columnObject;
-          for (var i= 0; i < columns.length; i++) {
-            columnObject = columns[i];
-            for (var j= 0; j < columnObject.data.length; j++) {
-              if (DS.types[columnObject.type].compare(columnObject.data[j], min) < 0) {
-                min = columnObject.numericAt(j);
-              }
-            }
-          }
+
+          var min = _.min(_.map(columns, function(c) { return c.min(); }));
+
            // save types and type options to later coerce
-          var type = columnObject.type;
-          var typeOptions = columnObject.typeOptions;
+          var type = columns[0].type;
+          var typeOptions = columns[0].typeOptions;
 
           // return the coerced value for column type.
-          return DS.types[type].coerce(min, typeOptions);
+          return Miso.types[type].coerce(min, typeOptions);
         };
       }(columnObjects));
 
-      if (this.syncable) {
-        return this.calculated(columnObjects, minFunc);  
-      } else {
-        return minFunc();
-      }
-      
+      return this.calculated(columnObjects, minFunc); 
     },
 
     /**
@@ -195,14 +168,42 @@
     * value of the column
     * @param {column} column on which the value is calculated 
     */    
-    mean : function(column, options) {},
+    mean : function(columns, options) {
+      options = options || {};
+      var columnObjects = this._findColumns(columns);
+
+      var meanFunc = (function(columns){
+        return function() {
+          var vals = [];
+          _.each(columns, function(col) {
+            vals.push(col.data);
+          });
+          
+          vals = _.flatten(vals);
+          
+          // save types and type options to later coerce
+          var type = columns[0].type;
+          var typeOptions = columns[0].typeOptions;
+
+          // convert the values to their appropriate numeric value
+          vals = _.map(vals, function(v) { return Miso.types[type].numeric(v); });
+
+          // return the coerced value for column type.
+          return Miso.types[type].coerce(_.mean(vals), typeOptions);   
+        };
+      }(columnObjects));
+
+      return this.calculated(columnObjects, meanFunc);
+    },
 
     /*
     * return a Product with the value of the mode
     * of the column
     * @param {column} column on which the value is calculated 
     */    
-    mode : function(column, options) {},
+    median : function(column, options) {
+
+    },
 
     /*
     * return a Product derived by running the passed function
@@ -221,27 +222,32 @@
           // build a diff delta. We're using the column name
           // so that any subscribers know whether they need to 
           // update if they are sharing a column.
-          var delta = this._buildDelta( this.value, producer.apply(_self) );
+          var delta = this._buildDelta(this.value, producer.apply(_self));
+
+          // because below we are triggering any change subscribers to this product
+          // before actually returning the changed value
+          // let's just set it here.
+          this.value = delta.changed;
 
           if (_self.syncable) {
-            var event = this._buildEvent( "change", delta );
+            var event = this._buildEvent(delta);
 
             // trigger any subscribers this might have if the values are diff
             if (!_.isUndefined(delta.old) && !options.silent && delta.old !== delta.changed) {
               this.trigger("change", event);
             }  
           }
-
-          // return updated value
-          return delta.changed;
         }
       });
 
       // auto bind to parent dataset if its syncable
       if (this.syncable) {
-        this.bind("change", prod.sync, prod);  
+        this.bind("change", prod.sync, prod); 
+        return prod; 
+      } else {
+        return producer();
       }
-      return prod;
+      
     }
 
   });

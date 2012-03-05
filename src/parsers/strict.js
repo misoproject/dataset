@@ -1,15 +1,15 @@
 (function(global, _) {
-  var DS = (global.DS || (global.DS = {}));
+  var Miso = (global.Miso || (global.Miso = {}));
   // ------ Strict Parser ---------
   /**
   * Handles basic strict data format.
   * TODO: add verify flag to disable auto id assignment for example.
   */
-  DS.Parsers.Strict = function( options ) {
+  Miso.Parsers.Strict = function( options ) {
     this.options = options || {};
   }; 
 
-  _.extend( DS.Parsers.Strict.prototype, DS.Parsers.prototype, {
+  _.extend( Miso.Parsers.Strict.prototype, Miso.Parsers.prototype, {
 
     parse : function( data ) {
       var columnData = {}, columnNames = [];

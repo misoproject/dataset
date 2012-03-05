@@ -1,18 +1,23 @@
 (function(global, _) {
 
-  var DS = global.DS;
+  var Miso = global.Miso;
 
-  DS.Column = function(options) {
+  Miso.Column = function(options) {
+    // copy over:
+    //   type
+    //   name
+    //   format (for "time" type)
+    //   anyOtherTypeOptions... (optional)
     _.extend(this, options);
     this._id = options.id || _.uniqueId();
     this.data = options.data || [];
     return this;
   };
 
-  _.extend(DS.Column.prototype, {
+  _.extend(Miso.Column.prototype, {
 
     toNumeric : function(value, index) {
-      return DS.types[this.type].numeric(value, index);  
+      return Miso.types[this.type].numeric(value, index);  
     },
 
     numericAt : function(index) {
@@ -21,7 +26,7 @@
 
     coerce : function() {
       this.data = _.map(this.data, function(datum) {
-        return DS.types[this.type].coerce(datum, this);
+        return Miso.types[this.type].coerce(datum, this);
       }, this);
     },
 
@@ -29,24 +34,38 @@
       return _.sum(this.data);
     },
 
+    mean : function() {
+      var m = 0;
+      for (var j = 0; j < this.data.length; j++) {
+        m += this.numericAt(j);
+      }
+      m /= this.data.length;
+      return Miso.types[this.type].coerce(m, this);
+    },
+
+    median : function() {
+      return Miso.types[this.type].coerce(_.median(this.data), this);
+    },
+
     max : function() {
       var max = -Infinity;
       for (var j = 0; j < this.data.length; j++) {
-        if (DS.types[this.type].compare(this.data[j], max) > 0) {
+        if (Miso.types[this.type].compare(this.data[j], max) > 0) {
           max = this.numericAt(j);
         }
       }
-      return max;
+
+      return Miso.types[this.type].coerce(max, this);
     },
 
     min : function() {
       var min = Infinity;
       for (var j = 0; j < this.data.length; j++) {
-        if (DS.types[this.type].compare(this.data[j], min) < 0) {
+        if (Miso.types[this.type].compare(this.data[j], min) < 0) {
           min = this.numericAt(j);
         }
       }
-      return min;
+      return Miso.types[this.type].coerce(min, this);
     }
   });
 
@@ -58,7 +77,7 @@
   *   parent : parent dataset
   *   filter : filter specification TODO: document better
   */
-  DS.View = function(options) {
+  Miso.View = function(options) {
     //rowFilter, columnFilter, parent
     options = options || (options = {});
 
@@ -71,14 +90,14 @@
     return this;
   };
 
-  _.extend(DS.View.prototype, {
+  _.extend(Miso.View.prototype, {
 
     _initialize: function(options) {
       
       // is this a syncable dataset? if so, pull
-      // required methods and mark this as a syncable dataset.
+      // required methoMiso and mark this as a syncable dataset.
       if (this.parent.syncable === true) {
-        _.extend(this, DS.Events);
+        _.extend(this, Miso.Events);
         this.syncable = true;
       }
 
@@ -91,15 +110,8 @@
       // initialize columns.
       this._columns = this._selectData();
 
-      // pass through strict importer
-      // TODO: Need to cache all data here, so.... need to
-      // either pass through importer, or pull that out. Maybe
-      // the data caching can happen elsewhere?
-      // right now just passing through default parser.
-      var tempParser = new DS.Parsers();
-      _.extend(this, 
-        tempParser._cacheColumns(this), 
-        tempParser._cacheRows(this));
+      Miso.Builder.cacheColumns(this);
+      Miso.Builder.cacheRows(this);
 
       // bind to parent if syncable
       if (this.syncable) {
@@ -124,7 +136,7 @@
 
         // ===== ADD NEW ROW
 
-        if (typeof rowPos === "undefined" && DS.Event.isAdd(d)) {
+        if (typeof rowPos === "undefined" && Miso.Event.isAdd(d)) {
           // this is an add event, since we couldn't find an
           // existing row to update and now need to just add a new
           // one. Use the delta's changed properties as the new row
@@ -156,7 +168,7 @@
     
         // if this is a delete event OR the row no longer
         // passes the filter, remove it.
-        if (DS.Event.isDelete(d) || 
+        if (Miso.Event.isDelete(d) || 
             (this.filter.row && !this.filter.row(row))) {
 
           // Since this is now a delete event, we need to convert it
@@ -194,7 +206,7 @@
       options.parent = this;
       options.filter = filter || {};
 
-      return new DS.View(options);
+      return new Miso.View(options);
     },
 
     _selectData : function() {
@@ -301,6 +313,7 @@
     * @returns {object} column 
     */
     _column : function(name) {
+      if (_.isUndefined(this._columnPositionByName)) { return undefined; }
       var pos = this._columnPositionByName[name];
       return this._columns[pos];
     },
@@ -310,7 +323,7 @@
     * @param {array} filter - an array of column names
     */    
     columns : function(columnsArray) {
-     return new DS.View({
+     return new Miso.View({
         filter : { columns : columnsArray },
         parent : this
       });
@@ -419,6 +432,26 @@
     */
     _add : function(row, options) {
       
+      // first coerce all the values appropriatly
+      _.each(row, function(value, key) {
+        var column = this.column(key),
+            Type = Miso.types[column.type];
+
+        // test if value matches column type
+        if (Type.test(row[column.name], column.typeOptions)) {
+          
+          // if so, coerce it.
+          row[column.name] = Type.coerce(row[column.name], column.typeOptions);
+
+        } else {
+          throw("incorrect value '" + row[column.name] + 
+                "' of type " + Miso.typeOf(row[column.name], column.typeOptions) +
+                " passed to column with type " + column.type);  
+        
+        }
+      }, this);
+
+      // if we don't have a comparator, just append them at the end.
       if (_.isUndefined(this.comparator)) {
         
         // add all data
@@ -429,7 +462,9 @@
         // add row indeces to the cache
         this._rowIdByPosition.push(row._id);
         this._rowPositionById[row._id] = this._rowIdByPosition.length;
-          
+      
+      // otherwise insert them in the right place. This is a somewhat
+      // expensive operation.    
       } else {
         
         var insertAt = function(at, value, into) {
@@ -470,7 +505,7 @@
     * the same as where
     */    
     rows : function(filter) {
-      return new DS.View({
+      return new Miso.View({
         filter : { rows : filter },
         parent : this
       });
@@ -569,6 +604,13 @@
             this.rowByPosition(1)) > 0) {
           swap(0,1);
         }
+      }
+
+      // check last two rows, they seem to always be off sync.
+      if (this.comparator(
+          this.rowByPosition(this.length - 2), 
+          this.rowByPosition(this.length - 1)) > 0) {
+        swap(this.length - 1,this.length - 2);
       }
 
       if (this.syncable) {

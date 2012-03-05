@@ -1,7 +1,7 @@
 (function(global, _) {
 
   /* @exports namespace */
-  var DS = global.DS || (global.DS = {});
+  var Miso = global.Miso || (global.Miso = {});
 
   /**
   * A representation of an event as it is passed through the
@@ -11,14 +11,14 @@
   * @param {string} ev - Name of event
   * @param {object|array of objects} deltas - array of deltas.
   */
-  DS.Event = function(deltas) {
+  Miso.Event = function(deltas) {
     if (!_.isArray(deltas)) {
       deltas = [deltas];
     }
     this.deltas = deltas;
   };
 
-  _.extend(DS.Event.prototype, {
+  _.extend(Miso.Event.prototype, {
     affectedColumns : function() {
       var cols = [];
       
@@ -33,7 +33,7 @@
     }
   });
 
-   _.extend(DS.Event, {
+   _.extend(Miso.Event, {
     /**
     * Returns true if the event is a deletion
     */
@@ -69,12 +69,12 @@
   });
   
   /**
-  * @name DS.Events
+  * @name Miso.Events
   * - Event Related Methods
-  * @property {object} DS.Events - A module aggregating some functionality
+  * @property {object} Miso.Events - A module aggregating some functionality
   *  related to events. Will be used to extend other classes.
   */
-  DS.Events = {};
+  Miso.Events = {};
 
   /**
   * Bind callbacks to dataset events
@@ -83,7 +83,7 @@
   * @param {object} context - context for the callback. optional.
   * @returns {object} context
   */
-  DS.Events.bind = function (ev, callback, context) {
+  Miso.Events.bind = function (ev, callback, context) {
     var calls = this._callbacks || (this._callbacks = {});
     var list  = calls[ev] || (calls[ev] = {});
     var tail = list.tail || (list.tail = list.next = {});
@@ -100,7 +100,7 @@
   * @param {string} ev - event name
   * @param {function} callback - callback function to be removed
   */
-  DS.Events.unbind = function(ev, callback) {
+  Miso.Events.unbind = function(ev, callback) {
     var calls, node, prev;
     if (!ev) {
       this._callbacks = null;
@@ -126,7 +126,7 @@
   * trigger a given event
   * @param {string} eventName - name of event
   */
-  DS.Events.trigger = function(eventName) {
+  Miso.Events.trigger = function(eventName) {
     var node, calls, callback, args, ev, events = ['all', eventName];
     if (!(calls = this._callbacks)) {
       return this;
@@ -152,7 +152,7 @@
   * @param {object|array of objects} delta - change delta object.
   * @returns {object} event - Event object.
   */
-  DS.Events._buildEvent = function(delta) {
-    return new DS.Event(delta);
+  Miso.Events._buildEvent = function(delta) {
+    return new Miso.Event(delta);
   };
 }(this, _));

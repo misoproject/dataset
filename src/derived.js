@@ -1,8 +1,8 @@
 (function(global, _) {
 
-  var DS = (global.DS = global.DS || {});
+  var Miso = (global.Miso = global.Miso || {});
 
-  _.extend(global.DS.Dataset.prototype, {
+  _.extend(global.Miso.Dataset.prototype, {
     /**
     * moving average
     * @param {column} column on which to calculate the average
@@ -30,41 +30,43 @@
       // default method is addition
       var method = options.method || _.sum;
 
-      var d = {
-        _columns : []
-      };
+      var d = new Miso.Dataset();
 
       if (options && options.preprocess) {
-        this.preprocess = options.preprocess;  
+        d.preprocess = options.preprocess;  
       }
-
-      var parser = new DS.Parsers();
 
       // copy columns we want - just types and names. No data.
       var newCols = _.union([byColumn], columns);
+      
       _.each(newCols, function(columnName) {
-        var newColumn = d._columns.push(_.clone(
-          this._columns[this._columnPositionByName[columnName]])
-        );
 
-        d._columns[d._columns.length-1].data = [];
+        d.addColumn({
+          name : columnName,
+          type : this.column(columnName).type,
+          data : []
+        });
       }, this);
 
       // save column positions on new dataset.
-      d = parser._cacheColumns(d);
+      Miso.Builder.cacheColumns(d);
 
       // a cache of values
       var categoryPositions = {},
           categoryCount     = 0,
-          byColumnPosition  = d._columnPositionByName[byColumn];
+          byColumnPosition  = d._columnPositionByName[byColumn],
+          originalByColumn = this.column(byColumn);
 
-      // bin all values by their categories
+      // bin all values by their
       for(var i = 0; i < this.length; i++) {
         var category = null;
-        if (this.preprocess) {
-          category = this.preprocess(this._columns[this._columnPositionByName[byColumn]].data[i]);
+        
+        // compute category. If a pre-processing function was specified
+        // (for binning time for example,) run that first.
+        if (d.preprocess) {
+          category = d.preprocess(originalByColumn.data[i]);
         } else {
-          category = this._columns[this._columnPositionByName[byColumn]].data[i];  
+          category = originalByColumn.data[i];  
         }
          
         if (_.isUndefined(categoryPositions[category])) {
@@ -76,20 +78,22 @@
           // add an empty array to all columns at that position to
           // bin the values
           _.each(columns, function(columnToGroup) {
-            var column = d._columns[d._columnPositionByName[columnToGroup]];
+            var column = d.column(columnToGroup);
+            var idCol  = d.column("_id");
             column.data[categoryCount] = [];
+            idCol.data[categoryCount] = _.uniqueId();
           });
 
           // add the actual bin number to the right col
-          d._columns[d._columnPositionByName[byColumn]].data[categoryCount] = category;
+          d.column(byColumn).data[categoryCount] = category;
 
           categoryCount++;
         }
 
         _.each(columns, function(columnToGroup) {
           
-          var column = d._columns[d._columnPositionByName[columnToGroup]],
-              value  = this._columns[this._columnPositionByName[columnToGroup]].data[i],
+          var column = d.column(columnToGroup),
+              value  = this.column(columnToGroup).data[i],
               binPosition = categoryPositions[category];
 
           column.data[binPosition].push(value);
@@ -99,30 +103,17 @@
       // now iterate over all the bins and combine their
       // values using the supplied method. 
       _.each(columns, function(colName) {
-        var column = d._columns[d._columnPositionByName[colName]];
+        var column = d.column(colName);
         _.each(column.data, function(bin, binPos) {
           if (_.isArray(bin)) {
             column.data[binPos] = method.call(this, bin);
+            d.length++;
           }
         });
       }, this);
-    
-      // create new dataset based on this data
-      d.columns = d._columns;
-      delete d._columns;
-      var ds = new DS.Dataset({
-        data   : d,
-        strict : true
-      });
 
-      // TODO: subscribe this to parent dataset!
-      var fetcheddata = null;
-      ds.fetch({
-        success : function() {
-          fetcheddata = this;
-        }
-      });
-      return fetcheddata;
+      Miso.Builder.cacheRows(d);
+      return d;
     }
   });
 

@@ -4,7 +4,7 @@
 
 (function(global, _) {
 
-  var DS = (global.DS || (global.DS = {}));
+  var Miso = (global.Miso || (global.Miso = {}));
   /**
   * @constructor
   * Google Spreadsheet Parser. 
@@ -13,13 +13,13 @@
   * @param {object} data - the google spreadsheet data.
   * @param {object} options - Optional options argument.
   */
-  DS.Parsers.GoogleSpreadsheet = function(data, options) {
+  Miso.Parsers.GoogleSpreadsheet = function(data, options) {
     this.options = options || {};
     this._data = data;
   };
 
 
-  _.extend(DS.Parsers.GoogleSpreadsheet.prototype, DS.Parsers.prototype, {
+  _.extend(Miso.Parsers.GoogleSpreadsheet.prototype, Miso.Parsers.prototype, {
 
     _buildColumns : function(d, n) {
       d._columns = [];

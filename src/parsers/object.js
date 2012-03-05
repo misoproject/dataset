@@ -1,14 +1,14 @@
 (function(global, _) {
-  var DS = (global.DS || (global.DS = {}));
+  var Miso = (global.Miso || (global.Miso = {}));
   // -------- Object Parser -----------
   /**
   * Converts an array of objects to strict format.
   * Each object is a flat json object of properties.
   * @params {Object} obj = [{},{}...]
   */
-  DS.Parsers.Obj = DS.Parsers;
+  Miso.Parsers.Obj = Miso.Parsers;
 
-  _.extend(DS.Parsers.Obj.prototype, DS.Parsers.prototype, {
+  _.extend(Miso.Parsers.Obj.prototype, Miso.Parsers.prototype, {
 
     parse : function( data ) {
       var columns = _.keys(data[0]),

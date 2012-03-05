@@ -1,7 +1,7 @@
 (function(global) {
   
   var Util  = global.Util;
-  var DS    = global.DS || {};  
+  var Miso  = global.Miso || {};  
 
   module("Columns");
 
@@ -34,7 +34,43 @@
     var column = ds.column("one");
     equals(column.sum(), 6);
   });
-  
+
+  test("Column median", function() {
+    var ds = new Miso.Dataset({
+      data : {
+        columns : [
+          { name : 'vals', data : [1,2,3,4,5,6,7,8,9,10] },
+          { name : 'valsrandomorder', data : [10,2,1,5,3,8,9,6,4,7] },
+          { name : 'randomvals', data : [19,4,233,40,10,39,23,47,5,22] }
+        ]
+      },
+      strict : true
+    });
+    _.when(ds.fetch()).then(function(){
+      equals(ds.column('vals').median(), 5.5);
+      equals(ds.column('valsrandomorder').median(), 5.5); 
+      equals(ds.column('randomvals').median(), 22.5); 
+    });
+  });
+
+  test("Column mean", function() {
+    var ds = new Miso.Dataset({
+      data : {
+        columns : [
+          { name : 'vals', data : [1,2,3,4,5,6,7,8,9,10] },
+          { name : 'valsrandomorder', data : [10,2,1,5,3,8,9,6,4,7] },
+          { name : 'randomvals', data : [19,4,233,40,10,39,23,47,5,22] }
+        ]
+      },
+      strict : true
+    });
+    _.when(ds.fetch()).then(function(){
+      equals(ds.column('vals').mean(), 5.5);
+      equals(ds.column('valsrandomorder').mean(), 5.5); 
+      equals(ds.column('randomvals').mean(), 44.2); 
+    });
+  });
+
   module("Views");
 
   test("Basic View creation", function() {
@@ -176,7 +212,7 @@ module("Views :: Syncing");
         delta.old[col] = oldVal;
         delta.changed[col] = 100;
         
-        var event = DS.Events._buildEvent(delta);
+        var event = Miso.Events._buildEvent(delta);
 
         // trigger view sync with delta
         // view.sync(delta);
@@ -215,7 +251,7 @@ module("Views :: Syncing");
         delta.old[col] = oldVal;
         delta.changed[col] = 100;
         
-        var event = DS.Events._buildEvent(delta);
+        var event = Miso.Events._buildEvent(delta);
 
         // trigger view sync with delta
         // view.sync(delta);
@@ -282,7 +318,7 @@ module("Views :: Syncing");
     delta.old[colname] = oldVal;
     delta.changed[colname] = 100;
 
-    var event = DS.Events._buildEvent(delta);
+    var event = Miso.Events._buildEvent(delta);
 
     // trigger dataset change
     ds.trigger("change", event);
@@ -311,7 +347,7 @@ module("Views :: Syncing");
     };
 
     // create event representing deletion
-    var event = DS.Events._buildEvent(delta);
+    var event = Miso.Events._buildEvent(delta);
 
     // delete actual row
     ds._remove( ds._rowIdByPosition[0] );
@@ -326,10 +362,11 @@ module("Views :: Syncing");
     var ds = Util.baseSyncingSample();
     var view = ds.where({ column : 'one' });
 
+    var l = ds.length;
     ds.remove(function(row) {
       return (row.one === 1);
     });
-
+    equals(ds.length, l-1);
     ok(view.length === 2, "row was removed from view");
     ok(ds.length === 2, "row was removed from dataset");
 
@@ -357,7 +394,7 @@ module("Views :: Syncing");
     };
 
     // create event representing addition
-    var event = DS.Events._buildEvent(delta);
+    var event = Miso.Events._buildEvent(delta);
 
     // for now, we aren't adding the actual data to the original dataset
     // just simulating that addition. Eventually when we ammend the api
@@ -398,7 +435,7 @@ module("Views :: Syncing");
     };
 
     // create event representing addition
-    var event = DS.Events._buildEvent(delta);
+    var event = Miso.Events._buildEvent(delta);
 
     // for now, we aren't adding the actual data to the original dataset
     // just simulating that addition. Eventually when we ammend the api
@@ -423,7 +460,7 @@ module("Views :: Syncing");
   });
 
   test("Basic Sort", function() {
-    var ds = new DS.Dataset({
+    var ds = new Miso.Dataset({
       data: { columns : [ 
         { name : "one",   data : [10, 2, 3, 14, 3, 4] },
         { name : "two",   data : [4,  5, 6, 1,  1, 1] },
@@ -438,18 +475,18 @@ module("Views :: Syncing");
       return 0;
     };
 
-    _.when(ds.fetch(), function(){
+    _.when(ds.fetch()).then(function(){
       ds.sort();
 
-      ok(_.isEqual(ds._columns[1].data, [2,3,3,4,10,14]));
-      ok(_.isEqual(ds._columns[2].data, [5,6,1,1,4,1]));
-      ok(_.isEqual(ds._columns[3].data, [8,9,1,1,7,1]));
+      ok(_.isEqual(ds._columns[1].data, [2,3,3,4,10,14]),ds._columns[1].data);
+      ok(_.isEqual(ds._columns[2].data, [5,6,1,1,4,1])  ,ds._columns[2].data);
+      ok(_.isEqual(ds._columns[3].data, [8,9,1,1,7,1])  ,ds._columns[3].data);
     });
 
   });
 
   test("Basic Sort reverse", function() {
-    var ds = new DS.Dataset({
+    var ds = new Miso.Dataset({
       data: { columns : [ 
         { name : "one",   data : [10, 2, 3, 14, 3, 4] },
         { name : "two",   data : [4,  5, 6, 1,  1, 1] },
@@ -463,17 +500,17 @@ module("Views :: Syncing");
       if (r1.one < r2.one) {return 1;}
       return 0;
     };
-    _.when(ds.fetch(), function(){
+    _.when(ds.fetch()).then(function(){
       ds.sort();
       
-      ok(_.isEqual(ds._columns[1].data, [2,3,3,4,10,14].reverse()));
-      ok(_.isEqual(ds._columns[2].data, [5,6,1,1,4,1].reverse()));
-      ok(_.isEqual(ds._columns[3].data, [8,9,1,1,7,1].reverse()));
+      ok(_.isEqual(ds._columns[1].data, [2,3,3,4,10,14].reverse()), ds._columns[1].data);
+      ok(_.isEqual(ds._columns[2].data, [5,6,1,1,4,1].reverse()), ds._columns[2].data);
+      ok(_.isEqual(ds._columns[3].data, [8,9,1,1,7,1].reverse()), ds._columns[3].data);
     });
   });
 
   test("Sort in init", function() {
-    var ds = new DS.Dataset({
+    var ds = new Miso.Dataset({
       data: { columns : [ 
         { name : "one",   data : [10, 2, 3, 14, 3, 4] },
         { name : "two",   data : [4,  5, 6, 1,  1, 1] },
@@ -486,15 +523,15 @@ module("Views :: Syncing");
       },
       strict: true
     });
-    _.when(ds.fetch(), function(){
-      ok(_.isEqual(ds._columns[1].data, [2,3,3,4,10,14].reverse()));
-      ok(_.isEqual(ds._columns[2].data, [5,6,1,1,4,1].reverse()));
-      ok(_.isEqual(ds._columns[3].data, [8,9,1,1,7,1].reverse()));
+    _.when(ds.fetch()).then(function(){
+      ok(_.isEqual(ds._columns[1].data, [2,3,3,4,10,14].reverse()), ds._columns[1].data);
+      ok(_.isEqual(ds._columns[2].data, [5,6,1,1,4,1].reverse()), ds._columns[2].data);
+      ok(_.isEqual(ds._columns[3].data, [8,9,1,1,7,1].reverse()), ds._columns[3].data);
     });
   });
 
   test("Add row in sorted order", function() {
-    var ds = new DS.Dataset({
+    var ds = new Miso.Dataset({
       data: { columns : [ 
         { name : "one",   data : [10, 2, 3, 14, 3, 4] },
         { name : "two",   data : [4,  5, 6, 1,  1, 1] },
@@ -507,11 +544,12 @@ module("Views :: Syncing");
       },
       strict: true
     });
-    _.when(ds.fetch(), function(){
+    _.when(ds.fetch()).then(function(){
+      var l = ds.length;
       ds.add({
         one : 5, two: 5, three: 5
       });
-
+      equals(ds.length, l+1);
       ok(_.isEqual(ds._columns[1].data, [2,3,3,4,5,10,14]));
       ok(_.isEqual(ds._columns[2].data, [5,6,1,1,5,4,1]));
       ok(_.isEqual(ds._columns[3].data, [8,9,1,1,5,7,1]));
@@ -519,7 +557,7 @@ module("Views :: Syncing");
   });
 
   test("Add row in reverse sorted order", function() {
-    var ds = new DS.Dataset({
+    var ds = new Miso.Dataset({
       data: { columns : [ 
         { name : "one",   data : [10, 2, 3, 14, 3, 4] },
         { name : "two",   data : [4,  5, 6, 1,  1, 1] },
@@ -533,7 +571,7 @@ module("Views :: Syncing");
       strict: true
     });
 
-    _.when(ds.fetch(), function(){
+    _.when(ds.fetch()).then(function(){
       ds.add({
         one : 5, two: 5, three: 5
       });

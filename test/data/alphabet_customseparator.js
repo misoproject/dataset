@@ -1,4 +1,4 @@
-window.DS.alphabet_customseparator="character###name###is_modern###numeric_value\n" +
+window.Miso.alphabet_customseparator="character###name###is_modern###numeric_value\n" +
 "α###alpha###true###1\n" +
 "β###beta###true###2\n" +
 "γ###gamma###true###3\n" +

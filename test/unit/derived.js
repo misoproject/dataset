@@ -1,7 +1,7 @@
 (function(global) {
   
   var Util  = global.Util;
-  var DS    = global.DS || {};
+  var Miso    = global.Miso || {};
 
   module("Group By");
 
@@ -51,7 +51,7 @@
 
   test("base group by", function() {
     
-    var ds = new DS.Dataset({
+    var ds = new Miso.Dataset({
       data : getData(),
       strict: true
     });
@@ -67,7 +67,7 @@
 
   test("base group by with diff modifier", function() {
     
-    var ds = new DS.Dataset({
+    var ds = new Miso.Dataset({
       data : getData(),
       strict: true
     });
@@ -89,7 +89,7 @@
   });
 
   test("group by with preprocessing of categoeies", function() {
-    var ds = new DS.Dataset({
+    var ds = new Miso.Dataset({
       data : getData(),
       strict: true
     });

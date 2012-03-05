@@ -1,675 +1,25 @@
 /**
-* Miso.Dataset - v0.1.0 - 2/29/2012
+* Miso.Dataset - v0.1.0 - 3/5/2012
 * http://github.com/alexgraul/Dataset
 * Copyright (c) 2012 Alex Graul, Irene Ros;
 * Licensed MIT, GPL
 */
 
-// Moment.js
-//
-// (c) 2011 Tim Wood
-// Moment.js is freely distributable under the terms of the MIT license.
-//
-// Version 1.4.0
-
-/*global define:false */
-
-(function (Date, undefined) {
-
-    var moment,
-        round = Math.round,
-        languages = {},
-        hasModule = (typeof module !== 'undefined'),
-        paramsToParse = 'months|monthsShort|monthsParse|weekdays|weekdaysShort|longDateFormat|calendar|relativeTime|ordinal|meridiem'.split('|'),
-        i,
-        jsonRegex = /^\/?Date\((\d+)/i,
-        charactersToReplace = /(\[[^\[]*\])|(\\)?(Mo|MM?M?M?|Do|DDDo|DD?D?D?|dddd?|do?|w[o|w]?|YYYY|YY|a|A|hh?|HH?|mm?|ss?|zz?|ZZ?|LT|LL?L?L?)/g,
-        nonuppercaseLetters = /[^A-Z]/g,
-        timezoneRegex = /\([A-Za-z ]+\)|:[0-9]{2} [A-Z]{3} /g,
-        tokenCharacters = /(\\)?(MM?M?M?|dd?d?d|DD?D?D?|YYYY|YY|a|A|hh?|HH?|mm?|ss?|ZZ?|T)/g,
-        inputCharacters = /(\\)?([0-9]+|([a-zA-Z\u00A0-\uD7FF\uF900-\uFDCF\uFDF0-\uFFEF])+|([\+\-]\d\d:?\d\d))/gi,
-        timezoneParseRegex = /([\+\-]|\d\d)/gi,
-        VERSION = "1.4.0",
-        shortcuts = 'Month|Date|Hours|Minutes|Seconds|Milliseconds'.split('|');
-
-    // Moment prototype object
-    function Moment(date) {
-        this._d = date;
-    }
-
-    // left zero fill a number
-    // see http://jsperf.com/left-zero-filling for performance comparison
-    function leftZeroFill(number, targetLength) {
-        var output = number + '';
-        while (output.length < targetLength) {
-            output = '0' + output;
-        }
-        return output;
-    }
-
-    // helper function for _.addTime and _.subtractTime
-    function dateAddRemove(date, _input, adding, val) {
-        var isString = (typeof _input === 'string'),
-            input = isString ? {} : _input,
-            ms, d, M, currentDate;
-        if (isString && val) {
-            input[_input] = +val;
-        }
-        ms = (input.ms || input.milliseconds || 0) +
-            (input.s || input.seconds || 0) * 1e3 + // 1000
-            (input.m || input.minutes || 0) * 6e4 + // 1000 * 60
-            (input.h || input.hours || 0) * 36e5; // 1000 * 60 * 60
-        d = (input.d || input.days || 0) +
-            (input.w || input.weeks || 0) * 7;
-        M = (input.M || input.months || 0) +
-            (input.y || input.years || 0) * 12;
-        if (ms) {
-            date.setTime(+date + ms * adding);
-        }
-        if (d) {
-            date.setDate(date.getDate() + d * adding);
-        }
-        if (M) {
-            currentDate = date.getDate();
-            date.setDate(1);
-            date.setMonth(date.getMonth() + M * adding);
-            date.setDate(Math.min(new Date(date.getFullYear(), date.getMonth() + 1, 0).getDate(), currentDate));
-        }
-        return date;
-    }
-
-    // check if is an array
-    function isArray(input) {
-        return Object.prototype.toString.call(input) === '[object Array]';
-    }
-
-    // convert an array to a date.
-    // the array should mirror the parameters below
-    // note: all values past the year are optional and will default to the lowest possible value.
-    // [year, month, day , hour, minute, second, millisecond]
-    function dateFromArray(input) {
-        return new Date(input[0], input[1] || 0, input[2] || 1, input[3] || 0, input[4] || 0, input[5] || 0, input[6] || 0);
-    }
-
-    // format date using native date object
-    function formatDate(date, inputString) {
-        var m = new Moment(date),
-            currentMonth = m.month(),
-            currentDate = m.date(),
-            currentYear = m.year(),
-            currentDay = m.day(),
-            currentHours = m.hours(),
-            currentMinutes = m.minutes(),
-            currentSeconds = m.seconds(),
-            currentZone = -m.zone(),
-            ordinal = moment.ordinal,
-            meridiem = moment.meridiem;
-        // check if the character is a format
-        // return formatted string or non string.
-        //
-        // uses switch/case instead of an object of named functions (like http://phpjs.org/functions/date:380)
-        // for minification and performance
-        // see http://jsperf.com/object-of-functions-vs-switch for performance comparison
-        function replaceFunction(input) {
-            // create a couple variables to be used later inside one of the cases.
-            var a, b;
-            switch (input) {
-                // MONTH
-            case 'M' :
-                return currentMonth + 1;
-            case 'Mo' :
-                return (currentMonth + 1) + ordinal(currentMonth + 1);
-            case 'MM' :
-                return leftZeroFill(currentMonth + 1, 2);
-            case 'MMM' :
-                return moment.monthsShort[currentMonth];
-            case 'MMMM' :
-                return moment.months[currentMonth];
-            // DAY OF MONTH
-            case 'D' :
-                return currentDate;
-            case 'Do' :
-                return currentDate + ordinal(currentDate);
-            case 'DD' :
-                return leftZeroFill(currentDate, 2);
-            // DAY OF YEAR
-            case 'DDD' :
-                a = new Date(currentYear, currentMonth, currentDate);
-                b = new Date(currentYear, 0, 1);
-                return ~~ (((a - b) / 864e5) + 1.5);
-            case 'DDDo' :
-                a = replaceFunction('DDD');
-                return a + ordinal(a);
-            case 'DDDD' :
-                return leftZeroFill(replaceFunction('DDD'), 3);
-            // WEEKDAY
-            case 'd' :
-                return currentDay;
-            case 'do' :
-                return currentDay + ordinal(currentDay);
-            case 'ddd' :
-                return moment.weekdaysShort[currentDay];
-            case 'dddd' :
-                return moment.weekdays[currentDay];
-            // WEEK OF YEAR
-            case 'w' :
-                a = new Date(currentYear, currentMonth, currentDate - currentDay + 5);
-                b = new Date(a.getFullYear(), 0, 4);
-                return ~~ ((a - b) / 864e5 / 7 + 1.5);
-            case 'wo' :
-                a = replaceFunction('w');
-                return a + ordinal(a);
-            case 'ww' :
-                return leftZeroFill(replaceFunction('w'), 2);
-            // YEAR
-            case 'YY' :
-                return leftZeroFill(currentYear % 100, 2);
-            case 'YYYY' :
-                return currentYear;
-            // AM / PM
-            case 'a' :
-                return currentHours > 11 ? meridiem.pm : meridiem.am;
-            case 'A' :
-                return currentHours > 11 ? meridiem.PM : meridiem.AM;
-            // 24 HOUR
-            case 'H' :
-                return currentHours;
-            case 'HH' :
-                return leftZeroFill(currentHours, 2);
-            // 12 HOUR
-            case 'h' :
-                return currentHours % 12 || 12;
-            case 'hh' :
-                return leftZeroFill(currentHours % 12 || 12, 2);
-            // MINUTE
-            case 'm' :
-                return currentMinutes;
-            case 'mm' :
-                return leftZeroFill(currentMinutes, 2);
-            // SECOND
-            case 's' :
-                return currentSeconds;
-            case 'ss' :
-                return leftZeroFill(currentSeconds, 2);
-            // TIMEZONE
-            case 'zz' :
-                // depreciating 'zz' fall through to 'z'
-            case 'z' :
-                return (date.toString().match(timezoneRegex) || [''])[0].replace(nonuppercaseLetters, '');
-            case 'Z' :
-                return (currentZone > 0 ? '+' : '-') + leftZeroFill(~~(Math.abs(currentZone) / 60), 2) + ':' + leftZeroFill(~~(Math.abs(currentZone) % 60), 2);
-            case 'ZZ' :
-                return (currentZone > 0 ? '+' : '-') + leftZeroFill(~~(10 * Math.abs(currentZone) / 6), 4);
-            // LONG DATES
-            case 'L' :
-            case 'LL' :
-            case 'LLL' :
-            case 'LLLL' :
-            case 'LT' :
-                return formatDate(date, moment.longDateFormat[input]);
-            // DEFAULT
-            default :
-                return input.replace(/(^\[)|(\\)|\]$/g, "");
-            }
-        }
-        return inputString.replace(charactersToReplace, replaceFunction);
-    }
-
-    // date from string and format string
-    function makeDateFromStringAndFormat(string, format) {
-        var inArray = [0, 0, 1, 0, 0, 0, 0],
-            timezoneHours = 0,
-            timezoneMinutes = 0,
-            isUsingUTC = false,
-            inputParts = string.match(inputCharacters),
-            formatParts = format.match(tokenCharacters),
-            i,
-            isPm;
-
-        // function to convert string input to date
-        function addTime(format, input) {
-            var a;
-            switch (format) {
-            // MONTH
-            case 'M' :
-                // fall through to MM
-            case 'MM' :
-                inArray[1] = ~~input - 1;
-                break;
-            case 'MMM' :
-                // fall through to MMMM
-            case 'MMMM' :
-                for (a = 0; a < 12; a++) {
-                    if (moment.monthsParse[a].test(input)) {
-                        inArray[1] = a;
-                        break;
-                    }
-                }
-                break;
-            // DAY OF MONTH
-            case 'D' :
-                // fall through to DDDD
-            case 'DD' :
-                // fall through to DDDD
-            case 'DDD' :
-                // fall through to DDDD
-            case 'DDDD' :
-                inArray[2] = ~~input;
-                break;
-            // YEAR
-            case 'YY' :
-                input = ~~input;
-                inArray[0] = input + (input > 70 ? 1900 : 2000);
-                break;
-            case 'YYYY' :
-                inArray[0] = ~~Math.abs(input);
-                break;
-            // AM / PM
-            case 'a' :
-                // fall through to A
-            case 'A' :
-                isPm = (input.toLowerCase() === 'pm');
-                break;
-            // 24 HOUR
-            case 'H' :
-                // fall through to hh
-            case 'HH' :
-                // fall through to hh
-            case 'h' :
-                // fall through to hh
-            case 'hh' :
-                inArray[3] = ~~input;
-                break;
-            // MINUTE
-            case 'm' :
-                // fall through to mm
-            case 'mm' :
-                inArray[4] = ~~input;
-                break;
-            // SECOND
-            case 's' :
-                // fall through to ss
-            case 'ss' :
-                inArray[5] = ~~input;
-                break;
-            // TIMEZONE
-            case 'Z' :
-                // fall through to ZZ
-            case 'ZZ' :
-                isUsingUTC = true;
-                a = (input || '').match(timezoneParseRegex);
-                if (a && a[1]) {
-                    timezoneHours = ~~a[1];
-                }
-                if (a && a[2]) {
-                    timezoneMinutes = ~~a[2];
-                }
-                // reverse offsets
-                if (a && a[0] === '+') {
-                    timezoneHours = -timezoneHours;
-                    timezoneMinutes = -timezoneMinutes;
-                }
-                break;
-            }
-        }
-        for (i = 0; i < formatParts.length; i++) {
-            addTime(formatParts[i], inputParts[i]);
-        }
-        // handle am pm
-        if (isPm && inArray[3] < 12) {
-            inArray[3] += 12;
-        }
-        // if is 12 am, change hours to 0
-        if (isPm === false && inArray[3] === 12) {
-            inArray[3] = 0;
-        }
-        // handle timezone
-        inArray[3] += timezoneHours;
-        inArray[4] += timezoneMinutes;
-        // return
-        return isUsingUTC ? new Date(Date.UTC.apply({}, inArray)) : dateFromArray(inArray);
-    }
-
-    // compare two arrays, return the number of differences
-    function compareArrays(array1, array2) {
-        var len = Math.min(array1.length, array2.length),
-            lengthDiff = Math.abs(array1.length - array2.length),
-            diffs = 0,
-            i;
-        for (i = 0; i < len; i++) {
-            if (~~array1[i] !== ~~array2[i]) {
-                diffs++;
-            }
-        }
-        return diffs + lengthDiff;
-    }
-
-    // date from string and array of format strings
-    function makeDateFromStringAndArray(string, formats) {
-        var output,
-            inputParts = string.match(inputCharacters),
-            scores = [],
-            scoreToBeat = 99,
-            i,
-            curDate,
-            curScore;
-        for (i = 0; i < formats.length; i++) {
-            curDate = makeDateFromStringAndFormat(string, formats[i]);
-            curScore = compareArrays(inputParts, formatDate(curDate, formats[i]).match(inputCharacters));
-            if (curScore < scoreToBeat) {
-                scoreToBeat = curScore;
-                output = curDate;
-            }
-        }
-        return output;
-    }
-
-    moment = function (input, format) {
-        if (input === null) {
-            return null;
-        }
-        var date,
-            matched;
-        // parse Moment object
-        if (input && input._d instanceof Date) {
-            date = new Date(+input._d);
-        // parse string and format
-        } else if (format) {
-            if (isArray(format)) {
-                date = makeDateFromStringAndArray(input, format);
-            } else {
-                date = makeDateFromStringAndFormat(input, format);
-            }
-        // evaluate it as a JSON-encoded date
-        } else {
-            matched = jsonRegex.exec(input);
-            date = input === undefined ? new Date() :
-                matched ? new Date(+matched[1]) :
-                input instanceof Date ? input :
-                isArray(input) ? dateFromArray(input) :
-                new Date(input);
-        }
-        return new Moment(date);
-    };
-
-    // version number
-    moment.version = VERSION;
-
-    // language switching and caching
-    moment.lang = function (key, values) {
-        var i,
-            param,
-            req,
-            parse = [];
-        if (values) {
-            for (i = 0; i < 12; i++) {
-                parse[i] = new RegExp('^' + values.months[i] + '|^' + values.monthsShort[i].replace('.', ''), 'i');
-            }
-            values.monthsParse = values.monthsParse || parse;
-            languages[key] = values;
-        }
-        if (languages[key]) {
-            for (i = 0; i < paramsToParse.length; i++) {
-                param = paramsToParse[i];
-                moment[param] = languages[key][param] || moment[param];
-            }
-        } else {
-            if (hasModule) {
-                req = require('./lang/' + key);
-                moment.lang(key, req);
-            }
-        }
-    };
-
-    // set default language
-    moment.lang('en', {
-        months : "January_February_March_April_May_June_July_August_September_October_November_December".split("_"),
-        monthsShort : "Jan_Feb_Mar_Apr_May_Jun_Jul_Aug_Sep_Oct_Nov_Dec".split("_"),
-        weekdays : "Sunday_Monday_Tuesday_Wednesday_Thursday_Friday_Saturday".split("_"),
-        weekdaysShort : "Sun_Mon_Tue_Wed_Thu_Fri_Sat".split("_"),
-        longDateFormat : {
-            LT : "h:mm A",
-            L : "MM/DD/YYYY",
-            LL : "MMMM D YYYY",
-            LLL : "MMMM D YYYY LT",
-            LLLL : "dddd, MMMM D YYYY LT"
-        },
-        meridiem : {
-            AM : 'AM',
-            am : 'am',
-            PM : 'PM',
-            pm : 'pm'
-        },
-        calendar : {
-            sameDay : '[Today at] LT',
-            nextDay : '[Tomorrow at] LT',
-            nextWeek : 'dddd [at] LT',
-            lastDay : '[Yesterday at] LT',
-            lastWeek : '[last] dddd [at] LT',
-            sameElse : 'L'
-        },
-        relativeTime : {
-            future : "in %s",
-            past : "%s ago",
-            s : "a few seconds",
-            m : "a minute",
-            mm : "%d minutes",
-            h : "an hour",
-            hh : "%d hours",
-            d : "a day",
-            dd : "%d days",
-            M : "a month",
-            MM : "%d months",
-            y : "a year",
-            yy : "%d years"
-        },
-        ordinal : function (number) {
-            var b = number % 10;
-            return (~~ (number % 100 / 10) === 1) ? 'th' :
-                (b === 1) ? 'st' :
-                (b === 2) ? 'nd' :
-                (b === 3) ? 'rd' : 'th';
-        }
-    });
-
-    // helper function for _date.from() and _date.fromNow()
-    function substituteTimeAgo(string, number, withoutSuffix) {
-        var rt = moment.relativeTime[string];
-        return (typeof rt === 'function') ?
-            rt(number || 1, !!withoutSuffix, string) :
-            rt.replace(/%d/i, number || 1);
-    }
-
-    function relativeTime(milliseconds, withoutSuffix) {
-        var seconds = round(Math.abs(milliseconds) / 1000),
-            minutes = round(seconds / 60),
-            hours = round(minutes / 60),
-            days = round(hours / 24),
-            years = round(days / 365),
-            args = seconds < 45 && ['s', seconds] ||
-                minutes === 1 && ['m'] ||
-                minutes < 45 && ['mm', minutes] ||
-                hours === 1 && ['h'] ||
-                hours < 22 && ['hh', hours] ||
-                days === 1 && ['d'] ||
-                days <= 25 && ['dd', days] ||
-                days <= 45 && ['M'] ||
-                days < 345 && ['MM', round(days / 30)] ||
-                years === 1 && ['y'] || ['yy', years];
-        args[2] = withoutSuffix;
-        return substituteTimeAgo.apply({}, args);
-    }
-
-    // shortcut for prototype
-    moment.fn = Moment.prototype = {
-
-        clone : function () {
-            return moment(this);
-        },
-
-        valueOf : function () {
-            return +this._d;
-        },
-
-        'native' : function () {
-            return this._d;
-        },
-
-        toString : function () {
-            return this._d.toString();
-        },
-
-        toDate : function () {
-            return this._d;
-        },
-
-        format : function (inputString) {
-            return formatDate(this._d, inputString);
-        },
-
-        add : function (input, val) {
-            this._d = dateAddRemove(this._d, input, 1, val);
-            return this;
-        },
-
-        subtract : function (input, val) {
-            this._d = dateAddRemove(this._d, input, -1, val);
-            return this;
-        },
-
-        diff : function (input, val, asFloat) {
-            var inputMoment = moment(input),
-                zoneDiff = (this.zone() - inputMoment.zone()) * 6e4,
-                diff = this._d - inputMoment._d - zoneDiff,
-                year = this.year() - inputMoment.year(),
-                month = this.month() - inputMoment.month(),
-                date = this.date() - inputMoment.date(),
-                output;
-            if (val === 'months') {
-                output = year * 12 + month + date / 30;
-            } else if (val === 'years') {
-                output = year + month / 12;
-            } else {
-                output = val === 'seconds' ? diff / 1e3 : // 1000
-                    val === 'minutes' ? diff / 6e4 : // 1000 * 60
-                    val === 'hours' ? diff / 36e5 : // 1000 * 60 * 60
-                    val === 'days' ? diff / 864e5 : // 1000 * 60 * 60 * 24
-                    val === 'weeks' ? diff / 6048e5 : // 1000 * 60 * 60 * 24 * 7
-                    diff;
-            }
-            return asFloat ? output : round(output);
-        },
-
-        from : function (time, withoutSuffix) {
-            var difference = this.diff(time),
-                rel = moment.relativeTime,
-                output = relativeTime(difference, withoutSuffix);
-            return withoutSuffix ? output : (difference <= 0 ? rel.past : rel.future).replace(/%s/i, output);
-        },
-
-        fromNow : function (withoutSuffix) {
-            return this.from(moment(), withoutSuffix);
-        },
-
-        calendar : function () {
-            var diff = this.diff(moment().sod(), 'days', true),
-                calendar = moment.calendar,
-                allElse = calendar.sameElse,
-                format = diff < -6 ? allElse :
-                diff < -1 ? calendar.lastWeek :
-                diff < 0 ? calendar.lastDay :
-                diff < 1 ? calendar.sameDay :
-                diff < 2 ? calendar.nextDay :
-                diff < 7 ? calendar.nextWeek : allElse;
-            return this.format(typeof format === 'function' ? format.apply(this) : format);
-        },
-
-        isLeapYear : function () {
-            var year = this.year();
-            return (year % 4 === 0 && year % 100 !== 0) || year % 400 === 0;
-        },
-
-        isDST : function () {
-            return (this.zone() < moment([this.year()]).zone() || 
-                this.zone() < moment([this.year(), 5]).zone());
-        },
-
-        day : function (input) {
-            var day = this._d.getDay();
-            return input == null ? day :
-                this.add({ d : input - day });
-        },
-
-        sod: function () {
-            return this.clone()
-                .hours(0)
-                .minutes(0)
-                .seconds(0)
-                .milliseconds(0);
-        },
-
-        eod: function () {
-            // end of day = start of day plus 1 day, minus 1 millisecond
-            return this.sod().add({
-                d : 1,
-                ms : -1
-            });
-        }
-    };
-
-    // helper for adding shortcuts
-    function makeShortcut(name, key) {
-        moment.fn[name] = function (input) {
-            if (input != null) {
-                this._d['set' + key](input);
-                return this;
-            } else {
-                return this._d['get' + key]();
-            }
-        };
-    }
-
-    // loop through and add shortcuts (Month, Date, Hours, Minutes, Seconds, Milliseconds)
-    for (i = 0; i < shortcuts.length; i ++) {
-        makeShortcut(shortcuts[i].toLowerCase(), shortcuts[i]);
-    }
-
-    // add shortcut for year (uses different syntax than the getter/setter 'year' == 'FullYear')
-    makeShortcut('year', 'FullYear');
-
-    // add shortcut for timezone offset (no setter)
-    moment.fn.zone = function () {
-        return this._d.getTimezoneOffset();
-    };
-
-    // CommonJS module is defined
-    if (hasModule) {
-        module.exports = moment;
-    }
-    if (typeof window !== 'undefined') {
-        window.moment = moment;
-    }
-    if (typeof define === "function" && define.amd) {
-        define("moment", [], function () {
-            return moment;
-        });
-    }
-})(Date);
-
 (function(global, _) {
 
   /* @exports namespace */
-  var DS = global.DS = {};
+  var Miso = global.Miso = {};
 
-  DS.typeOf = function( value ) {
-    var types = _.keys(DS.types),
+  Miso.typeOf = function(value, options) {
+    var types = _.keys(Miso.types),
         chosenType;
 
-    //move string to the end
+    //move string and mixed to the end
     types.push(types.splice(_.indexOf(types, 'string'), 1)[0]);
+    types.push(types.splice(_.indexOf(types, 'mixed'), 1)[0]);
 
     chosenType = _.find(types, function(type) {
-      return DS.types[type].test( value );
+      return Miso.types[type].test(value, options);
     });
 
     chosenType = _.isUndefined(chosenType) ? 'string' : chosenType;
@@ -677,7 +27,26 @@
     return chosenType;
   };
   
-  DS.types = {
+  Miso.types = {
+    
+    mixed : {
+      name : 'mixed',
+      coerce : function(v) {
+        return v;
+      },
+      test : function(v) {
+        return true;
+      },
+       compare : function(s1, s2) {
+        if (s1 < s2) { return -1; }
+        if (s1 > s2) { return 1;  }
+        return 0;
+      },
+      numeric : function(v) {
+        return _.isNaN( Number(v) ) ? 0 : Number(v);
+      }
+    },
+
     string : {
       name : "string",
       coerce : function(v) {
@@ -687,8 +56,8 @@
         return (typeof v === 'string');
       },
       compare : function(s1, s2) {
-        if (s1 < s2) {return -1;}
-        if (s1 > s2) {return 1;}
+        if (s1 < s2) { return -1; }
+        if (s1 > s2) { return 1;  }
         return 0;
       },
       // returns a raw value that can be used for computations
@@ -745,7 +114,7 @@
         return (n1 < n2 ? -1 : 1);
       },
       numeric : function(value) {
-        return value;
+        return +value;
       }
     },
 
@@ -763,7 +132,7 @@
       _regexp: function(format) {
         //memoise
         if (this._regexpTable[format]) {
-          return this._regexpTable[format];
+          return new RegExp(this._regexpTable[format], 'g');
         }
 
         //build the regexp for substitutions
@@ -772,7 +141,13 @@
           regexp = regexp.replace(pair[0], pair[1]);
         }, this);
 
-        return this._regexpTable[format] = new RegExp(regexp, 'g');
+        // escape all forward slashes
+        regexp = regexp.split("/").join("\\/");
+
+        // save the string of the regexp, NOT the regexp itself.
+        // For some reason, this resulted in inconsistant behavior
+        this._regexpTable[format] = regexp; 
+        return new RegExp(this._regexpTable[format], 'g');
       },
 
       coerce : function(v, options) {
@@ -780,7 +155,7 @@
         // if string, then parse as a time
         if (_.isString(v)) {
           var format = options.format || this.format;
-          return moment(v, format);   
+          return moment(v, options.format);   
         } else if (_.isNumber(v)) {
           return moment(v);
         } else {
@@ -789,10 +164,12 @@
 
       },
 
-      test : function(v, format) {
+      test : function(v, options) {
+        options = options || {};
         if (_.isString(v) ) {
-          format = format || this.format;
-          return this._regexp(format).test(v);
+          var format = options.format || this.format,
+              regex = this._regexp(format);
+          return regex.test(v);
         } else {
           //any number or moment obj basically
           return true;
@@ -814,7 +191,7 @@
 (function(global, _) {
 
   /* @exports namespace */
-  var DS = global.DS || (global.DS = {});
+  var Miso = global.Miso || (global.Miso = {});
 
   /**
   * A representation of an event as it is passed through the
@@ -824,14 +201,14 @@
   * @param {string} ev - Name of event
   * @param {object|array of objects} deltas - array of deltas.
   */
-  DS.Event = function(deltas) {
+  Miso.Event = function(deltas) {
     if (!_.isArray(deltas)) {
       deltas = [deltas];
     }
     this.deltas = deltas;
   };
 
-  _.extend(DS.Event.prototype, {
+  _.extend(Miso.Event.prototype, {
     affectedColumns : function() {
       var cols = [];
       
@@ -846,7 +223,7 @@
     }
   });
 
-   _.extend(DS.Event, {
+   _.extend(Miso.Event, {
     /**
     * Returns true if the event is a deletion
     */
@@ -882,12 +259,12 @@
   });
   
   /**
-  * @name DS.Events
+  * @name Miso.Events
   * - Event Related Methods
-  * @property {object} DS.Events - A module aggregating some functionality
+  * @property {object} Miso.Events - A module aggregating some functionality
   *  related to events. Will be used to extend other classes.
   */
-  DS.Events = {};
+  Miso.Events = {};
 
   /**
   * Bind callbacks to dataset events
@@ -896,7 +273,7 @@
   * @param {object} context - context for the callback. optional.
   * @returns {object} context
   */
-  DS.Events.bind = function (ev, callback, context) {
+  Miso.Events.bind = function (ev, callback, context) {
     var calls = this._callbacks || (this._callbacks = {});
     var list  = calls[ev] || (calls[ev] = {});
     var tail = list.tail || (list.tail = list.next = {});
@@ -913,7 +290,7 @@
   * @param {string} ev - event name
   * @param {function} callback - callback function to be removed
   */
-  DS.Events.unbind = function(ev, callback) {
+  Miso.Events.unbind = function(ev, callback) {
     var calls, node, prev;
     if (!ev) {
       this._callbacks = null;
@@ -939,7 +316,7 @@
   * trigger a given event
   * @param {string} eventName - name of event
   */
-  DS.Events.trigger = function(eventName) {
+  Miso.Events.trigger = function(eventName) {
     var node, calls, callback, args, ev, events = ['all', eventName];
     if (!(calls = this._callbacks)) {
       return this;
@@ -965,26 +342,121 @@
   * @param {object|array of objects} delta - change delta object.
   * @returns {object} event - Event object.
   */
-  DS.Events._buildEvent = function(delta) {
-    return new DS.Event(delta);
+  Miso.Events._buildEvent = function(delta) {
+    return new Miso.Event(delta);
+  };
+}(this, _));
+(function(global, _) {
+  
+  var Miso = global.Miso || {};
+    
+  /**
+  * This is a generic collection of dataset building utilities
+  * that are used by Miso.Dataset and Miso.View.
+  */
+  Miso.Builder = {
+
+    detectColumnType : function(column, data) {
+
+      // compute the type by assembling a sample of computed types
+      // and then squashing it to create a unique subset.
+      var type = _.inject(data.slice(0, 5), function(memo, value) {
+
+        var t = Miso.typeOf(value);
+
+        if (value !== "" && memo.indexOf(t) === -1 && !_.isNull(value)) {
+          memo.push(t);
+        }
+        return memo;
+      }, []);
+
+      // if we only have one type in our sample, save it as the type
+      if (type.length === 1) {
+        column.type = type[0];
+      } else {
+        //empty column or mixed type
+        column.type = 'mixed';
+      }
+
+      return column;
+    },
+
+    detectColumnTypes : function(dataset, parsedData) {
+
+      _.each(parsedData, function(data, columnName) {
+        
+        var column = dataset.column( columnName );
+        
+        // check if the column already has a type defined
+        if ( column.type ) { 
+          return; 
+        } else {
+          Miso.Builder.detectColumnType(column, data);
+        }
+
+      }, this);
+    },
+
+    /**
+    * Used by internal importers to cache the rows 
+    * in quick lookup tables for any id based operations.
+    * also used by views to cache the new rows they get
+    * as a result of whatever filter created them.
+    */
+    cacheRows : function(dataset) {
+
+      dataset._rowPositionById = {};
+      dataset._rowIdByPosition = [];
+
+      // cache the row id positions in both directions.
+      // iterate over the _id column and grab the row ids
+      _.each(dataset._columns[dataset._columnPositionByName._id].data, function(id, index) {
+        dataset._rowPositionById[id] = index;
+        dataset._rowIdByPosition.push(id);
+      }, dataset);  
+
+      // cache the total number of rows. There should be same 
+      // number in each column's data
+      var rowLengths = _.uniq( _.map(dataset._columns, function(column) { 
+        return column.data.length;
+      }));
+
+      if (rowLengths.length > 1) {
+        throw new Error("Row lengths need to be the same. Empty values should be set to null." + 
+          _.map(dataset._columns, function(c) { return c.data + "|||" ; }));
+      } else {
+        dataset.length = rowLengths[0];
+      }
+    },
+
+    cacheColumns : function(dataset) {
+      dataset._columnPositionByName = {};
+      _.each(dataset._columns, function(column, i) {
+        dataset._columnPositionByName[column.name] = i;
+      });
+    }
   };
 }(this, _));
 (function(global, _) {
 
-  var DS = global.DS;
+  var Miso = global.Miso;
 
-  DS.Column = function(options) {
+  Miso.Column = function(options) {
+    // copy over:
+    //   type
+    //   name
+    //   format (for "time" type)
+    //   anyOtherTypeOptions... (optional)
+    _.extend(this, options);
     this._id = options.id || _.uniqueId();
-    this.name = options.name;
-    this.type = options.type;
     this.data = options.data || [];
     return this;
   };
 
-  _.extend(DS.Column.prototype, {
+  _.extend(Miso.Column.prototype, {
 
     toNumeric : function(value, index) {
-      return DS.types[this.type].numeric(value, index);  
+      return Miso.types[this.type].numeric(value, index);  
     },
 
     numericAt : function(index) {
@@ -993,7 +465,7 @@
 
     coerce : function() {
       this.data = _.map(this.data, function(datum) {
-        return DS.types[this.type].coerce(datum, this.typeOptions);
+        return Miso.types[this.type].coerce(datum, this);
       }, this);
     },
 
@@ -1001,24 +473,38 @@
       return _.sum(this.data);
     },
 
+    mean : function() {
+      var m = 0;
+      for (var j = 0; j < this.data.length; j++) {
+        m += this.numericAt(j);
+      }
+      m /= this.data.length;
+      return Miso.types[this.type].coerce(m, this);
+    },
+
+    median : function() {
+      return Miso.types[this.type].coerce(_.median(this.data), this);
+    },
+
     max : function() {
       var max = -Infinity;
       for (var j = 0; j < this.data.length; j++) {
-        if (DS.types[this.type].compare(this.data[j], max) > 0) {
+        if (Miso.types[this.type].compare(this.data[j], max) > 0) {
           max = this.numericAt(j);
         }
       }
-      return max;
+
+      return Miso.types[this.type].coerce(max, this);
     },
 
     min : function() {
       var min = Infinity;
       for (var j = 0; j < this.data.length; j++) {
-        if (DS.types[this.type].compare(this.data[j], min) < 0) {
+        if (Miso.types[this.type].compare(this.data[j], min) < 0) {
           min = this.numericAt(j);
         }
       }
-      return min;
+      return Miso.types[this.type].coerce(min, this);
     }
   });
 
@@ -1030,7 +516,7 @@
   *   parent : parent dataset
   *   filter : filter specification TODO: document better
   */
-  DS.View = function(options) {
+  Miso.View = function(options) {
     //rowFilter, columnFilter, parent
     options = options || (options = {});
 
@@ -1043,14 +529,14 @@
     return this;
   };
 
-  _.extend(DS.View.prototype, {
+  _.extend(Miso.View.prototype, {
 
     _initialize: function(options) {
       
       // is this a syncable dataset? if so, pull
-      // required methods and mark this as a syncable dataset.
+      // required methoMiso and mark this as a syncable dataset.
       if (this.parent.syncable === true) {
-        _.extend(this, DS.Events);
+        _.extend(this, Miso.Events);
         this.syncable = true;
       }
 
@@ -1063,15 +549,8 @@
       // initialize columns.
       this._columns = this._selectData();
 
-      // pass through strict importer
-      // TODO: Need to cache all data here, so.... need to
-      // either pass through importer, or pull that out. Maybe
-      // the data caching can happen elsewhere?
-      // right now just passing through default parser.
-      var tempParser = new DS.Parsers();
-      _.extend(this, 
-        tempParser._cacheColumns(this), 
-        tempParser._cacheRows(this));
+      Miso.Builder.cacheColumns(this);
+      Miso.Builder.cacheRows(this);
 
       // bind to parent if syncable
       if (this.syncable) {
@@ -1096,7 +575,7 @@
 
         // ===== ADD NEW ROW
 
-        if (typeof rowPos === "undefined" && DS.Event.isAdd(d)) {
+        if (typeof rowPos === "undefined" && Miso.Event.isAdd(d)) {
           // this is an add event, since we couldn't find an
           // existing row to update and now need to just add a new
           // one. Use the delta's changed properties as the new row
@@ -1128,7 +607,7 @@
     
         // if this is a delete event OR the row no longer
         // passes the filter, remove it.
-        if (DS.Event.isDelete(d) || 
+        if (Miso.Event.isDelete(d) || 
             (this.filter.row && !this.filter.row(row))) {
 
           // Since this is now a delete event, we need to convert it
@@ -1166,7 +645,7 @@
       options.parent = this;
       options.filter = filter || {};
 
-      return new DS.View(options);
+      return new Miso.View(options);
     },
 
     _selectData : function() {
@@ -1273,6 +752,7 @@
     * @returns {object} column 
     */
     _column : function(name) {
+      if (_.isUndefined(this._columnPositionByName)) { return undefined; }
       var pos = this._columnPositionByName[name];
       return this._columns[pos];
     },
@@ -1282,7 +762,7 @@
     * @param {array} filter - an array of column names
     */    
     columns : function(columnsArray) {
-     return new DS.View({
+     return new Miso.View({
         filter : { columns : columnsArray },
         parent : this
       });
@@ -1294,8 +774,9 @@
     */
     columnNames : function() {
       var cols = _.pluck(this._columns, 'name');
-      cols.shift();
-      return cols;
+      return _.reject(cols, function( colName ) {
+        return colName === '_id';
+      });
     },
 
     /**
@@ -1390,6 +871,26 @@
     */
     _add : function(row, options) {
       
+      // first coerce all the values appropriatly
+      _.each(row, function(value, key) {
+        var column = this.column(key),
+            Type = Miso.types[column.type];
+
+        // test if value matches column type
+        if (Type.test(row[column.name], column.typeOptions)) {
+          
+          // if so, coerce it.
+          row[column.name] = Type.coerce(row[column.name], column.typeOptions);
+
+        } else {
+          throw("incorrect value '" + row[column.name] + 
+                "' of type " + Miso.typeOf(row[column.name], column.typeOptions) +
+                " passed to column with type " + column.type);  
+        
+        }
+      }, this);
+
+      // if we don't have a comparator, just append them at the end.
       if (_.isUndefined(this.comparator)) {
         
         // add all data
@@ -1400,7 +901,9 @@
         // add row indeces to the cache
         this._rowIdByPosition.push(row._id);
         this._rowPositionById[row._id] = this._rowIdByPosition.length;
-          
+      
+      // otherwise insert them in the right place. This is a somewhat
+      // expensive operation.    
       } else {
         
         var insertAt = function(at, value, into) {
@@ -1441,7 +944,7 @@
     * the same as where
     */    
     rows : function(filter) {
-      return new DS.View({
+      return new Miso.View({
         filter : { rows : filter },
         parent : this
       });
@@ -1542,6 +1045,13 @@
         }
       }
 
+      // check last two rows, they seem to always be off sync.
+      if (this.comparator(
+          this.rowByPosition(this.length - 2), 
+          this.rowByPosition(this.length - 1)) > 0) {
+        swap(this.length - 1,this.length - 2);
+      }
+
       if (this.syncable) {
         this.trigger("sort");  
       }
@@ -1559,7 +1069,7 @@ Version 0.0.1.2
 
 (function(global, _, moment) {
 
-  var DS = global.DS;
+  var Miso = global.Miso;
 
   /**
   * @constructor
@@ -1577,15 +1087,9 @@ Version 0.0.1.2
   *   extract : "function to apply to JSON before internal interpretation, optional"
   *   ready : the callback function to act on once the data is fetched. Isn't reuired for local imports
   *           but is required for remote url fetching.
-  *   columnNames : {
-  *     oldName : newName
-  *   },
-  *   columnTypes : {
+  *   columns: {
   *     name : typeName || { type : name, ...additionalProperties }
   *   }
-  *   google_spreadsheet: {
-  *     key : "", worksheet(optional) : ""
-  *   },
   *   sorted : true (optional) - If the dataset is already sorted, pass true
   *     so that we don't trigger a sort otherwise.
   *   comparator : function (optional) - takes two rows and returns 1, 0, or -1  if row1 is
@@ -1595,13 +1099,14 @@ Version 0.0.1.2
   }
   */
 
-  DS.Dataset = function(options) {
+  Miso.Dataset = function(options) {
     options = options || (options = {});
+    this.length = 0;
     this._initialize(options);
     return this;
   };
 
-  _.extend(DS.Dataset.prototype, DS.View.prototype, {
+  _.extend(Miso.Dataset.prototype, Miso.View.prototype, {
 
     /**
     * @private
@@ -1613,7 +1118,7 @@ Version 0.0.1.2
       // is this a syncable dataset? if so, pull
       // required methods and mark this as a syncable dataset.
       if (options.sync === true) {
-        _.extend(this, DS.Events);
+        _.extend(this, Miso.Events);
         this.syncable = true;
       }
 
@@ -1622,47 +1127,33 @@ Version 0.0.1.2
       this.importer = options.importer || null;
 
       // default parser is object parser, unless otherwise specified.
-      this.parser  = options.parser || DS.Parsers.Obj;
+      this.parser  = options.parser || Miso.Parsers.Obj;
 
       // figure out out if we need another parser.
       if (_.isUndefined(options.parser)) {
         if (options.strict) {
-          this.parser = DS.Parsers.Strict;
+          this.parser = Miso.Parsers.Strict;
         } else if (options.delimiter) {
-          this.parser = DS.Parsers.Delimited;
-        } else if (options.google_spreadsheet) {
-          this.parser = DS.Parsers.GoogleSpreadsheet;
+          this.parser = Miso.Parsers.Delimited;
         }
       }
 
-      // set up some base options for importer.
-      var importerOptions = _.extend({}, 
-        options,
-        { parser : this.parser }
-      );
-
       if (options.delimiter) {
-        importerOptions.dataType = "text";
-      }
-
-      if (options.google_spreadsheet) {
-        _.extend(importerOptions, options.google_spreadsheet);
+        options.dataType = "text";
       }
 
       // initialize the proper importer
       if (this.importer === null) {
         if (options.url) {
-          this.importer = DS.Importers.Remote;
-        } else if (options.google_spreadsheet) {
-          this.importer = DS.Importers.GoogleSpreadsheet;
-          delete options.google_spreadsheet;
+          this.importer = Miso.Importers.Remote;
         } else {
-          this.importer = DS.Importers.Local;
+          this.importer = Miso.Importers.Local;
         }
       }
 
-      // initialize actual new importer.
-      this.importer = new this.importer(importerOptions);
+      // initialize importer and parser
+      this.parser = new this.parser(options);
+      this.importer = new this.importer(options);
 
       // save comparator if we have one
       if (options.comparator) {
@@ -1674,11 +1165,26 @@ Version 0.0.1.2
         this.ready = options.ready;
       }
 
+      this._columns = [];
+      this._columnPositionByName = {};
+
+      // if there is no data and no url set, we must be building
+      // the dataset from scratch, so create an id column.
+      if (_.isUndefined(options.data) && _.isUndefined(options.url)) {
+        this._addIdColumn();  
+      }
+
       // if for any reason, you want to use a different deferred
       // implementation, pass it as an option
       if (options.deferred) {
         this.deferred = options.deferred;
       }
+
+      //build any columns present in the constructor
+      if ( options.columns ) {
+        this.addColumns(options.columns);
+      }
+
     },
 
     /**
@@ -1711,48 +1217,146 @@ Version 0.0.1.2
       
       var dfd = this.deferred || new _.Deferred();
 
-      if (this.importer !== null) {
+      if ( _.isNull(this.importer) ) {
+        throw "No importer defined";
+      }
 
-        this.importer.fetch({
-          
-          success: _.bind(function(d) {
-            _.extend(this, d);
+      this.importer.fetch({
+        success: _.bind(function( data ) {
 
-            // if a comparator was defined, sort the data
-            if (this.comparator) {
-              this.sort();
-            }
+          this.apply( data );
 
-            // call ready method
-            if (this.ready) {
-              this.ready.call(this);
-            }
+          // if a comparator was defined, sort the data
+          if (this.comparator) {
+            this.sort();
+          }
 
-            // call success method if any passed
-            if (options.success) {
-              options.success.call(this);
-            }
+          if (this.ready) {
+            this.ready.call(this);
+          }
 
-            // resolve deferred
-            dfd.resolve(this);
+          if (options.success) {
+            options.success.call(this);
+          }
 
-          }, this),
+          dfd.resolve(this);
 
-          error : _.bind(function(e) {
+        }, this),
 
-            // call error if any passed
-            if (options.error) {
-              options.error.call(this);
-            }
+        error : _.bind(function(e) {
+          if (options.error) {
+            options.error.call(this);
+          }
 
-            // reject deferred
-            dfd.reject(e);
+          dfd.reject(e);
+        }, this)
+      });
 
-          }, this)
+      return dfd.promise();
+    },
+
+    //These are the methods that will be used to determine
+    //how to update a dataset's data when fetch() is called
+    applications : {
+
+      //Update existing values, used the pass column to match 
+      //incoming data to existing rows.
+      againstColumn : function() {
+
+      },
+
+      //Always blindly add new rows
+      blind : function( data ) {
+        _.each(data, function( columnData , columnName ) {
+          var col = this._column( columnName );
+          col.data = col.data.concat( _.map(columnData, function(datum) {
+            return Miso.types[col.type].coerce(datum, col);
+          }, this) );
+        }, this);
+      }
+    },
+
+    //Takes a dataset and some data and applies one to the other
+    apply : function( data ) {
+      var parsed = this.parser.parse( data );
+
+      if ( !this.fetched ) {
+
+        this._addIdColumn( parsed.data[ parsed.columns[0] ].length );
+        this.addColumns( _.map(parsed.columns, function( name ) {
+            return { name : name };
+          })
+        );
+        
+        Miso.Builder.detectColumnTypes(this, parsed.data);
+        this.applications.blind.call( this, parsed.data );
+        Miso.Builder.cacheRows(this);
+      } else {
+        //TODO append functionality here
+        return true;//so I can keep this block and lint ewwww
+      }
+    },
+
+    addColumns : function( columns ) {
+      _.each(columns, function( column ) {
+        this.addColumn( column );
+      }, this);
+    },
+
+    addColumn : function(column) {
+      //don't create a column that already exists
+      if ( !_.isUndefined(this.column(column.name)) ) { 
+        return false; 
+      }
+
+      column = new Miso.Column( column );
+
+      this._columns.push( column );
+      this._columnPositionByName[column.name] = this._columns.length - 1;
+
+      return column;
+    },
+
+    /**
+    * Adds an id column to the column definition. If a count
+    * is provided, also generates unique ids.
+    * @param count {number} the number of ids to generate.
+    */
+    _addIdColumn : function( count ) {
+      // if we have any data, generate actual ids.
+
+      if (!_.isUndefined(this.column("_id"))) {
+        return;
+      }
+
+      var ids = [];
+      if (count && count > 0) {
+        _.times(count, function() {
+          ids.push(_.uniqueId());
         });
       }
 
-      return dfd.promise();
+      // add the id column
+      this.addColumn({ name: "_id", type : "number", data : ids });
+
+      // did we accidentally add it to the wrong place? (it should always be first.)
+      if (this._columnPositionByName._id !== 0) {
+
+        // we need to move it to the beginning and unshift all the other
+        // columns
+        var idCol = this._columns[this._columnPositionByName._id],
+            oldIdColPos = this._columnPositionByName._id;
+
+        // move col back 
+        this._columns.unshift(idCol);
+        
+        this._columnPositionByName._id = 0;
+        _.each(this._columnPositionByName, function(pos, colName) {
+          if (colName !== "_id" && this._columnPositionByName[colName] < oldIdColPos) {
+            this._columnPositionByName[colName]++;
+          }
+        }, this);
+      }
     },
 
     /**
@@ -1795,8 +1399,8 @@ Version 0.0.1.2
       });
       if (this.syncable && (!options || !options.silent)) {
         var ev = this._buildEvent( deltas );
-        this.trigger('change', ev );
         this.trigger('remove', ev );
+        this.trigger('change', ev );
       }
     },
 
@@ -1817,8 +1421,18 @@ Version 0.0.1.2
         if (filter(row)) {
           _.each(this._columns, function(c) {
             if (_.indexOf(newKeys, c.name) !== -1) {
-              if ((c.type !== 'untyped') && (c.type !== DS.typeOf(newProperties[c.name]))) {
-                throw("incorrect value '"+newProperties[c.name]+"' of type "+DS.typeOf(newProperties[c.name])+" passed to column with type "+c.type);
+
+              // test if the value passes the type test
+              var Type = Miso.types[c.type];
+              
+              if (Type) {
+                if (Miso.typeOf(newProperties[c.name], c) === c.type) {
+                  newProperties[c.name] = Type.coerce(newProperties[c.name], c);
+                } else {
+                  throw("incorrect value '" + newProperties[c.name] + 
+                        "' of type " + Miso.typeOf(newProperties[c.name], c) +
+                        " passed to column with type " + c.type);  
+                }
               }
               c.data[rowIndex] = newProperties[c.name];
             }
@@ -1830,8 +1444,8 @@ Version 0.0.1.2
 
       if (this.syncable && (!options || !options.silent)) {
         var ev = this._buildEvent( deltas );
+        this.trigger('update', ev );
         this.trigger('change', ev );
-        this.trigger('remove', ev );
       }
 
     }
@@ -1843,10 +1457,10 @@ Version 0.0.1.2
 (function(global, _) {
 
   // shorthand
-  var DS = global.DS;
-  var Product = (DS.Product || function() {
+  var Miso = global.Miso;
+  var Product = (Miso.Product || function() {
 
-    DS.Product = function(options) {
+    Miso.Product = function(options) {
       options = options || (options = {});
       
       // save column name. This will be necessary later
@@ -1867,14 +1481,14 @@ Version 0.0.1.2
         };
       }
 
-      this.value = this.func({ silent : true });
+      this.func({ silent : true });
       return this;
     };
 
-    return DS.Product;
+    return Miso.Product;
   })();
 
-  _.extend(Product.prototype, DS.Events, {
+  _.extend(Product.prototype, Miso.Events, {
 
     /**
     * @public
@@ -1882,7 +1496,7 @@ Version 0.0.1.2
     * the value based on the column its closed on.
     */
     sync : function(event) {
-      this.value = this.func();
+      this.func();
     },
 
     /**
@@ -1911,47 +1525,45 @@ Version 0.0.1.2
     }
   });
 
-  _.extend(DS.Dataset.prototype, {
+  _.extend(Miso.Dataset.prototype, {
 
-    _columnsToArray : function(columns) {
+    _findColumns : function(columns) {
+      var columnObjects = [];
+
+      // if no column names were specified, get all column names.
       if (_.isUndefined(columns)) {
         columns = this.columnNames();
       }
-      columns = _.isArray(columns) ? columns : [columns];
-      // verify this is an appropriate type for this function
-      
-      return columns;
-    },
 
-    _toColumnObjects : function(columns) {
-      var columnObjects = [];
+      // convert columns to an array in case we only got one column name.
+      columns = _.isArray(columns) ? columns : [columns];
+
+      // assemble actual column objecets together.
       _.each(columns, function(column) {
         column = this._columns[this._columnPositionByName[column]];
         columnObjects.push(column);
       }, this);
+
       return columnObjects;
     },
 
     sum : function(columns, options) {
       options = options || {};
-      columns = this._columnsToArray(columns);
-      var columnObjects = this._toColumnObjects(columns);
+      var columnObjects = this._findColumns(columns);
 
       var sumFunc = (function(columns){
         return function() {
-          var sum = 0;
-          for (var i= 0; i < columns.length; i++) {
-            sum += columns[i].sum();
-          }
-          return sum;
+          // check column types, can't sum up time.
+          _.each(columns, function(col) {
+            if (col.type === Miso.types.time.name) {
+              throw new Error("Can't sum up time");
+            }
+          });
+          return _.sum(_.map(columns, function(c) { return c.sum(); }));
         };
       }(columnObjects));
 
-      if (this.syncable) {
-        return this.calculated(columnObjects, sumFunc);
-      } else {
-        return sumFunc();
-      }
+      return this.calculated(columnObjects, sumFunc);
     },
 
     /**
@@ -1961,36 +1573,23 @@ Version 0.0.1.2
     */    
     max : function(columns, options) {
       options = options || {};
-      columns = this._columnsToArray(columns);
-      var columnObjects = this._toColumnObjects(columns);
+      var columnObjects = this._findColumns(columns);
 
       var maxFunc = (function(columns) {
         return function() {
-          var max = -Infinity, columnObject;
-          for (var i= 0; i < columns.length; i++) {
-            columnObject = columns[i];
 
-            for (var j= 0; j < columnObject.data.length; j++) {
-              if (DS.types[columnObject.type].compare(columnObject.data[j], max) > 0) {
-                max = columnObject.numericAt(j);
-              }
-            }
-          }
+          var max = _.max(_.map(columns, function(c) { return c.max(); }));
           
           // save types and type options to later coerce
-          var type = columnObject.type;
-          var typeOptions = columnObject.typeOptions;
+          var type = columns[0].type;
+          var typeOptions = columns[0].typeOptions;
 
           // return the coerced value for column type.
-          return DS.types[type].coerce(max, typeOptions);
+          return Miso.types[type].coerce(max, typeOptions);
         };
       }(columnObjects));
 
-      if (this.syncable) {
-        return this.calculated(columnObjects, maxFunc);  
-      } else {
-        return maxFunc();
-      }
+      return this.calculated(columnObjects, maxFunc);  
       
     },
 
@@ -2001,35 +1600,23 @@ Version 0.0.1.2
     */    
     min : function(columns, options) {
       options = options || {};
-      columns = this._columnsToArray(columns);
-      var columnObjects = this._toColumnObjects(columns);
+      var columnObjects = this._findColumns(columns);
       
       var minFunc = (function(columns) {
         return function() {
-          var min = Infinity, columnObject;
-          for (var i= 0; i < columns.length; i++) {
-            columnObject = columns[i];
-            for (var j= 0; j < columnObject.data.length; j++) {
-              if (DS.types[columnObject.type].compare(columnObject.data[j], min) < 0) {
-                min = columnObject.numericAt(j);
-              }
-            }
-          }
+
+          var min = _.min(_.map(columns, function(c) { return c.min(); }));
+
            // save types and type options to later coerce
-          var type = columnObject.type;
-          var typeOptions = columnObject.typeOptions;
+          var type = columns[0].type;
+          var typeOptions = columns[0].typeOptions;
 
           // return the coerced value for column type.
-          return DS.types[type].coerce(min, typeOptions);
+          return Miso.types[type].coerce(min, typeOptions);
         };
       }(columnObjects));
 
-      if (this.syncable) {
-        return this.calculated(columnObjects, minFunc);  
-      } else {
-        return minFunc();
-      }
-      
+      return this.calculated(columnObjects, minFunc); 
     },
 
     /**
@@ -2037,14 +1624,42 @@ Version 0.0.1.2
     * value of the column
     * @param {column} column on which the value is calculated 
     */    
-    mean : function(column, options) {},
+    mean : function(columns, options) {
+      options = options || {};
+      var columnObjects = this._findColumns(columns);
+
+      var meanFunc = (function(columns){
+        return function() {
+          var vals = [];
+          _.each(columns, function(col) {
+            vals.push(col.data);
+          });
+          
+          vals = _.flatten(vals);
+          
+          // save types and type options to later coerce
+          var type = columns[0].type;
+          var typeOptions = columns[0].typeOptions;
+
+          // convert the values to their appropriate numeric value
+          vals = _.map(vals, function(v) { return Miso.types[type].numeric(v); });
+
+          // return the coerced value for column type.
+          return Miso.types[type].coerce(_.mean(vals), typeOptions);   
+        };
+      }(columnObjects));
+
+      return this.calculated(columnObjects, meanFunc);
+    },
 
     /*
     * return a Product with the value of the mode
     * of the column
     * @param {column} column on which the value is calculated 
     */    
-    mode : function(column, options) {},
+    median : function(column, options) {
+
+    },
 
     /*
     * return a Product derived by running the passed function
@@ -2063,27 +1678,32 @@ Version 0.0.1.2
           // build a diff delta. We're using the column name
           // so that any subscribers know whether they need to 
           // update if they are sharing a column.
-          var delta = this._buildDelta( this.value, producer.apply(_self) );
+          var delta = this._buildDelta(this.value, producer.apply(_self));
+
+          // because below we are triggering any change subscribers to this product
+          // before actually returning the changed value
+          // let's just set it here.
+          this.value = delta.changed;
 
           if (_self.syncable) {
-            var event = this._buildEvent( "change", delta );
+            var event = this._buildEvent(delta);
 
             // trigger any subscribers this might have if the values are diff
             if (!_.isUndefined(delta.old) && !options.silent && delta.old !== delta.changed) {
               this.trigger("change", event);
             }  
           }
-
-          // return updated value
-          return delta.changed;
         }
       });
 
       // auto bind to parent dataset if its syncable
       if (this.syncable) {
-        this.bind("change", prod.sync, prod);  
+        this.bind("change", prod.sync, prod); 
+        return prod; 
+      } else {
+        return producer();
       }
-      return prod;
+      
     }
 
   });
@@ -2093,9 +1713,9 @@ Version 0.0.1.2
 
 (function(global, _) {
 
-  var DS = (global.DS = global.DS || {});
+  var Miso = (global.Miso = global.Miso || {});
 
-  _.extend(global.DS.Dataset.prototype, {
+  _.extend(global.Miso.Dataset.prototype, {
     /**
     * moving average
     * @param {column} column on which to calculate the average
@@ -2123,41 +1743,43 @@ Version 0.0.1.2
       // default method is addition
       var method = options.method || _.sum;
 
-      var d = {
-        _columns : []
-      };
+      var d = new Miso.Dataset();
 
       if (options && options.preprocess) {
-        this.preprocess = options.preprocess;  
+        d.preprocess = options.preprocess;  
       }
-
-      var parser = new DS.Parsers();
 
       // copy columns we want - just types and names. No data.
       var newCols = _.union([byColumn], columns);
+      
       _.each(newCols, function(columnName) {
-        var newColumn = d._columns.push(_.clone(
-          this._columns[this._columnPositionByName[columnName]])
-        );
 
-        d._columns[d._columns.length-1].data = [];
+        d.addColumn({
+          name : columnName,
+          type : this.column(columnName).type,
+          data : []
+        });
       }, this);
 
       // save column positions on new dataset.
-      d = parser._cacheColumns(d);
+      Miso.Builder.cacheColumns(d);
 
       // a cache of values
       var categoryPositions = {},
           categoryCount     = 0,
-          byColumnPosition  = d._columnPositionByName[byColumn];
+          byColumnPosition  = d._columnPositionByName[byColumn],
+          originalByColumn = this.column(byColumn);
 
-      // bin all values by their categories
+      // bin all values by their
       for(var i = 0; i < this.length; i++) {
         var category = null;
-        if (this.preprocess) {
-          category = this.preprocess(this._columns[this._columnPositionByName[byColumn]].data[i]);
+        
+        // compute category. If a pre-processing function was specified
+        // (for binning time for example,) run that first.
+        if (d.preprocess) {
+          category = d.preprocess(originalByColumn.data[i]);
         } else {
-          category = this._columns[this._columnPositionByName[byColumn]].data[i];  
+          category = originalByColumn.data[i];  
         }
          
         if (_.isUndefined(categoryPositions[category])) {
@@ -2169,20 +1791,22 @@ Version 0.0.1.2
           // add an empty array to all columns at that position to
           // bin the values
           _.each(columns, function(columnToGroup) {
-            var column = d._columns[d._columnPositionByName[columnToGroup]];
+            var column = d.column(columnToGroup);
+            var idCol  = d.column("_id");
             column.data[categoryCount] = [];
+            idCol.data[categoryCount] = _.uniqueId();
           });
 
           // add the actual bin number to the right col
-          d._columns[d._columnPositionByName[byColumn]].data[categoryCount] = category;
+          d.column(byColumn).data[categoryCount] = category;
 
           categoryCount++;
         }
 
         _.each(columns, function(columnToGroup) {
           
-          var column = d._columns[d._columnPositionByName[columnToGroup]],
-              value  = this._columns[this._columnPositionByName[columnToGroup]].data[i],
+          var column = d.column(columnToGroup),
+              value  = this.column(columnToGroup).data[i],
               binPosition = categoryPositions[category];
 
           column.data[binPosition].push(value);
@@ -2192,30 +1816,17 @@ Version 0.0.1.2
       // now iterate over all the bins and combine their
       // values using the supplied method. 
       _.each(columns, function(colName) {
-        var column = d._columns[d._columnPositionByName[colName]];
+        var column = d.column(colName);
         _.each(column.data, function(bin, binPos) {
           if (_.isArray(bin)) {
             column.data[binPos] = method.call(this, bin);
+            d.length++;
           }
         });
       }, this);
-    
-      // create new dataset based on this data
-      d.columns = d._columns;
-      delete d._columns;
-      var ds = new DS.Dataset({
-        data   : d,
-        strict : true
-      });
 
-      // TODO: subscribe this to parent dataset!
-      var fetcheddata = null;
-      ds.fetch({
-        success : function() {
-          fetcheddata = this;
-        }
-      });
-      return fetcheddata;
+      Miso.Builder.cacheRows(d);
+      return d;
     }
   });
 
@@ -2223,7 +1834,114 @@ Version 0.0.1.2
 
 
 (function(global, _) {
-  var DS = (global.DS || (global.DS = {}));
+  var Miso = (global.Miso || (global.Miso = {}));
+
+  Miso.Importers = function(data, options) {};
+
+  /**
+  * Simple base extract method, passing data through
+  * If your importer needs to extract the data from the
+  * returned payload before converting it to
+  * a dataset, overwrite this method to return the
+  * actual data object.
+  */
+  Miso.Importers.prototype.extract = function(data) {
+    data = _.clone(data);
+    return data;
+  };
+
+}(this, _));
+
+(function(global, _) {
+
+  var Miso = (global.Miso || (global.Miso = {}));
+
+  // ------ data parsers ---------
+  Miso.Parsers = function( options ) {
+    this.options = options || {};
+  };
+
+  _.extend(Miso.Parsers.prototype, {
+
+    //this is the main function for the parser,
+    //it must return an object with the columns names
+    //and the data in columns
+    parse : function() {},
+
+    _coerceTypes : function(d) {
+
+      // also save raw type function onto column for future computable
+      // value extraction
+      _.each(d._columns, function(column, index) {
+        column.coerce();
+      });
+      return d;
+    }
+
+  });
+}(this, _));
+
+(function(global, _) {
+  var Miso = (global.Miso || (global.Miso = {}));
+
+  /**
+  * Local data importer is responsible for just using
+  * a data object and passing it appropriately.
+  */
+  Miso.Importers.Local = function(options) {
+    options = options || {};
+
+    this.data = options.data || null;
+    this.extract = options.extract || this.extract;
+  };
+
+  _.extend(Miso.Importers.Local.prototype, Miso.Importers.prototype, {
+    fetch : function(options) {
+      var data = options.data ? options.data : this.data;
+      options.success( this.extract(data) );
+    }
+  });
+
+}(this, _));
+
+(function(global, _) {
+  var Miso = (global.Miso || (global.Miso = {}));
+
+  /**
+  * A remote importer is responsible for fetching data from a url
+  * and passing it through the right parser.
+  */
+  Miso.Importers.Remote = function(options) {
+    options = options || {};
+
+    this._url = options.url;
+    this.extract = options.extract || this.extract;
+
+    // Default ajax request parameters
+    this.params = {
+      type : "GET",
+      url : this._url,
+      dataType : options.dataType ? options.dataType : (options.jsonp ? "jsonp" : "json")
+    };
+  };
+
+  _.extend(Miso.Importers.Remote.prototype, Miso.Importers.prototype, {
+    fetch : function(options) {
+
+      // call the original fetch method of object parsing.
+      // we are assuming the parsed version of the data will
+      // be an array of objects.
+      var callback = _.bind(function(data) {
+        options.success( this.extract(data) );
+      }, this);
+
+      // make ajax call to fetch remote url.
+      Miso.Xhr(_.extend(this.params, {
+        success : callback,
+        error   : options.error
+      }));
+    }
+  });
 
   // this XHR code is from @rwldron.
   var _xhrSetup = {
@@ -2238,15 +1956,15 @@ Version 0.0.1.2
     }
   }, rparams = /\?/;
 
-  DS.Xhr = function(options) {
+  Miso.Xhr = function(options) {
 
     // json|jsonp etc.
     options.dataType = options.dataType && options.dataType.toLowerCase() || null;
 
-    if (options.dataType && 
+    if (options.dataType &&
       (options.dataType === "jsonp" || options.dataType === "script" )) {
 
-        DS.Xhr.getJSONP(
+        Miso.Xhr.getJSONP(
           options.url,
           options.success,
           options.dataType === "script",
@@ -2274,12 +1992,12 @@ Version 0.0.1.2
         settings.ajax.open(settings.type, settings.url, settings.async);
         settings.ajax.send(settings.data || null);
 
-        return DS.Xhr.httpData(settings);
+        return Miso.Xhr.httpData(settings);
       }
   };
 
-  DS.Xhr.getJSONP = function(url, success, isScript, error) {
-    // If this is a script request, ensure that we do not 
+  Miso.Xhr.getJSONP = function(url, success, isScript, error) {
+    // If this is a script request, ensure that we do not
     // call something that has already been loaded
     if (isScript) {
 
@@ -2289,16 +2007,16 @@ Version 0.0.1.2
       if (scripts.length) {
 
         //  Execute success callback and pass "exists" flag
-        if (success) { 
+        if (success) {
           success(true);
         }
 
         return;
       }
-    } 
+    }
 
-    var head    = document.head || 
-    document.getElementsByTagName("head")[0] || 
+    var head    = document.head ||
+    document.getElementsByTagName("head")[0] ||
     document.documentElement,
 
     script    = document.createElement("script"),
@@ -2329,7 +2047,7 @@ Version 0.0.1.2
 
       //  Define the JSONP success callback globally
       window[callback] = function(data) {
-        if (success) { 
+        if (success) {
           success(data);
         }
         isFired = true;
@@ -2346,7 +2064,7 @@ Version 0.0.1.2
         if (isScript) {
 
           //  getScript
-          if (success) { 
+          if (success) {
             success();
           }
         }
@@ -2364,7 +2082,7 @@ Version 0.0.1.2
     };
 
     script.onerror = function(e) {
-      if (error) { 
+      if (error) {
         error.call(null);
       }
     };
@@ -2374,7 +2092,7 @@ Version 0.0.1.2
     return;
   };
 
-  DS.Xhr.httpData = function(settings) {
+  Miso.Xhr.httpData = function(settings) {
     var data, json = null;
 
     settings.ajax.onreadystatechange = function() {
@@ -2397,7 +2115,7 @@ Version 0.0.1.2
 
         // if we got an ok response, call success, otherwise fail.
         if (/(2..)/.test(settings.ajax.status)) {
-          settings.success.call(settings.ajax, data);  
+          settings.success.call(settings.ajax, data);
         } else {
           if (settings.error) {
             settings.error.call(null, settings.ajax.statusText);
@@ -2409,226 +2127,252 @@ Version 0.0.1.2
     return data;
   };
 
-  DS.Importers = function(data, options) {};
-
-  /**
-  * Simple base parse method, passing data through
-  */
-  DS.Importers.prototype.extract = function(data) {
-    data = _.clone(data);
-    data._columns = data.columns;
-    delete data.columns;
-    return data;
-  };
-
-  /**
-  * Local data importer is responsible for just using 
-  * a data object and passing it appropriatly.
-  */
-  DS.Importers.Local = function(options) {
-    this.options = options || (options = {});
-
-    if (this.options.extract) {
-      this.extract = this.options.extract;
-    }
-    this.data = options.data;
-    this.parser = this.options.parser || DS.Importer.Obj;
-  };
-
-  _.extend(DS.Importers.Local.prototype, DS.Importers.prototype, {
-    fetch : function(options) {
-      // since this is the local importer, it just
-      // passes the data through, parsed.
-      this.data = this.extract(this.data);
-
-      // create a new parser and pass the parsed data in
-      this.parser = new this.parser(this.data, _.extend({},
-        this.options,
-        options));
-
-        var parsedData = this.parser.build();
-        options.success(parsedData);     
-    }
-  });
-
-  /**
-  * A remote importer is responsible for fetching data from a url
-  * and passing it through the right parser.
-  */
-  DS.Importers.Remote = function(options) {
-    options = options || {};
-    this._url = options.url;
-
-    if (options.extract) {
-      this.extract = options.extract;
-    }
-
-    this.parser = options.parser || DS.Parsers.Obj;
-
-    // Default ajax request parameters
-    this.params = {
-      type : "GET",
-      url : this._url,
-      dataType : options.dataType ? options.dataType : (options.jsonp ? "jsonp" : "json")
-    };
-  };
-
-  _.extend(DS.Importers.Remote.prototype, DS.Importers.prototype, {
-    fetch : function(options) {
-
-      // call the original fetch method of object parsing.
-      // we are assuming the parsed version of the data will
-      // be an array of objects.
-      var callback = _.bind(function(data) {
-        data = this.extract(data);
-
-        // create a new parser and pass the parsed data in
-        this.parser = new this.parser(data, options);
-
-        var parsedData = this.parser.build();
-        options.success(parsedData);  
-
-      }, this);
-
-      // make ajax call to fetch remote url.
-      DS.Xhr(_.extend(this.params, { 
-        success : callback,
-        error   : options.error
-      }));
-    }
-  }
-);
-
-
-
 }(this, _));
-
-// --------- Google Spreadsheet Parser -------
-// This is utilizing the format that can be obtained using this:
-// http://code.google.com/apis/gdata/samples/spreadsheet_sample.html
 
 (function(global, _) {
 
-  var DS = (global.DS || (global.DS = {}));
+  var Miso = (global.Miso || (global.Miso = {}));
+  /**
+  * @constructor
+  * Instantiates a new google spreadsheet importer.
+  * @param {object} options - Options object. Requires at the very least:
+  *     key - the google spreadsheet key
+  *     worksheet - the index of the spreadsheet to be retrieved.
+  *   OR
+  *     url - a more complex url (that may include filtering.) In this case
+  *           make sure it's returning the feed json data.
+  */
+  Miso.Importers.GoogleSpreadsheet = function(options) {
+    options = options || {};
+    if (options.url) {
 
-/**
-* @constructor
-* Google Spreadsheet Parser. 
-* Used in conjunction with the Google Spreadsheet Importer.
-* Requires the following:
-* @param {object} data - the google spreadsheet data.
-* @param {object} options - Optional options argument.
-*/
-DS.Parsers.GoogleSpreadsheet = function(data, options) {
-  this.options = options || {};
-  this._data = data;
-};
+      options.url = options.url;
 
-_.extend(DS.Parsers.GoogleSpreadsheet.prototype, DS.Parsers.prototype, {
-
-  _buildColumns : function(d, n) {
-    d._columns = [];
-
-    var positionRegex = /([A-Z]+)(\d+)/; 
-    var columnPositions = {};
-
-    _.each(this._data.feed.entry, function(cell, index) {
-
-      var parts = positionRegex.exec(cell.title.$t),
-      column = parts[1],
-      position = parseInt(parts[2], 10);
-
-      if (_.isUndefined(columnPositions[column])) {
-
-        // cache the column position
-        columnPositions[column] = d._columns.length;
-
-        // we found a new column, so build a new column type.
-        d._columns.push(this._buildColumn(cell.content.$t, null, []));
-
-      } else {
-
-        // find position: 
-        var colpos = columnPositions[column];
-
-        // this is a value for an existing column, so push it.
-        d._columns[colpos].data[position-1] = cell.content.$t; 
-      }
-    }, this);
-
-    // fill whatever empty spaces we might have in the data due to 
-    // empty cells
-    d.length = _.max(d._columns, function(column) { 
-      return column.data.length; 
-    }).data.length - 1; // for column name
-
-    _.each(d._columns, function(column, index) {
-
-      // slice off first space. It was alocated for the column name
-      // and we've moved that off.
-      column.data.splice(0,1);
-
-      for (var i = 0; i < d.length; i++) {
-        if (_.isUndefined(column.data[i]) || column.data[i] === "") {
-          column.data[i] = null;
-        }
-      }
-    });
-
-    // add row _id column. Generate auto ids if there
-    // isn't already a unique id column.
-    if (_.pluck(d._columns, "name").indexOf("_id") === -1) {
-      this._addIdColumn(d, d._columns[0].data.length);
-    }
-
-    return d;
-  }
-
-});
-
-/**
-* @constructor
-* Instantiates a new google spreadsheet importer.
-* @param {object} options - Options object. Requires at the very least:
-*     key - the google spreadsheet key
-*     worksheet - the index of the spreadsheet to be retrieved.
-*   OR
-*     url - a more complex url (that may include filtering.) In this case
-*           make sure it's returning the feed json data.
-*/
-DS.Importers.GoogleSpreadsheet = function(options) {
-  options = options || {};
-  if (options.url) {
-
-    options.url = options.url;
-
-  } else {
-
-    if (_.isUndefined(options.key)) {
-
-      throw new Error("Set options.key to point to your google document.");
     } else {
 
-      options.worksheet = options.worksheet || 1;
-      options.url = "https://spreadsheets.google.com/feeds/cells/" + options.key + "/" + options.worksheet + "/public/basic?alt=json-in-script&callback=";
-      delete options.key;
-      delete options.worksheet;
-    }
-  }
+      if (_.isUndefined(options.key)) {
 
-  this.parser = DS.Parsers.GoogleSpreadsheet;
-  this.params = {
-    type : "GET",
-    url : options.url,
-    dataType : "jsonp"
+        throw new Error("Set options 'key' properties to point to your google document.");
+      } else {
+
+        options.worksheet = options.worksheet || 1;
+        options.url = "https://spreadsheets.google.com/feeds/cells/" + 
+          options.key + "/" + 
+          options.worksheet + 
+          "/public/basic?alt=json-in-script&callback=";
+
+        delete options.key;
+        delete options.worksheet;
+      }
+    }
+    
+    this.parser = Miso.Parsers.GoogleSpreadsheet;
+    this.params = {
+      type : "GET",
+      url : options.url,
+      dataType : "jsonp"
+    };
+
+    return this;
   };
 
-  return this;
-};
+  _.extend(Miso.Importers.GoogleSpreadsheet.prototype, Miso.Importers.Remote.prototype);
 
-_.extend(
-  DS.Importers.GoogleSpreadsheet.prototype, 
-  DS.Importers.Remote.prototype);
+}(this, _));
+
+// <<<<<<< HEAD
+//   /**
+//   * @constructor
+//   * Instantiates a new google spreadsheet importer.
+//   * @param {object} options - Options object. Requires at the very least:
+//   *     key - the google spreadsheet key
+//   *     worksheet - the index of the spreadsheet to be retrieved.
+//   *   OR
+//   *     url - a more complex url (that may include filtering.) In this case
+//   *           make sure it's returning the feed json data.
+//   */
+//   Miso.Importers.GoogleSpreadsheet = function(options) {
+//     options = options || {};
+//     if (options.url) {
+
+//       options.url = options.url;
+// =======
+// /**
+// * @constructor
+// * Google Spreadsheet Parser. 
+// * Used in conjunction with the Google Spreadsheet Importer.
+// * Requires the following:
+// * @param {object} data - the google spreadsheet data.
+// * @param {object} options - Optional options argument.
+// */
+// Miso.Parsers.GoogleSpreadsheet = function(data, options) {
+//   this.options = options || {};
+//   this._data = data;
+// };
+
+// _.extend(Miso.Parsers.GoogleSpreadsheet.prototype, Miso.Parsers.prototype, {
+
+//   _buildColumns : function(d, n) {
+//     d._columns = [];
+
+//     var positionRegex = /([A-Z]+)(\d+)/; 
+//     var columnPositions = {};
+
+//     _.each(this._data.feed.entry, function(cell, index) {
+
+//       var parts = positionRegex.exec(cell.title.$t),
+//       column = parts[1],
+//       position = parseInt(parts[2], 10);
+
+//       if (_.isUndefined(columnPositions[column])) {
+// >>>>>>> master
+
+//     } else {
+
+//       if (_.isUndefined(options.key)) {
+
+//         throw new Error("Set options.key to point to your google document.");
+//       } else {
+
+//         options.worksheet = options.worksheet || 1;
+//         options.url = "https://spreadsheets.google.com/feeds/cells/" + options.key + "/" + options.worksheet + "/public/basic?alt=json-in-script&callback=";
+//         delete options.key;
+//         delete options.worksheet;
+//       }
+//     }
+
+// <<<<<<< HEAD
+//     this.parser = Miso.Parsers.GoogleSpreadsheet;
+//     this.params = {
+//       type : "GET",
+//       url : options.url,
+//       dataType : "jsonp"
+//     };
+
+//     return this;
+//   };
+
+//   _.extend(Miso.Importers.GoogleSpreadsheet.prototype, Miso.Importers.Remote.prototype);
+// =======
+//     return d;
+//   }
+
+// });
+
+// /**
+// * @constructor
+// * Instantiates a new google spreadsheet importer.
+// * @param {object} options - Options object. Requires at the very least:
+// *     key - the google spreadsheet key
+// *     worksheet - the index of the spreadsheet to be retrieved.
+// *   OR
+// *     url - a more complex url (that may include filtering.) In this case
+// *           make sure it's returning the feed json data.
+// */
+// Miso.Importers.GoogleSpreadsheet = function(options) {
+//   options = options || {};
+//   if (options.url) {
+
+//     options.url = options.url;
+
+//   } else {
+
+//     if (_.isUndefined(options.key)) {
+
+//       throw new Error("Set options.key to point to your google document.");
+//     } else {
+
+//       options.worksheet = options.worksheet || 1;
+//       options.url = "https://spreadsheets.google.com/feeds/cells/" + options.key + "/" + options.worksheet + "/public/basic?alt=json-in-script&callback=";
+//       delete options.key;
+//       delete options.worksheet;
+//     }
+//   }
+
+//   this.parser = Miso.Parsers.GoogleSpreadsheet;
+//   this.params = {
+//     type : "GET",
+//     url : options.url,
+//     dataType : "jsonp"
+//   };
+
+//   return this;
+// };
+
+// _.extend(
+//   Miso.Importers.GoogleSpreadsheet.prototype, 
+// Miso.Importers.Remote.prototype);
+// >>>>>>> master
+
+// }(this, _));
+
+(function(global, _) {
+  var Miso = (global.Miso || (global.Miso = {}));
+  // ------ Strict Parser ---------
+  /**
+  * Handles basic strict data format.
+  * TODO: add verify flag to disable auto id assignment for example.
+  */
+  Miso.Parsers.Strict = function( options ) {
+    this.options = options || {};
+  }; 
+
+  _.extend( Miso.Parsers.Strict.prototype, Miso.Parsers.prototype, {
+
+    parse : function( data ) {
+      var columnData = {}, columnNames = [];
+
+      _.each(data.columns, function(column) {
+        columnNames.push( column.name );
+        columnData[ column.name ] = column.data;
+      });
+
+      return {
+        columns : columnNames,
+        data : columnData 
+      };
+    }
+
+  });
+
+}(this, _));
+
+(function(global, _) {
+  var Miso = (global.Miso || (global.Miso = {}));
+  // -------- Object Parser -----------
+  /**
+  * Converts an array of objects to strict format.
+  * Each object is a flat json object of properties.
+  * @params {Object} obj = [{},{}...]
+  */
+  Miso.Parsers.Obj = Miso.Parsers;
+
+  _.extend(Miso.Parsers.Obj.prototype, Miso.Parsers.prototype, {
+
+    parse : function( data ) {
+      var columns = _.keys(data[0]),
+          columnData = {};
+
+      //create the empty arrays
+      _.each(columns, function( key ) {
+        columnData[ key ] = [];
+      });
+
+      // iterate over properties in each row and add them
+      // to the appropriate column data.
+      _.each(columns, function( col ) {
+        _.times(data.length, function( i ) {
+          columnData[ col ].push( data[i][col] );
+        });
+      });
+     
+      return {
+        columns : columns,
+        data : columnData 
+      };
+    }
+
+  });
 
 }(this, _));
 
@@ -2643,10 +2387,10 @@ _.extend(
 
 (function(global, _) {
 
-  var DS = (global.DS || (global.DS = {}));
+  var Miso = (global.Miso || (global.Miso = {}));
 
 
-  DS.Parsers.Delimited = function(data, options) {
+  Miso.Parsers.Delimited = function(data, options) {
     this.options = options || {};
 
     this.delimiter = this.options.delimiter || ",";
@@ -2667,7 +2411,7 @@ _.extend(
     );
   };
 
-  _.extend(DS.Parsers.Delimited.prototype, DS.Parsers.prototype, {
+  _.extend(Miso.Parsers.Delimited.prototype, Miso.Parsers.prototype, {
 
     _buildColumns : function(d, sample) {
 

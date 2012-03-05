@@ -1,7 +1,7 @@
 (function(global) {
   
   var Util  = global.Util;
-  var DS    = global.DS || {};
+  var Miso    = global.Miso || {};
 
   module("Dataset functions");
 
@@ -15,6 +15,21 @@
       equals(ds._columns[i].data.length, 4, "column length increased on "+ds._columns[i].name);
       strictEqual(ds._columns[i].data[3], null, "null added to column "+ds._columns[i].name);
     });
+  });
+
+  test("adding a row with wrong types", function() {
+    var ds = Util.baseSample();
+    raises(function() {
+      ds.add( { one: 'a', two : 5, three : [] } ); 
+      ds.add( { two : 5, three : [] } );   
+      ds.add( { three : [] } );  
+      ds.add( { one: 'a' } );
+    });
+    
+    ds.add( { one: 5 } );
+    equals(ds._columns[1].data.length, 4, "row adding to 'one'");
+    equals(ds._columns[2].data.length, 4, "row adding to 'two'");
+    equals(ds._columns[3].data.length, 4, "row adding to 'three'");
   });
 
   test("removing a row with a function", function() {

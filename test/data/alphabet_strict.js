@@ -1,4 +1,4 @@
-window.DS.alphabet_strict = { "metadata" : {"name" : "Greek Alphabet" },
+window.Miso.alphabet_strict = { "metadata" : {"name" : "Greek Alphabet" },
   "columns" : [
     {
         "name" : "character", 

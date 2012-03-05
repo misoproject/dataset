@@ -7,7 +7,7 @@ Version 0.0.1.2
 
 (function(global, _, moment) {
 
-  var DS = global.DS;
+  var Miso = global.Miso;
 
   /**
   * @constructor
@@ -37,13 +37,14 @@ Version 0.0.1.2
   }
   */
 
-  DS.Dataset = function(options) {
+  Miso.Dataset = function(options) {
     options = options || (options = {});
+    this.length = 0;
     this._initialize(options);
     return this;
   };
 
-  _.extend(DS.Dataset.prototype, DS.View.prototype, {
+  _.extend(Miso.Dataset.prototype, Miso.View.prototype, {
 
     /**
     * @private
@@ -55,7 +56,7 @@ Version 0.0.1.2
       // is this a syncable dataset? if so, pull
       // required methods and mark this as a syncable dataset.
       if (options.sync === true) {
-        _.extend(this, DS.Events);
+        _.extend(this, Miso.Events);
         this.syncable = true;
       }
 
@@ -64,14 +65,14 @@ Version 0.0.1.2
       this.importer = options.importer || null;
 
       // default parser is object parser, unless otherwise specified.
-      this.parser  = options.parser || DS.Parsers.Obj;
+      this.parser  = options.parser || Miso.Parsers.Obj;
 
       // figure out out if we need another parser.
       if (_.isUndefined(options.parser)) {
         if (options.strict) {
-          this.parser = DS.Parsers.Strict;
+          this.parser = Miso.Parsers.Strict;
         } else if (options.delimiter) {
-          this.parser = DS.Parsers.Delimited;
+          this.parser = Miso.Parsers.Delimited;
         }
       }
 
@@ -82,9 +83,9 @@ Version 0.0.1.2
       // initialize the proper importer
       if (this.importer === null) {
         if (options.url) {
-          this.importer = DS.Importers.Remote;
+          this.importer = Miso.Importers.Remote;
         } else {
-          this.importer = DS.Importers.Local;
+          this.importer = Miso.Importers.Local;
         }
       }
 
@@ -92,7 +93,6 @@ Version 0.0.1.2
       this.parser = new this.parser(options);
       this.importer = new this.importer(options);
 
-    
       // save comparator if we have one
       if (options.comparator) {
         this.comparator = options.comparator;  
@@ -106,6 +106,12 @@ Version 0.0.1.2
       this._columns = [];
       this._columnPositionByName = {};
 
+      // if there is no data and no url set, we must be building
+      // the dataset from scratch, so create an id column.
+      if (_.isUndefined(options.data) && _.isUndefined(options.url)) {
+        this._addIdColumn();  
+      }
+
       // if for any reason, you want to use a different deferred
       // implementation, pass it as an option
       if (options.deferred) {
@@ -114,7 +120,7 @@ Version 0.0.1.2
 
       //build any columns present in the constructor
       if ( options.columns ) {
-        this.addColumns( options.columns );
+        this.addColumns(options.columns);
       }
 
     },
@@ -202,7 +208,7 @@ Version 0.0.1.2
         _.each(data, function( columnData , columnName ) {
           var col = this._column( columnName );
           col.data = col.data.concat( _.map(columnData, function(datum) {
-            return DS.types[col.type].coerce(datum, col);
+            return Miso.types[col.type].coerce(datum, col);
           }, this) );
         }, this);
       }
@@ -213,48 +219,20 @@ Version 0.0.1.2
       var parsed = this.parser.parse( data );
 
       if ( !this.fetched ) {
+
+        this._addIdColumn( parsed.data[ parsed.columns[0] ].length );
         this.addColumns( _.map(parsed.columns, function( name ) {
             return { name : name };
           })
         );
-        this._addIdColumn( parsed.data[ parsed.columns[0] ].length );
-        this._detectColumnTypes( parsed.data );
+        
+        Miso.Builder.detectColumnTypes(this, parsed.data);
         this.applications.blind.call( this, parsed.data );
-        this._cacheRows();
+        Miso.Builder.cacheRows(this);
       } else {
         //TODO append functionality here
         return true;//so I can keep this block and lint ewwww
       }
-      // this._cacheRows(d);
-    },
-
-    _detectColumnTypes : function( data ) {
-      _.each(data, function( columnData, columnName ) {
-        var column = this._column( columnName );
-        // check if the column already has a type defined.
-        if ( column.type ) { return; }
-
-        // compute the type by assembling a sample of computed types
-        // and then squashing it to create a unique subset.
-        var type = _.inject(columnData.slice(0, 5), function(memo, value) {
-
-          var t = DS.typeOf(value);
-
-          if (value !== "" && memo.indexOf(t) === -1 && !_.isNull(value)) {
-            memo.push(t);
-          }
-          return memo;
-        }, []);
-
-        // if we only have one type in our sample, save it as the type
-        if (type.length === 1) {
-          column.type = type[0];
-        } else {
-          //empty column or mixed type
-          column.type = 'mixed';
-        }
-
-      }, this);
     },
 
     addColumns : function( columns ) {
@@ -265,46 +243,16 @@ Version 0.0.1.2
 
     addColumn : function(column) {
       //don't create a column that already exists
-      if ( !_.isUndefined(this._columnPositionByName[column.name]) ) { 
+      if ( !_.isUndefined(this.column(column.name)) ) { 
         return false; 
       }
 
-      column = new DS.Column( column );
+      column = new Miso.Column( column );
 
       this._columns.push( column );
       this._columnPositionByName[column.name] = this._columns.length - 1;
 
       return column;
-    },
-
-    /**
-    * Used by internal importers to cache the rows 
-    * in quick lookup tables for any id based operations.
-    */
-    _cacheRows : function() {
-
-      this._rowPositionById = {};
-      this._rowIdByPosition = [];
-
-      // cache the row id positions in both directions.
-      // iterate over the _id column and grab the row ids
-      _.each(this._columns[this._columnPositionByName._id].data, function(id, index) {
-        this._rowPositionById[id] = index;
-        this._rowIdByPosition.push(id);
-      }, this);  
-
-      // cache the total number of rows. There should be same 
-      // number in each column's data
-      var rowLengths = _.uniq( _.map(this._columns, function(column) { 
-        return column.data.length;
-      }));
-
-      if (rowLengths.length > 1) {
-        throw new Error("Row lengths need to be the same. Empty values should be set to null." + _.map(this._columns, function(c) { return c.data + "|||" ; }));
-      } else {
-        this.length = rowLengths[0];
-      }
-
     },
 
     /**
@@ -314,13 +262,39 @@ Version 0.0.1.2
     */
     _addIdColumn : function( count ) {
       // if we have any data, generate actual ids.
+
+      if (!_.isUndefined(this.column("_id"))) {
+        return;
+      }
+
       var ids = [];
       if (count && count > 0) {
         _.times(count, function() {
           ids.push(_.uniqueId());
         });
       }
+
+      // add the id column
       this.addColumn({ name: "_id", type : "number", data : ids });
+
+      // did we accidentally add it to the wrong place? (it should always be first.)
+      if (this._columnPositionByName._id !== 0) {
+
+        // we need to move it to the beginning and unshift all the other
+        // columns
+        var idCol = this._columns[this._columnPositionByName._id],
+            oldIdColPos = this._columnPositionByName._id;
+
+        // move col back 
+        this._columns.unshift(idCol);
+        
+        this._columnPositionByName._id = 0;
+        _.each(this._columnPositionByName, function(pos, colName) {
+          if (colName !== "_id" && this._columnPositionByName[colName] < oldIdColPos) {
+            this._columnPositionByName[colName]++;
+          }
+        }, this);
+      }
     },
 
     /**
@@ -363,8 +337,8 @@ Version 0.0.1.2
       });
       if (this.syncable && (!options || !options.silent)) {
         var ev = this._buildEvent( deltas );
-        this.trigger('change', ev );
         this.trigger('remove', ev );
+        this.trigger('change', ev );
       }
     },
 
@@ -385,8 +359,18 @@ Version 0.0.1.2
         if (filter(row)) {
           _.each(this._columns, function(c) {
             if (_.indexOf(newKeys, c.name) !== -1) {
-              if ((c.type !== 'untyped') && (c.type !== DS.typeOf(newProperties[c.name]))) {
-                throw("incorrect value '"+newProperties[c.name]+"' of type "+DS.typeOf(newProperties[c.name])+" passed to column with type "+c.type);
+
+              // test if the value passes the type test
+              var Type = Miso.types[c.type];
+              
+              if (Type) {
+                if (Miso.typeOf(newProperties[c.name], c) === c.type) {
+                  newProperties[c.name] = Type.coerce(newProperties[c.name], c);
+                } else {
+                  throw("incorrect value '" + newProperties[c.name] + 
+                        "' of type " + Miso.typeOf(newProperties[c.name], c) +
+                        " passed to column with type " + c.type);  
+                }
               }
               c.data[rowIndex] = newProperties[c.name];
             }
@@ -398,8 +382,8 @@ Version 0.0.1.2
 
       if (this.syncable && (!options || !options.silent)) {
         var ev = this._buildEvent( deltas );
+        this.trigger('update', ev );
         this.trigger('change', ev );
-        this.trigger('remove', ev );
       }
 
     }

@@ -14,16 +14,32 @@ config.init({
   concat : {
     'dist/miso.ds.js' : [
       '<banner>',
-      "lib/moment.js",
+      "src/types.js",
       "src/core.js",
       "src/sync.js",
+      "src/builder.js",
       "src/view.js",
       "src/dataset.js",
       "src/product.js",
       "src/derived.js",
-      "src/importers.js",
+      "src/importer.js",
+      "src/parser.js",
+      "src/importers/local.js",
+      "src/importers/remote.js",
       "src/importers/google_spreadsheet.js",
-      "src/importers/delimited.js"
+      "src/parsers/strict.js",
+      "src/parsers/object.js",
+      "src/parsers/delimited.js",
+      "src/parsers/google_spreadhsheet.js"
+    ],
+
+    'dist/miso.ds.deps.js' : [
+      '<banner>',
+      "lib/moment.js",
+      "lib/underscore.js",
+      "lib/underscore.math.js",
+      "lib/underscore.deferred.js",
+      "dist/miso.ds.js"
     ]
   },
 
@@ -31,11 +47,18 @@ config.init({
     'dist/miso.ds.min.js' : [
       '<banner>',
       'dist/miso.ds.js'
+    ],
+
+    'dist/miso.ds.deps.min.js' : [
+      '<banner>',
+      'dist/miso.ds.deps.js'
     ]
   },
 
   qunit : {
-    urls : [ 'http://localhost:9292/test/index.html' ]
+    urls : [ 
+      'http://localhost:9292/test/index.html'
+    ]
   },
 
   lint : {
@@ -102,4 +125,4 @@ config.init({
 });
 
 // Default task.
-task.registerTask('default', 'lint concat min');
+task.registerTask('default', 'lint qunit concat min');

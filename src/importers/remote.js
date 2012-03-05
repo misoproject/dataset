@@ -1,11 +1,11 @@
 (function(global, _) {
-  var DS = (global.DS || (global.DS = {}));
+  var Miso = (global.Miso || (global.Miso = {}));
 
   /**
   * A remote importer is responsible for fetching data from a url
   * and passing it through the right parser.
   */
-  DS.Importers.Remote = function(options) {
+  Miso.Importers.Remote = function(options) {
     options = options || {};
 
     this._url = options.url;
@@ -19,7 +19,7 @@
     };
   };
 
-  _.extend(DS.Importers.Remote.prototype, DS.Importers.prototype, {
+  _.extend(Miso.Importers.Remote.prototype, Miso.Importers.prototype, {
     fetch : function(options) {
 
       // call the original fetch method of object parsing.
@@ -30,7 +30,7 @@
       }, this);
 
       // make ajax call to fetch remote url.
-      DS.Xhr(_.extend(this.params, {
+      Miso.Xhr(_.extend(this.params, {
         success : callback,
         error   : options.error
       }));
@@ -50,7 +50,7 @@
     }
   }, rparams = /\?/;
 
-  DS.Xhr = function(options) {
+  Miso.Xhr = function(options) {
 
     // json|jsonp etc.
     options.dataType = options.dataType && options.dataType.toLowerCase() || null;
@@ -58,7 +58,7 @@
     if (options.dataType &&
       (options.dataType === "jsonp" || options.dataType === "script" )) {
 
-        DS.Xhr.getJSONP(
+        Miso.Xhr.getJSONP(
           options.url,
           options.success,
           options.dataType === "script",
@@ -86,11 +86,11 @@
         settings.ajax.open(settings.type, settings.url, settings.async);
         settings.ajax.send(settings.data || null);
 
-        return DS.Xhr.httpData(settings);
+        return Miso.Xhr.httpData(settings);
       }
   };
 
-  DS.Xhr.getJSONP = function(url, success, isScript, error) {
+  Miso.Xhr.getJSONP = function(url, success, isScript, error) {
     // If this is a script request, ensure that we do not
     // call something that has already been loaded
     if (isScript) {
@@ -186,7 +186,7 @@
     return;
   };
 
-  DS.Xhr.httpData = function(settings) {
+  Miso.Xhr.httpData = function(settings) {
     var data, json = null;
 
     settings.ajax.onreadystatechange = function() {
