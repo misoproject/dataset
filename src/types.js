@@ -7,8 +7,9 @@
     var types = _.keys(DS.types),
         chosenType;
 
-    //move string to the end
+    //move string and mixed to the end
     types.push(types.splice(_.indexOf(types, 'string'), 1)[0]);
+    types.push(types.splice(_.indexOf(types, 'mixed'), 1)[0]);
 
     chosenType = _.find(types, function(type) {
       return DS.types[type].test( value );
@@ -20,6 +21,24 @@
   };
   
   DS.types = {
+    mixed : {
+      name : 'mixed',
+      coerce : function(v) {
+        return v;
+      },
+      test : function(v) {
+        return true;
+      },
+       compare : function(s1, s2) {
+        if (s1 < s2) { return -1; }
+        if (s1 > s2) { return 1;  }
+        return 0;
+      },
+      numeric : function(v) {
+        return _.isNaN( Number(v) ) ? 0 : Number(v);
+      }
+    },
+
     string : {
       name : "string",
       coerce : function(v) {
@@ -29,8 +48,8 @@
         return (typeof v === 'string');
       },
       compare : function(s1, s2) {
-        if (s1 < s2) {return -1;}
-        if (s1 > s2) {return 1;}
+        if (s1 < s2) { return -1; }
+        if (s1 > s2) { return 1;  }
         return 0;
       },
       // returns a raw value that can be used for computations

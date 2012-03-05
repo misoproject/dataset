@@ -104,6 +104,9 @@ Version 0.0.1.2
         this.ready = options.ready;
       }
 
+      this._columns = [];
+      this._columnPositionByName = {};
+
       // if for any reason, you want to use a different deferred
       // implementation, pass it as an option
       if (options.deferred) {
@@ -201,8 +204,10 @@ Version 0.0.1.2
       //Always blindly add new rows
       blind : function( data ) {
         _.each(data, function( columnData , columnName ) {
-          var col = this._column( columnName )
-          col.data = col.data.concat( columnData ); 
+          var col = this._column( columnName );
+          col.data = col.data.concat( _.map(columnData, function(datum) {
+            return DS.types[col.type].coerce(datum, this.typeOptions);
+          }, this) );
         }, this);
       }
     },
@@ -212,11 +217,16 @@ Version 0.0.1.2
       parsed = this.parser.parse( data );
 
       if ( !this.fetched ) {
-        this._buildColumns( parsed.columns );
+        this._buildColumns( _.map(parsed.columns, function( name ) {
+            return { name : name };
+          })
+        );
         this._addIdColumn( parsed.data[ parsed.columns[0] ].length );
         this._detectColumnTypes( parsed.data );
         this.applications.blind.call( this, parsed.data );
+        console.log('bfcache', this);
         this._cacheRows();
+        console.log('pfcache', this);
       } else {
 
       }
@@ -240,14 +250,14 @@ Version 0.0.1.2
           }
           return memo;
         }, []);
+        console.log(columnName, type);
 
         // if we only have one type in our sample, save it as the type
         if (type.length === 1) {
           column.type = type[0];
-        } else if (type.length === 0) {
-          column.type = "number";
         } else {
-          throw new Error("This column seems to have mixed types");
+          //empty column or mixed type
+          column.type = 'mixed';
         }
 
       }, this);
@@ -255,42 +265,26 @@ Version 0.0.1.2
 
     _buildColumns : function( columns ) {
       _.each(columns, function( column ) {
-        this._buildColumn(column);
+        this._buildColumn( column );
       }, this);
     },
 
-    _buildColumn : function(name, type, data, unshift) {
-      var column, position;
-
-      //create the column array if it hasn't already
-      if ( !this._columns ) { 
-        this._columns = [];
-        this._columnPositionByName = {};
-      }
-
+    _buildColumn : function(column, unshift) {
+      console.log('ibc', column);
       //don't create a column that already exists
-      if ( this._columnPositionByName[name] ) {
-        return false;
+      if ( !_.isUndefined(this._columnPositionByName[column.name]) ) { 
+        return false; 
       }
+      console.log('bc', column);
 
-      // if all properties were passed as an object rather
-      // than separatly
-      if (_.isObject(name) && arguments.length === 1) {
-        column = new DS.Column(name);  
-
-      } else {
-        column = new DS.Column({
-          name : name,
-          type : type,
-          data : data
-        });
-      }
+      var column = new DS.Column( column );
 
       this._addColumn(column, unshift);
       return column;
     },
 
     _addColumn : function(column, unshift) {
+      var position;
       if ( unshift ) {
         this._columns.unshift( column );
         position = 0;
@@ -324,6 +318,7 @@ Version 0.0.1.2
       // cache the total number of rows. There should be same 
       // number in each column's data
       var rowLengths = _.uniq( _.map(this._columns, function(column) { 
+        console.log(column, column.data.length);
         return column.data.length;
       }));
 
@@ -348,7 +343,7 @@ Version 0.0.1.2
           ids.push(_.uniqueId());
         });
       }
-      this._buildColumn("_id", "number", ids, true)
+      this._buildColumn({ name: "_id", type : "number", data : ids }, true)
     },
 
     /**

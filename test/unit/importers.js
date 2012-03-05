@@ -76,25 +76,25 @@
         { name : 'testTwo', type: 'time' }
       ] 
     });
-    ok(ds._columns[0].name === 'testOne', 'testOne column created');
-    ok(ds._columns[1].name === 'testTwo', 'testTwo column created');
-    ok(ds._columns[1].type === 'time', 'testTwo column has time type');
+    console.log('ds!', ds);
+    ok(ds._column('testOne').name === 'testOne', 'testOne column created');
+    ok(ds._column('testTwo').name === 'testTwo', 'testTwo column created');
+    ok(ds._column('testTwo').type === 'time', 'testTwo column has time type');
   });
 
-  // test("Manual column type override", function() {
-    // var ds = new DS.Dataset({
-      // data : DS.alphabet_strict,
-      // strict: true,
-      // columnTypes : {
-        // name : 'number'
-      // }
-    // });
-    // _.when(ds.fetch()).then(function(){
-      // ok(ds._columns[2].name === "name", "character is 2 column");
-      // ok(ds._columns[2].type === "number", "character is 2 column");
-      // ok(_.uniq(ds._columns[2].data)[0] === null, "character has been coerced to null");
-    // });
-  // });
+  test("Manual column type override", function() {
+    var ds = new DS.Dataset({
+      data : DS.alphabet_strict,
+      strict : true,
+      columns : [
+        { name : 'name', type : 'number' }
+      ]
+    });
+    _.when(ds.fetch()).then(function(){
+      ok(ds._column('name').type === "number", "character is 2 column");
+      ok(_.uniq(ds._column('name').data)[0] === null, "character has been coerced to null");
+    });
+  });
 
   // test("Manual column type override", function() {
     // var data = _.clone(DS.alphabet_strict);
