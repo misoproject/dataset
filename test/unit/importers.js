@@ -20,10 +20,6 @@
       ok(i === strictData._rowPositionById[id], "row " + i + " id correctly cached");
     }
 
-    // check unique id column is first
-    ok(strictData._columns[0].name === "_id", "first column is _id.");
-    ok(strictData._columnPositionByName["_id"] === 0, "first column cached _id as 0");
-
     // verify all rows have the proper amount of data
     _.each(strictData._columns, function(column) {
       ok(column.data.length === strictData.length, "row count for column " + column.name + " is correct.");
@@ -44,19 +40,14 @@
     ok(strictData._columns.length === 5, "there are 5 columns");
 
     // check column types
-    ok(strictData._columns[0].name === "_id", "_id is 1 column");
-    ok(strictData._columns[0].type === "number", "_id is number type");
-    ok(strictData._columns[1].name === "character", "character is 2 column");
-    ok(strictData._columns[1].type === "string", "character is string type");
-    ok(strictData._columns[2].name === "name", "name is 3 column");
-    ok(strictData._columns[2].type === "string", "name is string type");
-    ok(strictData._columns[3].name === "is_modern", "is_modern is 4 column");
-    ok(strictData._columns[3].type === "boolean", "is_modern is boolean type");
-    ok(strictData._columns[4].name === "numeric_value", "numeric_value is 5 column");
-    ok(strictData._columns[4].type === "number", "numeric_value is numeric type");
+    ok(strictData._column('_id').type === "number", "_id is number type");
+    ok(strictData._column('character').type === "string", "character is string type");
+    ok(strictData._column('name').type === "string", "name is string type");
+    ok(strictData._column('is_modern').type === "boolean", "is_modern is boolean type");
+    ok(strictData._column('numeric_value').type === "number", "numeric_value is numeric type");
   }
 
-  test("Basic Strict Import through Dataset API", 54, function() {
+  test("Basic Strict Import through Dataset API", 47, function() {
     var ds = new DS.Dataset({ 
       data : DS.alphabet_strict, 
       strict: true
@@ -136,7 +127,7 @@
   });
 
   module("Obj Importer");
-  test("Convert object to dataset", 53, function() {
+  test("Convert object to dataset", 46, function() {
     var ds = new DS.Dataset({ data : DS.alphabet_obj });
     _.when(ds.fetch()).then(function(){
       verifyImport(DS.alphabet_obj, ds);
@@ -160,7 +151,7 @@
     // });
   // });
 
-  test("Basic json url fetch through Dataset API", 53, function() {
+  test("Basic json url fetch through Dataset API", 46, function() {
     var url = "data/alphabet_strict.json";
     var ds = new DS.Dataset({ 
       url : url, 
@@ -194,7 +185,7 @@
     // });
   // });
 
-  test("Basic jsonp url fetch with Dataset API", 53, function() {
+  test("Basic jsonp url fetch with Dataset API", 46, function() {
     var url = "data/alphabet_obj.json?callback=";
     var ds = new DS.Dataset({ 
       url : url, 

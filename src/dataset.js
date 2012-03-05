@@ -114,7 +114,7 @@ Version 0.0.1.2
 
       //build any columns present in the constructor
       if ( options.columns ) {
-        this._buildColumns( options.columns );
+        this.addColumns( options.columns );
       }
 
     },
@@ -213,7 +213,7 @@ Version 0.0.1.2
       var parsed = this.parser.parse( data );
 
       if ( !this.fetched ) {
-        this._buildColumns( _.map(parsed.columns, function( name ) {
+        this.addColumns( _.map(parsed.columns, function( name ) {
             return { name : name };
           })
         );
@@ -257,13 +257,13 @@ Version 0.0.1.2
       }, this);
     },
 
-    _buildColumns : function( columns ) {
+    addColumns : function( columns ) {
       _.each(columns, function( column ) {
-        this._buildColumn( column );
+        this.addColumn( column );
       }, this);
     },
 
-    _buildColumn : function(column, unshift) {
+    addColumn : function(column) {
       //don't create a column that already exists
       if ( !_.isUndefined(this._columnPositionByName[column.name]) ) { 
         return false; 
@@ -271,24 +271,10 @@ Version 0.0.1.2
 
       column = new DS.Column( column );
 
-      this._addColumn(column, unshift);
+      this._columns.push( column );
+      this._columnPositionByName[column.name] = this._columns.length - 1;
+
       return column;
-    },
-
-    _addColumn : function(column, unshift) {
-      var position;
-      if ( unshift ) {
-        this._columns.unshift( column );
-        position = 0;
-        _.each(this._columnPositionByName, function(val, key) {
-          this._columnPositionByName[key] = val+1;
-        }, this);
-
-      } else {
-        this._columns.push( column );
-        position = this._columns.length - 1;
-      }
-      this._columnPositionByName[column.name] = position;
     },
 
     /**
@@ -334,7 +320,7 @@ Version 0.0.1.2
           ids.push(_.uniqueId());
         });
       }
-      this._buildColumn({ name: "_id", type : "number", data : ids }, true);
+      this.addColumn({ name: "_id", type : "number", data : ids });
     },
 
     /**

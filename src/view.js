@@ -322,8 +322,9 @@
     */
     columnNames : function() {
       var cols = _.pluck(this._columns, 'name');
-      cols.shift();
-      return cols;
+      return _.reject(cols, function( colName ) {
+        return colName === '_id';
+      });
     },
 
     /**
