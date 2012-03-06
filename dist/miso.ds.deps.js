@@ -1,5 +1,5 @@
 /**
-* Miso.Dataset - v0.1.0 - 3/5/2012
+* Miso.Dataset - v0.1.0 - 3/6/2012
 * http://github.com/alexgraul/Dataset
 * Copyright (c) 2012 Alex Graul, Irene Ros;
 * Licensed MIT, GPL
@@ -2187,6 +2187,13 @@
 
 })(this);
 
+/**
+* Miso.Dataset - v0.1.0 - 3/6/2012
+* http://github.com/alexgraul/Dataset
+* Copyright (c) 2012 Alex Graul, Irene Ros;
+* Licensed MIT, GPL
+*/
+
 (function(global, _) {
 
   /* @exports namespace */
@@ -2196,8 +2203,9 @@
     var types = _.keys(Miso.types),
         chosenType;
 
-    //move string to the end
+    //move string and mixed to the end
     types.push(types.splice(_.indexOf(types, 'string'), 1)[0]);
+    types.push(types.splice(_.indexOf(types, 'mixed'), 1)[0]);
 
     chosenType = _.find(types, function(type) {
       return Miso.types[type].test(value, options);
@@ -2209,6 +2217,25 @@
   };
   
   Miso.types = {
+    
+    mixed : {
+      name : 'mixed',
+      coerce : function(v) {
+        return v;
+      },
+      test : function(v) {
+        return true;
+      },
+       compare : function(s1, s2) {
+        if (s1 < s2) { return -1; }
+        if (s1 > s2) { return 1;  }
+        return 0;
+      },
+      numeric : function(v) {
+        return _.isNaN( Number(v) ) ? 0 : Number(v);
+      }
+    },
+
     string : {
       name : "string",
       coerce : function(v) {
@@ -2218,8 +2245,8 @@
         return (typeof v === 'string');
       },
       compare : function(s1, s2) {
-        if (s1 < s2) {return -1;}
-        if (s1 > s2) {return 1;}
+        if (s1 < s2) { return -1; }
+        if (s1 > s2) { return 1;  }
         return 0;
       },
       // returns a raw value that can be used for computations
@@ -2509,14 +2536,108 @@
   };
 }(this, _));
 (function(global, _) {
+  
+  var Miso = global.Miso || {};
+    
+  /**
+  * This is a generic collection of dataset building utilities
+  * that are used by Miso.Dataset and Miso.View.
+  */
+  Miso.Builder = {
+
+    detectColumnType : function(column, data) {
+
+      // compute the type by assembling a sample of computed types
+      // and then squashing it to create a unique subset.
+      var type = _.inject(data.slice(0, 5), function(memo, value) {
+
+        var t = Miso.typeOf(value);
+
+        if (value !== "" && memo.indexOf(t) === -1 && !_.isNull(value)) {
+          memo.push(t);
+        }
+        return memo;
+      }, []);
+
+      // if we only have one type in our sample, save it as the type
+      if (type.length === 1) {
+        column.type = type[0];
+      } else {
+        //empty column or mixed type
+        column.type = 'mixed';
+      }
+
+      return column;
+    },
+
+    detectColumnTypes : function(dataset, parsedData) {
+
+      _.each(parsedData, function(data, columnName) {
+        
+        var column = dataset.column( columnName );
+        
+        // check if the column already has a type defined
+        if ( column.type ) { 
+          return; 
+        } else {
+          Miso.Builder.detectColumnType(column, data);
+        }
+
+      }, this);
+    },
+
+    /**
+    * Used by internal importers to cache the rows 
+    * in quick lookup tables for any id based operations.
+    * also used by views to cache the new rows they get
+    * as a result of whatever filter created them.
+    */
+    cacheRows : function(dataset) {
+
+      dataset._rowPositionById = {};
+      dataset._rowIdByPosition = [];
+
+      // cache the row id positions in both directions.
+      // iterate over the _id column and grab the row ids
+      _.each(dataset._columns[dataset._columnPositionByName._id].data, function(id, index) {
+        dataset._rowPositionById[id] = index;
+        dataset._rowIdByPosition.push(id);
+      }, dataset);  
+
+      // cache the total number of rows. There should be same 
+      // number in each column's data
+      var rowLengths = _.uniq( _.map(dataset._columns, function(column) { 
+        return column.data.length;
+      }));
+
+      if (rowLengths.length > 1) {
+        throw new Error("Row lengths need to be the same. Empty values should be set to null." + 
+          _.map(dataset._columns, function(c) { return c.data + "|||" ; }));
+      } else {
+        dataset.length = rowLengths[0];
+      }
+    },
+
+    cacheColumns : function(dataset) {
+      dataset._columnPositionByName = {};
+      _.each(dataset._columns, function(column, i) {
+        dataset._columnPositionByName[column.name] = i;
+      });
+    }
+  };
+}(this, _));
+(function(global, _) {
 
   var Miso = global.Miso;
 
   Miso.Column = function(options) {
+    // copy over:
+    //   type
+    //   name
+    //   format (for "time" type)
+    //   anyOtherTypeOptions... (optional)
+    _.extend(this, options);
     this._id = options.id || _.uniqueId();
-    this.name = options.name;
-    this.type = options.type;
-    this.typeOptions = options.typeOptions || {};
     this.data = options.data || [];
     return this;
   };
@@ -2533,7 +2654,7 @@
 
     coerce : function() {
       this.data = _.map(this.data, function(datum) {
-        return Miso.types[this.type].coerce(datum, this.typeOptions);
+        return Miso.types[this.type].coerce(datum, this);
       }, this);
     },
 
@@ -2547,11 +2668,11 @@
         m += this.numericAt(j);
       }
       m /= this.data.length;
-      return Miso.types[this.type].coerce(m, this.typeOptions);
+      return Miso.types[this.type].coerce(m, this);
     },
 
     median : function() {
-      return Miso.types[this.type].coerce(_.median(this.data), this.typeOptions);
+      return Miso.types[this.type].coerce(_.median(this.data), this);
     },
 
     max : function() {
@@ -2562,7 +2683,7 @@
         }
       }
 
-      return Miso.types[this.type].coerce(max, this.typeOptions);
+      return Miso.types[this.type].coerce(max, this);
     },
 
     min : function() {
@@ -2572,7 +2693,7 @@
           min = this.numericAt(j);
         }
       }
-      return Miso.types[this.type].coerce(min, this.typeOptions);
+      return Miso.types[this.type].coerce(min, this);
     }
   });
 
@@ -2617,15 +2738,8 @@
       // initialize columns.
       this._columns = this._selectData();
 
-      // pass through strict importer
-      // TODO: Need to cache all data here, so.... need to
-      // either pass through importer, or pull that out. Maybe
-      // the data caching can happen elsewhere?
-      // right now just passing through default parser.
-      var tempParser = new Miso.Parsers();
-      _.extend(this, 
-        tempParser._cacheColumns(this), 
-        tempParser._cacheRows(this));
+      Miso.Builder.cacheColumns(this);
+      Miso.Builder.cacheRows(this);
 
       // bind to parent if syncable
       if (this.syncable) {
@@ -2827,6 +2941,7 @@
     * @returns {object} column 
     */
     _column : function(name) {
+      if (_.isUndefined(this._columnPositionByName)) { return undefined; }
       var pos = this._columnPositionByName[name];
       return this._columns[pos];
     },
@@ -2848,8 +2963,9 @@
     */
     columnNames : function() {
       var cols = _.pluck(this._columns, 'name');
-      cols.shift();
-      return cols;
+      return _.reject(cols, function( colName ) {
+        return colName === '_id';
+      });
     },
 
     /**
@@ -3160,15 +3276,9 @@ Version 0.0.1.2
   *   extract : "function to apply to JSON before internal interpretation, optional"
   *   ready : the callback function to act on once the data is fetched. Isn't reuired for local imports
   *           but is required for remote url fetching.
-  *   columnNames : {
-  *     oldName : newName
-  *   },
-  *   columnTypes : {
+  *   columns: {
   *     name : typeName || { type : name, ...additionalProperties }
   *   }
-  *   google_spreadsheet: {
-  *     key : "", worksheet(optional) : ""
-  *   },
   *   sorted : true (optional) - If the dataset is already sorted, pass true
   *     so that we don't trigger a sort otherwise.
   *   comparator : function (optional) - takes two rows and returns 1, 0, or -1  if row1 is
@@ -3180,6 +3290,7 @@ Version 0.0.1.2
 
   Miso.Dataset = function(options) {
     options = options || (options = {});
+    this.length = 0;
     this._initialize(options);
     return this;
   };
@@ -3213,39 +3324,25 @@ Version 0.0.1.2
           this.parser = Miso.Parsers.Strict;
         } else if (options.delimiter) {
           this.parser = Miso.Parsers.Delimited;
-        } else if (options.google_spreadsheet) {
-          this.parser = Miso.Parsers.GoogleSpreadsheet;
         }
       }
 
-      // set up some base options for importer.
-      var importerOptions = _.extend({}, 
-        options,
-        { parser : this.parser }
-      );
-
       if (options.delimiter) {
-        importerOptions.dataType = "text";
-      }
-
-      if (options.google_spreadsheet) {
-        _.extend(importerOptions, options.google_spreadsheet);
+        options.dataType = "text";
       }
 
       // initialize the proper importer
       if (this.importer === null) {
         if (options.url) {
           this.importer = Miso.Importers.Remote;
-        } else if (options.google_spreadsheet) {
-          this.importer = Miso.Importers.GoogleSpreadsheet;
-          delete options.google_spreadsheet;
         } else {
           this.importer = Miso.Importers.Local;
         }
       }
 
-      // initialize actual new importer.
-      this.importer = new this.importer(importerOptions);
+      // initialize importer and parser
+      this.parser = new this.parser(options);
+      this.importer = new this.importer(options);
 
       // save comparator if we have one
       if (options.comparator) {
@@ -3257,11 +3354,26 @@ Version 0.0.1.2
         this.ready = options.ready;
       }
 
+      this._columns = [];
+      this._columnPositionByName = {};
+
+      // if there is no data and no url set, we must be building
+      // the dataset from scratch, so create an id column.
+      if (_.isUndefined(options.data) && _.isUndefined(options.url)) {
+        this._addIdColumn();  
+      }
+
       // if for any reason, you want to use a different deferred
       // implementation, pass it as an option
       if (options.deferred) {
         this.deferred = options.deferred;
       }
+
+      //build any columns present in the constructor
+      if ( options.columns ) {
+        this.addColumns(options.columns);
+      }
+
     },
 
     /**
@@ -3294,48 +3406,146 @@ Version 0.0.1.2
       
       var dfd = this.deferred || new _.Deferred();
 
-      if (this.importer !== null) {
+      if ( _.isNull(this.importer) ) {
+        throw "No importer defined";
+      }
 
-        this.importer.fetch({
-          
-          success: _.bind(function(d) {
-            _.extend(this, d);
+      this.importer.fetch({
+        success: _.bind(function( data ) {
 
-            // if a comparator was defined, sort the data
-            if (this.comparator) {
-              this.sort();
-            }
+          this.apply( data );
 
-            // call ready method
-            if (this.ready) {
-              this.ready.call(this);
-            }
+          // if a comparator was defined, sort the data
+          if (this.comparator) {
+            this.sort();
+          }
 
-            // call success method if any passed
-            if (options.success) {
-              options.success.call(this);
-            }
+          if (this.ready) {
+            this.ready.call(this);
+          }
 
-            // resolve deferred
-            dfd.resolve(this);
+          if (options.success) {
+            options.success.call(this);
+          }
 
-          }, this),
+          dfd.resolve(this);
 
-          error : _.bind(function(e) {
+        }, this),
 
-            // call error if any passed
-            if (options.error) {
-              options.error.call(this);
-            }
+        error : _.bind(function(e) {
+          if (options.error) {
+            options.error.call(this);
+          }
 
-            // reject deferred
-            dfd.reject(e);
+          dfd.reject(e);
+        }, this)
+      });
 
-          }, this)
+      return dfd.promise();
+    },
+
+    //These are the methods that will be used to determine
+    //how to update a dataset's data when fetch() is called
+    applications : {
+
+      //Update existing values, used the pass column to match 
+      //incoming data to existing rows.
+      againstColumn : function() {
+
+      },
+
+      //Always blindly add new rows
+      blind : function( data ) {
+        _.each(data, function( columnData , columnName ) {
+          var col = this._column( columnName );
+          col.data = col.data.concat( _.map(columnData, function(datum) {
+            return Miso.types[col.type].coerce(datum, col);
+          }, this) );
+        }, this);
+      }
+    },
+
+    //Takes a dataset and some data and applies one to the other
+    apply : function( data ) {
+      var parsed = this.parser.parse( data );
+
+      if ( !this.fetched ) {
+
+        this._addIdColumn( parsed.data[ parsed.columns[0] ].length );
+        this.addColumns( _.map(parsed.columns, function( name ) {
+            return { name : name };
+          })
+        );
+        
+        Miso.Builder.detectColumnTypes(this, parsed.data);
+        this.applications.blind.call( this, parsed.data );
+        Miso.Builder.cacheRows(this);
+      } else {
+        //TODO append functionality here
+        return true;//so I can keep this block and lint ewwww
+      }
+    },
+
+    addColumns : function( columns ) {
+      _.each(columns, function( column ) {
+        this.addColumn( column );
+      }, this);
+    },
+
+    addColumn : function(column) {
+      //don't create a column that already exists
+      if ( !_.isUndefined(this.column(column.name)) ) { 
+        return false; 
+      }
+
+      column = new Miso.Column( column );
+
+      this._columns.push( column );
+      this._columnPositionByName[column.name] = this._columns.length - 1;
+
+      return column;
+    },
+
+    /**
+    * Adds an id column to the column definition. If a count
+    * is provided, also generates unique ids.
+    * @param count {number} the number of ids to generate.
+    */
+    _addIdColumn : function( count ) {
+      // if we have any data, generate actual ids.
+
+      if (!_.isUndefined(this.column("_id"))) {
+        return;
+      }
+
+      var ids = [];
+      if (count && count > 0) {
+        _.times(count, function() {
+          ids.push(_.uniqueId());
         });
       }
 
-      return dfd.promise();
+      // add the id column
+      this.addColumn({ name: "_id", type : "number", data : ids });
+
+      // did we accidentally add it to the wrong place? (it should always be first.)
+      if (this._columnPositionByName._id !== 0) {
+
+        // we need to move it to the beginning and unshift all the other
+        // columns
+        var idCol = this._columns[this._columnPositionByName._id],
+            oldIdColPos = this._columnPositionByName._id;
+
+        // move col back 
+        this._columns.unshift(idCol);
+        
+        this._columnPositionByName._id = 0;
+        _.each(this._columnPositionByName, function(pos, colName) {
+          if (colName !== "_id" && this._columnPositionByName[colName] < oldIdColPos) {
+            this._columnPositionByName[colName]++;
+          }
+        }, this);
+      }
     },
 
     /**
@@ -3405,11 +3615,11 @@ Version 0.0.1.2
               var Type = Miso.types[c.type];
               
               if (Type) {
-                if (Miso.typeOf(newProperties[c.name], c.typeOptions) === c.type) {
-                  newProperties[c.name] = Type.coerce(newProperties[c.name], c.typeOptions);
+                if (Miso.typeOf(newProperties[c.name], c) === c.type) {
+                  newProperties[c.name] = Type.coerce(newProperties[c.name], c);
                 } else {
                   throw("incorrect value '" + newProperties[c.name] + 
-                        "' of type " + Miso.typeOf(newProperties[c.name], c.typeOptions) +
+                        "' of type " + Miso.typeOf(newProperties[c.name], c) +
                         " passed to column with type " + c.type);  
                 }
               }
@@ -3532,7 +3742,13 @@ Version 0.0.1.2
 
       var sumFunc = (function(columns){
         return function() {
-         return _.sum(_.map(columns, function(c) { return c.sum(); }));
+          // check column types, can't sum up time.
+          _.each(columns, function(col) {
+            if (col.type === Miso.types.time.name) {
+              throw new Error("Can't sum up time");
+            }
+          });
+          return _.sum(_.map(columns, function(c) { return c.sum(); }));
         };
       }(columnObjects));
 
@@ -3695,7 +3911,7 @@ Version 0.0.1.2
     * @param {width} direct each side to take into the average
     */
     movingAverage : function(column, width) {
-
+      
     },
 
     /**
@@ -3716,41 +3932,43 @@ Version 0.0.1.2
       // default method is addition
       var method = options.method || _.sum;
 
-      var d = {
-        _columns : []
-      };
+      var d = new Miso.Dataset();
 
       if (options && options.preprocess) {
-        this.preprocess = options.preprocess;  
+        d.preprocess = options.preprocess;  
       }
-
-      var parser = new Miso.Parsers();
 
       // copy columns we want - just types and names. No data.
       var newCols = _.union([byColumn], columns);
+      
       _.each(newCols, function(columnName) {
-        var newColumn = d._columns.push(_.clone(
-          this._columns[this._columnPositionByName[columnName]])
-        );
 
-        d._columns[d._columns.length-1].data = [];
+        d.addColumn({
+          name : columnName,
+          type : this.column(columnName).type,
+          data : []
+        });
       }, this);
 
       // save column positions on new dataset.
-      d = parser._cacheColumns(d);
+      Miso.Builder.cacheColumns(d);
 
       // a cache of values
       var categoryPositions = {},
           categoryCount     = 0,
-          byColumnPosition  = d._columnPositionByName[byColumn];
+          byColumnPosition  = d._columnPositionByName[byColumn],
+          originalByColumn = this.column(byColumn);
 
-      // bin all values by their categories
+      // bin all values by their
       for(var i = 0; i < this.length; i++) {
         var category = null;
-        if (this.preprocess) {
-          category = this.preprocess(this._columns[this._columnPositionByName[byColumn]].data[i]);
+        
+        // compute category. If a pre-processing function was specified
+        // (for binning time for example,) run that first.
+        if (d.preprocess) {
+          category = d.preprocess(originalByColumn.data[i]);
         } else {
-          category = this._columns[this._columnPositionByName[byColumn]].data[i];  
+          category = originalByColumn.data[i];  
         }
          
         if (_.isUndefined(categoryPositions[category])) {
@@ -3762,20 +3980,22 @@ Version 0.0.1.2
           // add an empty array to all columns at that position to
           // bin the values
           _.each(columns, function(columnToGroup) {
-            var column = d._columns[d._columnPositionByName[columnToGroup]];
+            var column = d.column(columnToGroup);
+            var idCol  = d.column("_id");
             column.data[categoryCount] = [];
+            idCol.data[categoryCount] = _.uniqueId();
           });
 
           // add the actual bin number to the right col
-          d._columns[d._columnPositionByName[byColumn]].data[categoryCount] = category;
+          d.column(byColumn).data[categoryCount] = category;
 
           categoryCount++;
         }
 
         _.each(columns, function(columnToGroup) {
           
-          var column = d._columns[d._columnPositionByName[columnToGroup]],
-              value  = this._columns[this._columnPositionByName[columnToGroup]].data[i],
+          var column = d.column(columnToGroup),
+              value  = this.column(columnToGroup).data[i],
               binPosition = categoryPositions[category];
 
           column.data[binPosition].push(value);
@@ -3785,30 +4005,17 @@ Version 0.0.1.2
       // now iterate over all the bins and combine their
       // values using the supplied method. 
       _.each(columns, function(colName) {
-        var column = d._columns[d._columnPositionByName[colName]];
+        var column = d.column(colName);
         _.each(column.data, function(bin, binPos) {
           if (_.isArray(bin)) {
             column.data[binPos] = method.call(this, bin);
+            d.length++;
           }
         });
       }, this);
-    
-      // create new dataset based on this data
-      d.columns = d._columns;
-      delete d._columns;
-      var ds = new Miso.Dataset({
-        data   : d,
-        strict : true
-      });
 
-      // TODO: subscribe this to parent dataset!
-      var fetcheddata = null;
-      ds.fetch({
-        success : function() {
-          fetcheddata = this;
-        }
-      });
-      return fetcheddata;
+      Miso.Builder.cacheRows(d);
+      return d;
     }
   });
 
@@ -3816,46 +4023,39 @@ Version 0.0.1.2
 
 
 (function(global, _) {
+  var Miso = (global.Miso || (global.Miso = {}));
+
+  Miso.Importers = function(data, options) {};
+
+  /**
+  * Simple base extract method, passing data through
+  * If your importer needs to extract the data from the
+  * returned payload before converting it to
+  * a dataset, overwrite this method to return the
+  * actual data object.
+  */
+  Miso.Importers.prototype.extract = function(data) {
+    data = _.clone(data);
+    return data;
+  };
+
+}(this, _));
+
+(function(global, _) {
 
   var Miso = (global.Miso || (global.Miso = {}));
 
   // ------ data parsers ---------
-  Miso.Parsers = function() {};
+  Miso.Parsers = function( options ) {
+    this.options = options || {};
+  };
 
   _.extend(Miso.Parsers.prototype, {
 
-    /**
-    * Creates an internal representation of a column based on
-    * the form expected by our strict json.
-    * @param {string} name The column name
-    * @param {string} type The type of the data in the column
-    */
-    _buildColumn : function(name, type, data) {
-      // if all properties were passed as an object rather
-      // than separatly
-      if (_.isObject(name) && arguments.length === 1) {
-        return new Miso.Column(name);  
-      } else {
-        return new Miso.Column({
-          name : name,
-          type : type,
-          data : data
-        });
-      }
-    },
-
-    build : function(options) {
-      var d = {};
-
-      this._buildColumns(d);
-      this._setTypes(d, this.options);
-      this._detectTypes(d);
-      this._coerceTypes(d);
-      this._cacheColumns(d);
-      this._cacheRows(d);
-
-      return d;
-    },
+    //this is the main function for the parser,
+    //it must return an object with the columns names
+    //and the data in columns
+    parse : function() {},
 
     _coerceTypes : function(d) {
 
@@ -3865,659 +4065,503 @@ Version 0.0.1.2
         column.coerce();
       });
       return d;
-    },
+    }
 
-    _setTypes : function(d, options) {
-      options.columnTypes = options.columnTypes || {};
-      _.each(d._columns, function(column) {
-        var type = options.columnTypes[column.name];
-        if (type) {
+  });
+}(this, _));
 
-          // if the type is specified as an object of a form such as:
-          // { type : time, format : 'YYYY/MM/DDD'}
-          // then take the type property as the type and extend the 
-          // column to add a property called
-          // typeOptions with the rest of the attributes.
-          if (_.isObject(type)) {
-            column.type = type.type;
-            delete type.type;
-            column.typeOptions = type;
-          } else {
-            column.type = type;
-          }
-        } 
-      });
-    },
+(function(global, _) {
+  var Miso = (global.Miso || (global.Miso = {}));
 
-    _addValue : function(d, columnName, value) {
-      var colPos = d._columnPositionByName[columnName];
-      d._columns[colPos].data.push(value);
-    },
+  /**
+  * Local data importer is responsible for just using
+  * a data object and passing it appropriately.
+  */
+  Miso.Importers.Local = function(options) {
+    options = options || {};
 
-    _detectTypes : function(d, n) {
+    this.data = options.data || null;
+    this.extract = options.extract || this.extract;
+  };
 
-      _.each(d._columns, function(column) {
-
-        // check if the column already has a type defined. If so, skip
-        // this auth detection phase.
-        if (_.isUndefined(column.type) || column.type === null) {
-
-          // compute the type by assembling a sample of computed types
-          // and then squashing it to create a unique subset.
-          var type = _.inject(column.data.slice(0, (n || 5)), function(memo, value) {
-
-            var t = Miso.typeOf(value);
-
-            if (value !== "" && memo.indexOf(t) === -1 && !_.isNull(value)) {
-              memo.push(t);
-            }
-            return memo;
-          }, []);
-
-          // if we only have one type in our sample, save it as the type
-          if (type.length === 1) {
-            column.type = type[0];
-          } else if (type.length === 0) {
-            // we are assuming that this is a number type because we have
-            // no values in the sample. Unfortunate.
-            column.type = "number";
-          } else {
-            throw new Error("This column seems to have mixed types");
-          }
-        }
-
-      });
-
-      return d;
-    },
-
-    /**
-    * Used by internal importers to cache the columns and their
-    * positions in a fast hash lookup.
-    * @param d {object} the data object to append cache to.
-    */
-    _cacheColumns : function(d) {
-      d._columnPositionByName = {};
-
-      // cache columns by their column names
-      // TODO: should we cache by _id?
-      _.each(d._columns, function(column, index) {
-        d._columnPositionByName[column.name] = index;
-      });
-
-      return d;
-    },
-
-    /**
-    * Used by internal importers to cache the rows 
-    * in quick lookup tables for any id based operations.
-    * @param d {object} the data object to append cache to.
-    */
-    _cacheRows : function(d) {
-
-      d._rowPositionById = {};
-      d._rowIdByPosition = [];
-
-      // cache the row id positions in both directions.
-      // iterate over the _id column and grab the row ids
-      _.each(d._columns[d._columnPositionByName._id].data, function(id, index) {
-        d._rowPositionById[id] = index;
-        d._rowIdByPosition.push(id);
-      });  
-
-      // cache the total number of rows. There should be same 
-      // number in each column's data type
-      var rowLengths = _.uniq( _.map(d._columns, function(column) { 
-        return column.data.length;
-      }));
-
-      if (rowLengths.length > 1) {
-        throw new Error("Row lengths need to be the same. Empty values should be set to null." + _.map(d._columns, function(c) { return c.data + "|||" ; }));
-      } else {
-        d.length = rowLengths[0];
-      }
-
-      return d;
-    },
-
-    /**
-    * Adds an id column to the column definition. If a count
-    * is provided, also generates unique ids.
-    * @param d {object} the data object to modify
-    * @param count {number} the number of ids to generate.
-    */
-    _addIdColumn : function(d, count) {
-      // if we have any data, generate actual ids.
-      var ids = [];
-      if (count && count > 0) {
-        _.times(count, function() {
-          ids.push(_.uniqueId());
-        });
-      }
-      d._columns.unshift(
-        this._buildColumn("_id", "number", ids)
-      );
-
-      return d;
-    },
-
-
-    /**
-    * By default we are assuming that our data is in
-    * the correct form from the fetching.
-    */
-    parse : function(data) {
-      return data;
+  _.extend(Miso.Importers.Local.prototype, Miso.Importers.prototype, {
+    fetch : function(options) {
+      var data = options.data ? options.data : this.data;
+      options.success( this.extract(data) );
     }
   });
 
+}(this, _));
+
+(function(global, _) {
+  var Miso = (global.Miso || (global.Miso = {}));
+
+  /**
+  * A remote importer is responsible for fetching data from a url
+  * and passing it through the right parser.
+  */
+  Miso.Importers.Remote = function(options) {
+    options = options || {};
+
+    this._url = options.url;
+    this.extract = options.extract || this.extract;
+
+    // Default ajax request parameters
+    this.params = {
+      type : "GET",
+      url : this._url,
+      dataType : options.dataType ? options.dataType : (options.jsonp ? "jsonp" : "json")
+    };
+  };
+
+  _.extend(Miso.Importers.Remote.prototype, Miso.Importers.prototype, {
+    fetch : function(options) {
+
+      // call the original fetch method of object parsing.
+      // we are assuming the parsed version of the data will
+      // be an array of objects.
+      var callback = _.bind(function(data) {
+        options.success( this.extract(data) );
+      }, this);
+
+      // make ajax call to fetch remote url.
+      Miso.Xhr(_.extend(this.params, {
+        success : callback,
+        error   : options.error
+      }));
+    }
+  });
+
+  // this XHR code is from @rwldron.
+  var _xhrSetup = {
+    url       : "",
+    data      : "",
+    dataType  : "",
+    success   : function() {},
+    type      : "GET",
+    async     : true,
+    xhr : function() {
+      return new global.XMLHttpRequest();
+    }
+  }, rparams = /\?/;
+
+  Miso.Xhr = function(options) {
+
+    // json|jsonp etc.
+    options.dataType = options.dataType && options.dataType.toLowerCase() || null;
+
+    if (options.dataType &&
+      (options.dataType === "jsonp" || options.dataType === "script" )) {
+
+        Miso.Xhr.getJSONP(
+          options.url,
+          options.success,
+          options.dataType === "script",
+          options.error
+        );
+
+        return;
+      }
+
+      var settings = _.extend({}, _xhrSetup, options);
+
+      // create new xhr object
+      settings.ajax = settings.xhr();
+
+      if (settings.ajax) {
+        if (settings.type === "GET" && settings.data) {
+
+          //  append query string
+          settings.url += (rparams.test(settings.url) ? "&" : "?") + settings.data;
+
+          //  Garbage collect and reset settings.data
+          settings.data = null;
+        }
+
+        settings.ajax.open(settings.type, settings.url, settings.async);
+        settings.ajax.send(settings.data || null);
+
+        return Miso.Xhr.httpData(settings);
+      }
+  };
+
+  Miso.Xhr.getJSONP = function(url, success, isScript, error) {
+    // If this is a script request, ensure that we do not
+    // call something that has already been loaded
+    if (isScript) {
+
+      var scripts = document.querySelectorAll("script[src=\"" + url + "\"]");
+
+      //  If there are scripts with this url loaded, early return
+      if (scripts.length) {
+
+        //  Execute success callback and pass "exists" flag
+        if (success) {
+          success(true);
+        }
+
+        return;
+      }
+    }
+
+    var head    = document.head ||
+    document.getElementsByTagName("head")[0] ||
+    document.documentElement,
+
+    script    = document.createElement("script"),
+    paramStr  = url.split("?")[ 1 ],
+    isFired   = false,
+    params    = [],
+    callback, parts, callparam;
+
+    // Extract params
+    if (paramStr && !isScript) {
+      params = paramStr.split("&");
+    }
+    if (params.length) {
+      parts = params[params.length - 1].split("=");
+    }
+    callback = params.length ? (parts[ 1 ] ? parts[ 1 ] : parts[ 0 ]) : "jsonp";
+
+    if (!paramStr && !isScript) {
+      url += "?callback=" + callback;
+    }
+
+    if (callback && !isScript) {
+
+      // If a callback name already exists
+      if (!!window[callback]) {
+        callback = callback + (+new Date()) + _.uniqueId();
+      }
+
+      //  Define the JSONP success callback globally
+      window[callback] = function(data) {
+        if (success) {
+          success(data);
+        }
+        isFired = true;
+      };
+
+      //  Replace callback param and callback name
+      url = url.replace(parts.join("="), parts[0] + "=" + callback);
+    }
+
+    script.onload = script.onreadystatechange = function() {
+      if (!script.readyState || /loaded|complete/.test(script.readyState)) {
+
+        //  Handling remote script loading callbacks
+        if (isScript) {
+
+          //  getScript
+          if (success) {
+            success();
+          }
+        }
+
+        //  Executing for JSONP requests
+        if (isFired) {
+
+          //  Garbage collect the callback
+          delete window[callback];
+
+          //  Garbage collect the script resource
+          head.removeChild(script);
+        }
+      }
+    };
+
+    script.onerror = function(e) {
+      if (error) {
+        error.call(null);
+      }
+    };
+
+    script.src = url;
+    head.insertBefore(script, head.firstChild);
+    return;
+  };
+
+  Miso.Xhr.httpData = function(settings) {
+    var data, json = null;
+
+    settings.ajax.onreadystatechange = function() {
+      if (settings.ajax.readyState === 4) {
+        try {
+          json = JSON.parse(settings.ajax.responseText);
+        } catch (e) {
+          // suppress
+        }
+
+        data = {
+          xml : settings.ajax.responseXML,
+          text : settings.ajax.responseText,
+          json : json
+        };
+
+        if (settings.dataType) {
+          data = data[settings.dataType];
+        }
+
+        // if we got an ok response, call success, otherwise fail.
+        if (/(2..)/.test(settings.ajax.status)) {
+          settings.success.call(settings.ajax, data);
+        } else {
+          if (settings.error) {
+            settings.error.call(null, settings.ajax.statusText);
+          }
+        }
+      }
+    };
+
+    return data;
+  };
+
+}(this, _));
+
+(function(global, _) {
+
+  var Miso = (global.Miso || (global.Miso = {}));
+  /**
+  * @constructor
+  * Instantiates a new google spreadsheet importer.
+  * @param {object} options - Options object. Requires at the very least:
+  *     key - the google spreadsheet key
+  *     worksheet - the index of the spreadsheet to be retrieved.
+  *   OR
+  *     url - a more complex url (that may include filtering.) In this case
+  *           make sure it's returning the feed json data.
+  */
+  Miso.Importers.GoogleSpreadsheet = function(options) {
+    options = options || {};
+    if (options.url) {
+
+      options.url = options.url;
+
+    } else {
+
+      if (_.isUndefined(options.key)) {
+
+        throw new Error("Set options 'key' properties to point to your google document.");
+      } else {
+
+        options.worksheet = options.worksheet || 1;
+        options.url = "https://spreadsheets.google.com/feeds/cells/" + 
+          options.key + "/" + 
+          options.worksheet + 
+          "/public/basic?alt=json-in-script&callback=";
+
+        delete options.key;
+        delete options.worksheet;
+      }
+    }
+    
+    this.parser = Miso.Parsers.GoogleSpreadsheet;
+    this.params = {
+      type : "GET",
+      url : options.url,
+      dataType : "jsonp"
+    };
+
+    return this;
+  };
+
+  _.extend(Miso.Importers.GoogleSpreadsheet.prototype, Miso.Importers.Remote.prototype);
+
+}(this, _));
+
+// <<<<<<< HEAD
+//   /**
+//   * @constructor
+//   * Instantiates a new google spreadsheet importer.
+//   * @param {object} options - Options object. Requires at the very least:
+//   *     key - the google spreadsheet key
+//   *     worksheet - the index of the spreadsheet to be retrieved.
+//   *   OR
+//   *     url - a more complex url (that may include filtering.) In this case
+//   *           make sure it's returning the feed json data.
+//   */
+//   Miso.Importers.GoogleSpreadsheet = function(options) {
+//     options = options || {};
+//     if (options.url) {
+
+//       options.url = options.url;
+// =======
+// /**
+// * @constructor
+// * Google Spreadsheet Parser. 
+// * Used in conjunction with the Google Spreadsheet Importer.
+// * Requires the following:
+// * @param {object} data - the google spreadsheet data.
+// * @param {object} options - Optional options argument.
+// */
+// Miso.Parsers.GoogleSpreadsheet = function(data, options) {
+//   this.options = options || {};
+//   this._data = data;
+// };
+
+// _.extend(Miso.Parsers.GoogleSpreadsheet.prototype, Miso.Parsers.prototype, {
+
+//   _buildColumns : function(d, n) {
+//     d._columns = [];
+
+//     var positionRegex = /([A-Z]+)(\d+)/; 
+//     var columnPositions = {};
+
+//     _.each(this._data.feed.entry, function(cell, index) {
+
+//       var parts = positionRegex.exec(cell.title.$t),
+//       column = parts[1],
+//       position = parseInt(parts[2], 10);
+
+//       if (_.isUndefined(columnPositions[column])) {
+// >>>>>>> master
+
+//     } else {
+
+//       if (_.isUndefined(options.key)) {
+
+//         throw new Error("Set options.key to point to your google document.");
+//       } else {
+
+//         options.worksheet = options.worksheet || 1;
+//         options.url = "https://spreadsheets.google.com/feeds/cells/" + options.key + "/" + options.worksheet + "/public/basic?alt=json-in-script&callback=";
+//         delete options.key;
+//         delete options.worksheet;
+//       }
+//     }
+
+// <<<<<<< HEAD
+//     this.parser = Miso.Parsers.GoogleSpreadsheet;
+//     this.params = {
+//       type : "GET",
+//       url : options.url,
+//       dataType : "jsonp"
+//     };
+
+//     return this;
+//   };
+
+//   _.extend(Miso.Importers.GoogleSpreadsheet.prototype, Miso.Importers.Remote.prototype);
+// =======
+//     return d;
+//   }
+
+// });
+
+// /**
+// * @constructor
+// * Instantiates a new google spreadsheet importer.
+// * @param {object} options - Options object. Requires at the very least:
+// *     key - the google spreadsheet key
+// *     worksheet - the index of the spreadsheet to be retrieved.
+// *   OR
+// *     url - a more complex url (that may include filtering.) In this case
+// *           make sure it's returning the feed json data.
+// */
+// Miso.Importers.GoogleSpreadsheet = function(options) {
+//   options = options || {};
+//   if (options.url) {
+
+//     options.url = options.url;
+
+//   } else {
+
+//     if (_.isUndefined(options.key)) {
+
+//       throw new Error("Set options.key to point to your google document.");
+//     } else {
+
+//       options.worksheet = options.worksheet || 1;
+//       options.url = "https://spreadsheets.google.com/feeds/cells/" + options.key + "/" + options.worksheet + "/public/basic?alt=json-in-script&callback=";
+//       delete options.key;
+//       delete options.worksheet;
+//     }
+//   }
+
+//   this.parser = Miso.Parsers.GoogleSpreadsheet;
+//   this.params = {
+//     type : "GET",
+//     url : options.url,
+//     dataType : "jsonp"
+//   };
+
+//   return this;
+// };
+
+// _.extend(
+//   Miso.Importers.GoogleSpreadsheet.prototype, 
+// Miso.Importers.Remote.prototype);
+// >>>>>>> master
+
+// }(this, _));
+
+(function(global, _) {
+  var Miso = (global.Miso || (global.Miso = {}));
   // ------ Strict Parser ---------
   /**
   * Handles basic strict data format.
   * TODO: add verify flag to disable auto id assignment for example.
   */
-  Miso.Parsers.Strict = function(data, options) {
+  Miso.Parsers.Strict = function( options ) {
     this.options = options || {};
-    this._data = this.parse(data);
-  };
+  }; 
 
-  _.extend(
-    Miso.Parsers.Strict.prototype,
-    Miso.Parsers.prototype, {
+  _.extend( Miso.Parsers.Strict.prototype, Miso.Parsers.prototype, {
 
-      _buildColumns : function(d) {
-        d._columns = [];
-        
-        _.each(this._data._columns, function(columnOpts) {
-          d._columns.push(this._buildColumn(columnOpts));
-        }, this);
+    parse : function( data ) {
+      var columnData = {}, columnNames = [];
 
-        // add row _id column. Generate auto ids if there
-        // isn't already a unique id column.
-        if (_.pluck(d._columns, "name").indexOf("_id") === -1) {
-          this._addIdColumn(d, d._columns[0].data.length);
-        }
-
-        return d;
-      }
-
-    });
-
-    // -------- Object Parser -----------
-    /**
-    * Converts an array of objects to strict format.
-    * Each object is a flat json object of properties.
-    * @params {Object} obj = [{},{}...]
-    */
-    Miso.Parsers.Obj = function(data, options) {
-      this.options = options || {};
-      this._data = data;
-    };
-
-    _.extend(
-      Miso.Parsers.Obj.prototype,
-      Miso.Parsers.prototype, {
-
-        _buildColumns : function(d, n) {
-
-          d._columns = [];
-
-          // create column container objects
-          var columnNames  = _.keys(this._data[0]);
-          _.each(columnNames, function(columnName) {
-            d._columns.push(this._buildColumn(columnName, null));
-          }, this);
-
-          // add id column
-          this._addIdColumn(d);
-
-          // cache them so we have a lookup
-          this._cacheColumns(d);
-
-          // Build rows
-          _.map(this._data, function(row) {
-
-            // iterate over properties in each row and add them
-            // to the appropriate column data.
-            _.each(row, function(value, key) {
-              this._addValue(d, key, value);
-            }, this);
-
-            // add a row id
-            this._addValue(d, "_id", _.uniqueId());
-          }, this);
-
-          return d;
-        },
-
-        build : function(options) {
-
-          var d = {};
-
-          this._buildColumns(d);
-          // column caching happens inside of build columns this time
-          // so that rows know which column their values belong to
-          // before we build the data.
-          this._setTypes(d, this.options);
-          this._detectTypes(d);
-          this._coerceTypes(d);
-          this._cacheRows(d);
-          return d;
-        }
-      }
-    );
-
-    // ---------- Data Importers -------------
-
-    // this XHR code is from @rwldron.
-    var _xhrSetup = {
-      url       : "",
-      data      : "",
-      dataType  : "",
-      success   : function() {},
-      type      : "GET",
-      async     : true,
-      xhr : function() {
-        return new global.XMLHttpRequest();
-      }
-    }, rparams = /\?/;
-
-    Miso.Xhr = function(options) {
-
-      // json|jsonp etc.
-      options.dataType = options.dataType && options.dataType.toLowerCase() || null;
-
-      if (options.dataType && 
-        (options.dataType === "jsonp" || options.dataType === "script" )) {
-
-          Miso.Xhr.getJSONP(
-            options.url,
-            options.success,
-            options.dataType === "script",
-            options.error
-          );
-
-          return;
-        }
-
-        var settings = _.extend({}, _xhrSetup, options);
-
-        // create new xhr object
-        settings.ajax = settings.xhr();
-
-        if (settings.ajax) {
-          if (settings.type === "GET" && settings.data) {
-
-            //  append query string
-            settings.url += (rparams.test(settings.url) ? "&" : "?") + settings.data;
-
-            //  Garbage collect and reset settings.data
-            settings.data = null;
-          }
-
-          settings.ajax.open(settings.type, settings.url, settings.async);
-          settings.ajax.send(settings.data || null);
-
-          return Miso.Xhr.httpData(settings);
-        }
-    };
-
-    Miso.Xhr.getJSONP = function(url, success, isScript, error) {
-      // If this is a script request, ensure that we do not 
-      // call something that has already been loaded
-      if (isScript) {
-
-        var scripts = document.querySelectorAll("script[src=\"" + url + "\"]");
-
-        //  If there are scripts with this url loaded, early return
-        if (scripts.length) {
-
-          //  Execute success callback and pass "exists" flag
-          if (success) { 
-            success(true);
-          }
-
-          return;
-        }
-      } 
-
-      var head    = document.head || 
-      document.getElementsByTagName("head")[0] || 
-      document.documentElement,
-
-      script    = document.createElement("script"),
-      paramStr  = url.split("?")[ 1 ],
-      isFired   = false,
-      params    = [],
-      callback, parts, callparam;
-
-      // Extract params
-      if (paramStr && !isScript) {
-        params = paramStr.split("&");
-      }
-      if (params.length) {
-        parts = params[params.length - 1].split("=");
-      }
-      callback = params.length ? (parts[ 1 ] ? parts[ 1 ] : parts[ 0 ]) : "jsonp";
-
-      if (!paramStr && !isScript) {
-        url += "?callback=" + callback;
-      }
-
-      if (callback && !isScript) {
-
-        // If a callback name already exists
-        if (!!window[callback]) {
-          callback = callback + (+new Date()) + _.uniqueId();
-        }
-
-        //  Define the JSONP success callback globally
-        window[callback] = function(data) {
-          if (success) { 
-            success(data);
-          }
-          isFired = true;
-        };
-
-        //  Replace callback param and callback name
-        url = url.replace(parts.join("="), parts[0] + "=" + callback);
-      }
-
-      script.onload = script.onreadystatechange = function() {
-        if (!script.readyState || /loaded|complete/.test(script.readyState)) {
-
-          //  Handling remote script loading callbacks
-          if (isScript) {
-
-            //  getScript
-            if (success) { 
-              success();
-            }
-          }
-
-          //  Executing for JSONP requests
-          if (isFired) {
-
-            //  Garbage collect the callback
-            delete window[callback];
-
-            //  Garbage collect the script resource
-            head.removeChild(script);
-          }
-        }
-      };
-
-      script.onerror = function(e) {
-        if (error) { 
-          error.call(null);
-        }
-      };
-
-      script.src = url;
-      head.insertBefore(script, head.firstChild);
-      return;
-    };
-
-    Miso.Xhr.httpData = function(settings) {
-      var data, json = null;
-
-      settings.ajax.onreadystatechange = function() {
-        if (settings.ajax.readyState === 4) {
-          try {
-            json = JSON.parse(settings.ajax.responseText);
-          } catch (e) {
-            // suppress
-          }
-
-          data = {
-            xml : settings.ajax.responseXML,
-            text : settings.ajax.responseText,
-            json : json
-          };
-
-          if (settings.dataType) {
-            data = data[settings.dataType];
-          }
-
-          // if we got an ok response, call success, otherwise fail.
-          if (/(2..)/.test(settings.ajax.status)) {
-            settings.success.call(settings.ajax, data);  
-          } else {
-            if (settings.error) {
-              settings.error.call(null, settings.ajax.statusText);
-            }
-          }
-        }
-      };
-
-      return data;
-    };
-
-    Miso.Importers = function(data, options) {};
-
-    /**
-    * Simple base parse method, passing data through
-    */
-    Miso.Importers.prototype.extract = function(data) {
-      data = _.clone(data);
-      data._columns = data.columns;
-      delete data.columns;
-      return data;
-    };
-
-    /**
-    * Local data importer is responsible for just using 
-    * a data object and passing it appropriatly.
-    */
-    Miso.Importers.Local = function(options) {
-      this.options = options || (options = {});
-
-      if (this.options.extract) {
-        this.extract = this.options.extract;
-      }
-      this.data = options.data;
-      this.parser = this.options.parser || Miso.Importer.Obj;
-    };
-
-    _.extend(
-      Miso.Importers.Local.prototype,
-      Miso.Importers.prototype, {
-        fetch : function(options) {
-          // since this is the local importer, it just
-          // passes the data through, parsed.
-          this.data = this.extract(this.data);
-
-          // create a new parser and pass the parsed data in
-          this.parser = new this.parser(this.data, _.extend({},
-            this.options,
-            options));
-
-            var parsedData = this.parser.build();
-            options.success(parsedData);     
-        }
+      _.each(data.columns, function(column) {
+        columnNames.push( column.name );
+        columnData[ column.name ] = column.data;
       });
 
-      /**
-      * A remote importer is responsible for fetching data from a url
-      * and passing it through the right parser.
-      */
-      Miso.Importers.Remote = function(options) {
-        options = options || {};
-        this._url = options.url;
-
-        if (options.extract) {
-          this.extract = options.extract;
-        }
-
-        this.parser = options.parser || Miso.Parsers.Obj;
-
-        // Default ajax request parameters
-        this.params = {
-          type : "GET",
-          url : this._url,
-          dataType : options.dataType ? options.dataType : (options.jsonp ? "jsonp" : "json")
-        };
+      return {
+        columns : columnNames,
+        data : columnData 
       };
+    }
 
-      _.extend(
-        Miso.Importers.Remote.prototype,
-        Miso.Importers.prototype,
-        {
-          fetch : function(options) {
-
-            // call the original fetch method of object parsing.
-            // we are assuming the parsed version of the data will
-            // be an array of objects.
-            var callback = _.bind(function(data) {
-              data = this.extract(data);
-
-              // create a new parser and pass the parsed data in
-              this.parser = new this.parser(data, options);
-
-              var parsedData = this.parser.build();
-              options.success(parsedData);  
-
-            }, this);
-
-            // make ajax call to fetch remote url.
-            Miso.Xhr(_.extend(this.params, { 
-              success : callback,
-              error   : options.error
-            }));
-          }
-        }
-      );
-
-
+  });
 
 }(this, _));
 
-// --------- Google Spreadsheet Parser -------
-// This is utilizing the format that can be obtained using this:
-// http://code.google.com/apis/gdata/samples/spreadsheet_sample.html
-
 (function(global, _) {
-
   var Miso = (global.Miso || (global.Miso = {}));
+  // -------- Object Parser -----------
+  /**
+  * Converts an array of objects to strict format.
+  * Each object is a flat json object of properties.
+  * @params {Object} obj = [{},{}...]
+  */
+  Miso.Parsers.Obj = Miso.Parsers;
 
-/**
-* @constructor
-* Google Spreadsheet Parser. 
-* Used in conjunction with the Google Spreadsheet Importer.
-* Requires the following:
-* @param {object} data - the google spreadsheet data.
-* @param {object} options - Optional options argument.
-*/
-Miso.Parsers.GoogleSpreadsheet = function(data, options) {
-  this.options = options || {};
-  this._data = data;
-};
+  _.extend(Miso.Parsers.Obj.prototype, Miso.Parsers.prototype, {
 
-_.extend(Miso.Parsers.GoogleSpreadsheet.prototype, Miso.Parsers.prototype, {
+    parse : function( data ) {
+      var columns = _.keys(data[0]),
+          columnData = {};
 
-  _buildColumns : function(d, n) {
-    d._columns = [];
+      //create the empty arrays
+      _.each(columns, function( key ) {
+        columnData[ key ] = [];
+      });
 
-    var positionRegex = /([A-Z]+)(\d+)/; 
-    var columnPositions = {};
-
-    _.each(this._data.feed.entry, function(cell, index) {
-
-      var parts = positionRegex.exec(cell.title.$t),
-      column = parts[1],
-      position = parseInt(parts[2], 10);
-
-      if (_.isUndefined(columnPositions[column])) {
-
-        // cache the column position
-        columnPositions[column] = d._columns.length;
-
-        // we found a new column, so build a new column type.
-        d._columns.push(this._buildColumn(cell.content.$t, null, []));
-
-      } else {
-
-        // find position: 
-        var colpos = columnPositions[column];
-
-        // this is a value for an existing column, so push it.
-        d._columns[colpos].data[position-1] = cell.content.$t; 
-      }
-    }, this);
-
-    // fill whatever empty spaces we might have in the data due to 
-    // empty cells
-    d.length = _.max(d._columns, function(column) { 
-      return column.data.length; 
-    }).data.length - 1; // for column name
-
-    _.each(d._columns, function(column, index) {
-
-      // slice off first space. It was alocated for the column name
-      // and we've moved that off.
-      column.data.splice(0,1);
-
-      for (var i = 0; i < d.length; i++) {
-        if (_.isUndefined(column.data[i]) || column.data[i] === "") {
-          column.data[i] = null;
-        }
-      }
-    });
-
-    // add row _id column. Generate auto ids if there
-    // isn't already a unique id column.
-    if (_.pluck(d._columns, "name").indexOf("_id") === -1) {
-      this._addIdColumn(d, d._columns[0].data.length);
+      // iterate over properties in each row and add them
+      // to the appropriate column data.
+      _.each(columns, function( col ) {
+        _.times(data.length, function( i ) {
+          columnData[ col ].push( data[i][col] );
+        });
+      });
+     
+      return {
+        columns : columns,
+        data : columnData 
+      };
     }
 
-    return d;
-  }
-
-});
-
-/**
-* @constructor
-* Instantiates a new google spreadsheet importer.
-* @param {object} options - Options object. Requires at the very least:
-*     key - the google spreadsheet key
-*     worksheet - the index of the spreadsheet to be retrieved.
-*   OR
-*     url - a more complex url (that may include filtering.) In this case
-*           make sure it's returning the feed json data.
-*/
-Miso.Importers.GoogleSpreadsheet = function(options) {
-  options = options || {};
-  if (options.url) {
-
-    options.url = options.url;
-
-  } else {
-
-    if (_.isUndefined(options.key)) {
-
-      throw new Error("Set options.key to point to your google document.");
-    } else {
-
-      options.worksheet = options.worksheet || 1;
-      options.url = "https://spreadsheets.google.com/feeds/cells/" + options.key + "/" + options.worksheet + "/public/basic?alt=json-in-script&callback=";
-      delete options.key;
-      delete options.worksheet;
-    }
-  }
-
-  this.parser = Miso.Parsers.GoogleSpreadsheet;
-  this.params = {
-    type : "GET",
-    url : options.url,
-    dataType : "jsonp"
-  };
-
-  return this;
-};
-
-_.extend(
-  Miso.Importers.GoogleSpreadsheet.prototype, 
-Miso.Importers.Remote.prototype);
+  });
 
 }(this, _));
 

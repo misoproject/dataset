@@ -136,19 +136,19 @@
 
   // module("Remote Importer");
   // test("Basic json url fetch", 53, function() {
-    // var url = "data/alphabet_strict.json";
-    // var importer = new Miso.Importers.Remote({
-      // url : url,
-      // parser : Miso.Parsers.Strict,
-      // jsonp : false
-    // });
-    // stop();
-    // var data = importer.fetch({
-      // success: function(strictData) {
-        // verifyImport({}, strictData);
-        // start();
-      // }
-    // });
+  //   var url = "data/alphabet_strict.json";
+  //   var importer = new Miso.Importers.Remote({
+  //     url : url,
+  //     parser : Miso.Parsers.Strict,
+  //     jsonp : false
+  //   });
+  //   stop();
+  //   var data = importer.fetch({
+  //     success: function(strictData) {
+  //       verifyImport({}, strictData);
+  //       start();
+  //     }
+  //   });
   // });
 
   test("Basic json url fetch through Dataset API", 46, function() {
@@ -270,75 +270,42 @@
     // });
   // });
 
-  // module("Google Spreadsheet Support");
-  // function verifyGoogleSpreadsheet(d, obj) {
+  module("Google Spreadsheet Support");
+  function verifyGoogleSpreadsheet(d, obj) {
 
-    // ok(_.isEqual(
-      // _.keys(d._columnPositionByName), 
-      // _.keys(obj._columnPositionByName)
-    // ));
-    // ok(_.isEqual(
-      // d._rowIdByPosition.length, 
-      // obj._rowIdByPosition.length)
-    // );
+    ok(_.isEqual(
+      _.keys(d._columnPositionByName), 
+      _.keys(obj._columnPositionByName)
+    ));
+    ok(_.isEqual(
+      d._rowIdByPosition.length, 
+      obj._rowIdByPosition.length)
+    );
 
-    // // ignoring id column, since that changes.
-    // for(var i = 1; i < d.length; i++) {
-      // ok(_.isEqual(d._columns[i].data, obj._columns[i].data), "Expected: "+d._columns[i].data + " Got: " + window.Miso.google_spreadsheet_strict._columns[i].data);
-    // }
-  // }
+    // ignoring id column, since that changes.
+    for(var i = 1; i < d.length; i++) {
+      ok(_.isEqual(d._columns[i].data, obj._columns[i].data), "Expected: "+d._columns[i].data + " Got: " + window.Miso.google_spreadsheet_strict._columns[i].data);
+    }
+  }
 
-  // test("Google spreadsheet parse test", function() {
+  test("Google spreadsheet dataset test", function() {
     
-    // $.ajax({
-      // url : "https://spreadsheets.google.com/feeds/cells/0Asnl0xYK7V16dFpFVmZUUy1taXdFbUJGdGtVdFBXbFE/1/public/basic?alt=json-in-script",
-      // dataType: "jsonp",
-      // success: function(data) {
-        // var parser = new Miso.Parsers.GoogleSpreadsheet(data);
-        // var strictData = parser.build();
-        // verifyGoogleSpreadsheet(strictData, window.Miso.google_spreadsheet_strict);
-        // start();
-      // }
-    // });
-    // stop();
-  // });
+    var key = "0Asnl0xYK7V16dFpFVmZUUy1taXdFbUJGdGtVdFBXbFE";
+    var worksheet = "1";
 
-  // test("Google spreadsheet import test", function() {
-
-    
-    // var importer = new Miso.Importers.GoogleSpreadsheet({
-      // key : "0Asnl0xYK7V16dFpFVmZUUy1taXdFbUJGdGtVdFBXbFE",
-      // worksheet : "1"
-    // });
-
-    // importer.fetch({
-      // success : function(data) {
-        // verifyGoogleSpreadsheet(data, window.Miso.google_spreadsheet_strict);
-        // start();
-      // }
-    // });
-    // stop();
-  // });
-
-
-  // test("Google spreadsheet dataset test", function() {
-    
-    // var key = "0Asnl0xYK7V16dFpFVmZUUy1taXdFbUJGdGtVdFBXbFE";
-    // var worksheet = "1";
-
-    // var ds = new Miso.Dataset({
-      // google_spreadsheet : {
-        // key : key,
-        // worksheet: worksheet
-      // },
-      // ready : function() {
-        // verifyGoogleSpreadsheet(this, window.Miso.google_spreadsheet_strict);
-        // start();
-      // }
-    // });
-    // ds.fetch();
-    // stop();
-  // });
+    var ds = new Miso.Dataset({
+      importer: Miso.Importers.GoogleSpreadsheet,
+      parser : Miso.Parsers.GoogleSpreadsheet,
+      key : key,
+      worksheet: worksheet,
+      ready : function() {
+        verifyGoogleSpreadsheet(this, window.Miso.google_spreadsheet_strict);
+        start();
+      }
+    });
+    ds.fetch();
+    stop();
+  });
 
 }(this));
 

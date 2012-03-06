@@ -1,5 +1,5 @@
 /**
-* Miso.Dataset - v0.1.0 - 3/5/2012
+* Miso.Dataset - v0.1.0 - 3/6/2012
 * http://github.com/alexgraul/Dataset
 * Copyright (c) 2012 Alex Graul, Irene Ros;
 * Licensed MIT, GPL
@@ -1722,7 +1722,7 @@ Version 0.0.1.2
     * @param {width} direct each side to take into the average
     */
     movingAverage : function(column, width) {
-
+      
     },
 
     /**

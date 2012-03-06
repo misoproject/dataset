@@ -21,13 +21,14 @@
 
   _.extend(Miso.Parsers.GoogleSpreadsheet.prototype, Miso.Parsers.prototype, {
 
-    _buildColumns : function(d, n) {
-      d._columns = [];
+    parse : function(data) {
+      var columns = [],
+          columnData = [];
 
       var positionRegex = /([A-Z]+)(\d+)/; 
       var columnPositions = {};
 
-      _.each(this._data.feed.entry, function(cell, index) {
+      _.each(data.feed.entry, function(cell, index) {
 
         var parts = positionRegex.exec(cell.title.$t),
         column = parts[1],
@@ -36,10 +37,11 @@
         if (_.isUndefined(columnPositions[column])) {
 
           // cache the column position
-          columnPositions[column] = d._columns.length;
+          columnPositions[column] = columnData.length;
 
           // we found a new column, so build a new column type.
-          d._columns.push(this._buildColumn(cell.content.$t, null, []));
+          columns[columnPositions[column]]    = cell.content.$t;
+          columnData[columnPositions[column]] = [];
 
         } else {
 
@@ -47,36 +49,35 @@
           var colpos = columnPositions[column];
 
           // this is a value for an existing column, so push it.
-          d._columns[colpos].data[position-1] = cell.content.$t; 
+          columnData[colpos][position-1] = cell.content.$t; 
         }
       }, this);
 
       // fill whatever empty spaces we might have in the data due to 
       // empty cells
-      d.length = _.max(d._columns, function(column) { 
-        return column.data.length; 
-      }).data.length - 1; // for column name
+      columnData.length = _.max(_.pluck(columnData, "length")) - 1; // for column name
 
-      _.each(d._columns, function(column, index) {
+      var keyedData = {};
+
+      _.each(columnData, function(coldata, column) {
 
         // slice off first space. It was alocated for the column name
         // and we've moved that off.
-        column.data.splice(0,1);
+        coldata.splice(0,1);
 
-        for (var i = 0; i < d.length; i++) {
-          if (_.isUndefined(column.data[i]) || column.data[i] === "") {
-            column.data[i] = null;
+        for (var i = 0; i < coldata.length; i++) {
+          if (_.isUndefined(coldata[i]) || coldata[i] === "") {
+            coldata[i] = null;
           }
         }
+
+        keyedData[columns[column]] = coldata;
       });
 
-      // add row _id column. Generate auto ids if there
-      // isn't already a unique id column.
-      if (_.pluck(d._columns, "name").indexOf("_id") === -1) {
-        this._addIdColumn(d, d._columns[0].data.length);
-      }
-
-      return d;
+      return {
+        columns : columns,
+        data : keyedData
+      };
     }
 
   });
