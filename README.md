@@ -120,19 +120,20 @@ var ds = new DS.Dataset({
 If you have a **published** Google Spreadsheet that you would like to import data from, you can do so with the following format:
 
 ```javascript
-var ds = new DS.Dataset({
-  google_spreadsheet : {
-    key : "0Asnl0xYK7V16dFpFVmZUUy1taXdFbUJGdGtVdFBXbFE",
-    worksheet: "1"
-  }
+var ds = new Miso.Dataset({
+  importer: Miso.Importers.GoogleSpreadsheet,
+  parser : Miso.Parsers.GoogleSpreadsheet,
+  key : "0Asnl0xYK7V16dFpFVmZUUy1taXdFbUJGdGtVdFBXbFE",
+  worksheet: "1"
 });
 ```
+
 The google spreadsheet importer is utilizing the format specified here:
 [http://code.google.com/apis/gdata/samples/spreadsheet_sample.html](http://code.google.com/apis/gdata/samples/spreadsheet_sample.html)
 
 ### Custom Importers
 
-The import system can also easily be extended for custom data formats and other APIs. See the "Write Your Own Importers" section for more information.
+You may have noticed how easy it is to set a custom importer and parser in the dataset constructor by specifying the `importer` and `parser` properties. The import system can also easily be extended for custom data formats and other APIs. See the "Write Your Own Importers & Parsers" section for more information.
 
 ## Fetching the Data
 
@@ -187,9 +188,9 @@ Dataset will attempt to detect what the type of your data is. However, if any of
 The format required is:
 
 ```javascript:
-columTypes : {
-  'columnName' : { type : '<known type (see Types Sections)>' … <any additional type required options here.>]
-}
+columns : [
+  { name : 'columnName', type : '<known type (see Types Sections)>' … <any additional type required options here.> }
+]
 ```
 
 Dataset will take care of the actual type coercion, making it trivial to convert strings to numbers or timestamps to `moment` objects. For example, coercing the timestamp column into a time column and the total column to a numeric type would look like so:
@@ -198,10 +199,10 @@ Dataset will take care of the actual type coercion, making it trivial to convert
 
 new DS.Dataset({
   url : "http://myserver.com/data/data.json",
-  columnTypes : {
-    'timestamp' : { type : 'time', format : 'MM/DD YYYY' },
-    'total' : { type : 'numeric' }
-  }
+  columns : [
+    { name : 'timestamp', type : 'time', format : 'MM/DD YYYY' },
+    { name : 'total', type : 'numeric' }
+  ]
 });
 ```
 
@@ -222,13 +223,16 @@ A column has the following properties:
 
 Again, it is not recommended to modify the data in the column directly as this will not go through the event system. More on that further down.
 
+
+
 #### Getting a Column By Name
 
 ```javascript
 ds.column(columnName);
 ```
 
-This returns the actual column object.
+This returns the actual column object. Note that the order of columns **does not**
+matter as dataset is not a *visual* form of looking at your data.
 
 #### Iterating Over Columns
 
@@ -238,13 +242,17 @@ ds.eachColumn(function(columnName) {
 });
 ```
 
-#### Operations on a column:
+Note, if you want to access the actual column, you still need to fetch it
+from the dataset.
 
-##### sum
+#### Getting Column Names:
 
-##### min
+```javascript
+ds.columnNames();
+```
 
-##### max
+Will return an array of your column names. This will **not** include the "_id" column as it is
+a system column.
 
 ### Rows
 
@@ -280,7 +288,7 @@ The row object will look as follows:
 { columnName : 'value', … }
 ```
 
-Note that each row has a unique identifier assiged to it called `_id`. Do not attempt to change that value unless you're feeling destructive.
+Note that each row has a unique identifier assiged to it called `_id` in a separate column. Do not attempt to change that value unless you're feeling destructive. That identifier is used for caching purposes and changing it may make your data inaccessible.
 
 
 ## Data Modification
@@ -289,14 +297,72 @@ Note that each row has a unique identifier assiged to it called `_id`. Do not at
 
 #### Adding a Row
 
+To add a row to your dataset, you can call the .add method:
+
+```javascript
+ds.add({
+  name : "John",
+  phone : "413-900-xxxx",
+  value : 41
+});
+
+This will trigger the following events:
+
+* `add`
+* `change`
+
 #### Removing a Row
 
+There are two ways to remove rows:
+
+* By providing a row id:
+
+  ```javascript
+  ds.remove(rowId)
+  ```
+  
+  _The `row._id` is a unique identifier each row has._
+
+* By providing a filter function:
+  
+  If you want to remove all rows that match a particular filter, you can pass a function
+  to the remove method like so:
+  
+  ```javascript
+  // remove all rows in which the someCol value is greater than 10
+  ds.remove(function(row) {
+    return (row.someCol > 10);
+  });
+  ```
+  
+  _The function should return true if the row should be removed. False otherwise._
+  
+
+This will trigger the following events:
+
+* `remove`
+* `change`
+
 #### Updating Rows
+
+To update a row, pass the `id` of the row along with the changed attributes like so:
+
+```javascript
+ds.update(rowId, {
+  name : "new name", country : "France"
+});
+```
+
+This will trigger the following events:
+
+* `update`
+* `change`
 
 
 ## Sorting
 
 You can sort your Dataset by specifying a comparator on your constructor or at any later point like so:
+
 
 ```javascript
 // initialize a new dataset
@@ -325,6 +391,28 @@ _.when(ds.fetch(), function(){
   // [8,9,1,1,7,1]
 });
 ```
+
+
+You can define a comparator as a property on the object passed to your constructor as well, like so:
+
+```javascript
+// initialize a new dataset
+var ds = new DS.Dataset({
+  data: { columns : [ 
+    { name : "one",   data : [10, 2, 3, 14, 3, 4] },
+    { name : "two",   data : [4,  5, 6, 1,  1, 1] },
+    { name : "three", data : [7,  8, 9, 1,  1, 1] } 
+  ] },
+  strict: true,
+  comparator = function(r1, r2) {
+    if (r1.one > r2.one) {return 1;}
+    if (r1.one < r2.one) {return -1;}
+    return 0;
+  }
+});
+```
+
+_Note that when you insert values into the dataset, they will be added in the correct place. An addition to a sorted dataset does NOT cause a resort of the entire data. The data will be inserted in the right position._
 
 ### Selection
 Dataset makes it easy to select sections of your columns and rows based on either static or function based criteria.
