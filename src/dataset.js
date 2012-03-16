@@ -327,14 +327,22 @@ Version 0.0.1.2
     */    
     remove : function(filter, options) {
       filter = this._rowFilter(filter);
-      var deltas = [];
+      var deltas = [], rowsToRemove = [];
 
       this.each(function(row, rowIndex) {
         if (filter(row)) {
-          this._remove(row._id);
+          rowsToRemove.push(row._id);
           deltas.push( { old: row } );
         }
       });
+
+      // don't attempt tp remove the rows while iterating over them
+      // since that modifies the length of the dataset and thus
+      // terminates the each loop early. 
+      _.each(rowsToRemove, function(rowId) {
+        this._remove(rowId);  
+      }, this);
+      
       if (this.syncable && (!options || !options.silent)) {
         var ev = this._buildEvent( deltas );
         this.trigger('remove', ev );
