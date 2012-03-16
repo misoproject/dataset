@@ -168,7 +168,7 @@
     
         // if this is a delete event OR the row no longer
         // passes the filter, remove it.
-        if (Miso.Event.isDelete(d) || 
+        if (Miso.Event.isRemove(d) || 
             (this.filter.row && !this.filter.row(row))) {
 
           // Since this is now a delete event, we need to convert it
@@ -362,7 +362,7 @@
     eachColumn : function(iterator, context) {
       // skip id col
       for(var i = 1; i < this.length; i++) {
-        iterator.apply(context || this, [this._columns[i].name, i]);
+        iterator.apply(context || this, [this._columns[i].name, this._columns[i], i]);
       }  
     },
 
@@ -614,7 +614,7 @@
       }
 
       if (this.syncable) {
-        this.trigger("sort");  
+        this.trigger("sort");
       }
     }
   });

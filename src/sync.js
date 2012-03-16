@@ -37,7 +37,7 @@
     /**
     * Returns true if the event is a deletion
     */
-    isDelete : function(delta) {
+    isRemove : function(delta) {
       if (_.isUndefined(delta.changed) || _.keys(delta.changed).length === 0) {
         return true;
       } else {
@@ -60,7 +60,7 @@
     * Returns true if the event is an update.
     */
     isUpdate : function(delta) {
-      if (!this.isDelete(delta) && !this.isAdd(delta)) {
+      if (!this.isRemove(delta) && !this.isAdd(delta)) {
         return true;
       } else {
         return false;
