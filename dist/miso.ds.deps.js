@@ -1,5 +1,5 @@
 /**
-* Miso.Dataset - v0.1.0 - 3/15/2012
+* Miso.Dataset - v0.1.0 - 3/16/2012
 * http://github.com/alexgraul/Dataset
 * Copyright (c) 2012 Alex Graul, Irene Ros;
 * Licensed MIT, GPL
@@ -2188,7 +2188,7 @@
 })(this);
 
 /**
-* Miso.Dataset - v0.1.0 - 3/15/2012
+* Miso.Dataset - v0.1.0 - 3/16/2012
 * http://github.com/alexgraul/Dataset
 * Copyright (c) 2012 Alex Graul, Irene Ros;
 * Licensed MIT, GPL
@@ -2754,7 +2754,7 @@
     * But also not sure it still belongs here.
     */
     sync : function(event) {
-      var deltas = event.deltas;
+      var deltas = event.deltas, eventType = null;
  
       // iterate over deltas and update rows that are affected.
       _.each(deltas, function(d, deltaIndex) {
@@ -2771,6 +2771,7 @@
           // if it passes the filter.
           if (this.filter.rows && this.filter.rows(d.changed)) {
             this._add(d.changed);  
+            eventType = "add";
           }
         } else {
 
@@ -2785,6 +2786,7 @@
             if (_.isUndefined(colPos)) { return; }
             this._columns[colPos].data[rowPos] = newValue;
 
+            eventType = "update";
           }, this);
         }
 
@@ -2813,12 +2815,14 @@
 
           // remove row since it doesn't match the filter.
           this._remove(rowPos);
+          eventType = "delete";
         }
 
       }, this);
 
       // trigger any subscribers 
       if (this.syncable) {
+        this.trigger(eventType, event);
         this.trigger("change", event);  
       }
     },
@@ -2989,7 +2993,7 @@
     */
     eachColumn : function(iterator, context) {
       // skip id col
-      for(var i = 1; i < this.length; i++) {
+      for(var i = 1; i < this._columns.length; i++) {
         iterator.apply(context || this, [this._columns[i].name, this._columns[i], i]);
       }  
     },
@@ -3919,7 +3923,7 @@ Version 0.0.1.2
     * @param {width} direct each side to take into the average
     */
     movingAverage : function(column, width) {
-      
+
     },
 
     /**
