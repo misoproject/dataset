@@ -1,5 +1,5 @@
 /**
-* Miso.Dataset - v0.1.0 - 3/6/2012
+* Miso.Dataset - v0.1.0 - 3/15/2012
 * http://github.com/alexgraul/Dataset
 * Copyright (c) 2012 Alex Graul, Irene Ros;
 * Licensed MIT, GPL
@@ -227,7 +227,7 @@
     /**
     * Returns true if the event is a deletion
     */
-    isDelete : function(delta) {
+    isRemove : function(delta) {
       if (_.isUndefined(delta.changed) || _.keys(delta.changed).length === 0) {
         return true;
       } else {
@@ -250,7 +250,7 @@
     * Returns true if the event is an update.
     */
     isUpdate : function(delta) {
-      if (!this.isDelete(delta) && !this.isAdd(delta)) {
+      if (!this.isRemove(delta) && !this.isAdd(delta)) {
         return true;
       } else {
         return false;
@@ -607,7 +607,7 @@
     
         // if this is a delete event OR the row no longer
         // passes the filter, remove it.
-        if (Miso.Event.isDelete(d) || 
+        if (Miso.Event.isRemove(d) || 
             (this.filter.row && !this.filter.row(row))) {
 
           // Since this is now a delete event, we need to convert it
@@ -801,7 +801,7 @@
     eachColumn : function(iterator, context) {
       // skip id col
       for(var i = 1; i < this.length; i++) {
-        iterator.apply(context || this, [this._columns[i].name, i]);
+        iterator.apply(context || this, [this._columns[i].name, this._columns[i], i]);
       }  
     },
 
@@ -1053,7 +1053,7 @@
       }
 
       if (this.syncable) {
-        this.trigger("sort");  
+        this.trigger("sort");
       }
     }
   });
@@ -1389,14 +1389,22 @@ Version 0.0.1.2
     */    
     remove : function(filter, options) {
       filter = this._rowFilter(filter);
-      var deltas = [];
+      var deltas = [], rowsToRemove = [];
 
       this.each(function(row, rowIndex) {
         if (filter(row)) {
-          this._remove(row._id);
+          rowsToRemove.push(row._id);
           deltas.push( { old: row } );
         }
       });
+
+      // don't attempt tp remove the rows while iterating over them
+      // since that modifies the length of the dataset and thus
+      // terminates the each loop early. 
+      _.each(rowsToRemove, function(rowId) {
+        this._remove(rowId);  
+      }, this);
+      
       if (this.syncable && (!options || !options.silent)) {
         var ev = this._buildEvent( deltas );
         this.trigger('remove', ev );
