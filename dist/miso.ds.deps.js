@@ -1,5 +1,5 @@
 /**
-* Miso.Dataset - v0.1.0 - 3/16/2012
+* Miso.Dataset - v0.1.0 - 3/19/2012
 * http://github.com/alexgraul/Dataset
 * Copyright (c) 2012 Alex Graul, Irene Ros;
 * Licensed MIT, GPL
@@ -2188,7 +2188,7 @@
 })(this);
 
 /**
-* Miso.Dataset - v0.1.0 - 3/16/2012
+* Miso.Dataset - v0.1.0 - 3/19/2012
 * http://github.com/alexgraul/Dataset
 * Copyright (c) 2012 Alex Graul, Irene Ros;
 * Licensed MIT, GPL
@@ -4591,11 +4591,10 @@ Version 0.0.1.2
   var Miso = (global.Miso || (global.Miso = {}));
 
 
-  Miso.Parsers.Delimited = function(data, options) {
+  Miso.Parsers.Delimited = function(options) {
     this.options = options || {};
 
     this.delimiter = this.options.delimiter || ",";
-    this._data = data;
 
     this.__delimiterPatterns = new RegExp(
       (
@@ -4614,13 +4613,10 @@ Version 0.0.1.2
 
   _.extend(Miso.Parsers.Delimited.prototype, Miso.Parsers.prototype, {
 
-    _buildColumns : function(d, sample) {
+    parse : function(data) {
+      var columns = [];
+      var columnData = {};
 
-      d._columns = [];
-
-      // convert the csv string into the beginnings of a strict
-      // format. The only thing missing is type detection.
-      // That happens after all data is parsed.
       var parseCSV = function(delimiterPattern, strData, strDelimiter) {
 
         // Check to see if the delimiter is defined. If not,
@@ -4699,31 +4695,26 @@ Version 0.0.1.2
             // it to the data array.
             if (columnCountComputed) {
 
-              d._columns[columnIndex].data.push(strMatchedValue); 
-
+              columnData[columns[columnIndex]].push(strMatchedValue);
+            
             } else {
-
               // we are building the column names here
-              d._columns.push(this._buildColumn({
-                name : strMatchedValue,
-                data : []
-              }));
+              columns.push(strMatchedValue);
+              columnData[strMatchedValue] = [];
             }
         }
 
         // Return the parsed data.
-        return d;
+        return {
+          columns : columns,
+          data : columnData
+        };
       };
 
-      parseCSV = _.bind(parseCSV, this);
-      parseCSV(
+      return parseCSV(
         this.__delimiterPatterns, 
-        this._data, 
-      this.delimiter);
-
-      this._addIdColumn(d, d._columns[0].data.length);
-
-      return d;
+        data, 
+        this.delimiter);
     }
 
   });

@@ -129,7 +129,7 @@
         return {
           columns : columns,
           data : columnData
-        }
+        };
       };
 
       return parseCSV(
