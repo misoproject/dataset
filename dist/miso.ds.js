@@ -1470,37 +1470,32 @@ Version 0.0.1.2
 
   // shorthand
   var Miso = global.Miso;
-  var Product = (Miso.Product || function() {
+  Miso.Product = (Miso.Product || function(options) {
+    options = options || {};
+    
+    // save column name. This will be necessary later
+    // when we decide whether we need to update the column
+    // when sync is called.
+    this.func = options.func;
 
-    Miso.Product = function(options) {
-      options = options || (options = {});
-      
-      // save column name. This will be necessary later
-      // when we decide whether we need to update the column
-      // when sync is called.
-      this.func = options.func;
-
-      // determine the product type (numeric, string, time etc.)
-      if (options.columns) {
-        var column = options.columns;
-        if (_.isArray(options.columns)) {
-          column = options.columns[0];
-        }
-        
-        this.valuetype = column.type;
-        this.numeric = function() {
-          return column.toNumeric(this.value);
-        };
+    // determine the product type (numeric, string, time etc.)
+    if (options.columns) {
+      var column = options.columns;
+      if (_.isArray(options.columns)) {
+        column = options.columns[0];
       }
+      
+      this.valuetype = column.type;
+      this.numeric = function() {
+        return column.toNumeric(this.value);
+      };
+    }
 
-      this.func({ silent : true });
-      return this;
-    };
+    this.func({ silent : true });
+    return this;
+  });
 
-    return Miso.Product;
-  })();
-
-  _.extend(Product.prototype, Miso.Events, {
+  _.extend(Miso.Product.prototype, Miso.Events, {
 
     /**
     * @public
@@ -1682,7 +1677,7 @@ Version 0.0.1.2
     calculated : function(columns, producer) {
       var _self = this;
 
-      var prod = new Product({
+      var prod = new Miso.Product({
         columns : columns,
         func : function(options) {
           options = options || {};
