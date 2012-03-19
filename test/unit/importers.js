@@ -134,23 +134,6 @@
     });
   });
 
-  // module("Remote Importer");
-  // test("Basic json url fetch", 53, function() {
-  //   var url = "data/alphabet_strict.json";
-  //   var importer = new Miso.Importers.Remote({
-  //     url : url,
-  //     parser : Miso.Parsers.Strict,
-  //     jsonp : false
-  //   });
-  //   stop();
-  //   var data = importer.fetch({
-  //     success: function(strictData) {
-  //       verifyImport({}, strictData);
-  //       start();
-  //     }
-  //   });
-  // });
-
   test("Basic json url fetch through Dataset API", 46, function() {
     var url = "data/alphabet_strict.json";
     var ds = new Miso.Dataset({ 
@@ -165,25 +148,6 @@
     ds.fetch();
     stop();
   });
-
-  // test("Basic jsonp url fetch", 53, function() {
-    // var url = "data/alphabet_obj.json?callback=";
-    // var importer = new Miso.Importers.Remote({
-      // url : url,
-      // parser : Miso.Parsers.Obj,
-      // jsonp : true,
-      // extract : function(raw) {
-        // return raw.data;
-      // }
-    // });
-    // stop();
-    // var data = importer.fetch({
-      // success: function(strictData) {
-        // verifyImport({}, strictData);
-        // start();
-      // }
-    // });
-  // });
 
   test("Basic jsonp url fetch with Dataset API", 46, function() {
     var url = "data/alphabet_obj.json?callback=";
@@ -201,74 +165,40 @@
     ds.fetch();
     stop();
   });
-    
-  // module("Delimiter Importer");
-  // test("Remote delimiter parsing test", function() {
-    // var url = "data/alphabet.csv";
-    // var importer = new Miso.Importers.Remote({
-      // url : url, 
-      // jsonp : false,
-      // parser : Miso.Parsers.Delimited,
-      // dataType: "text"
-    // });
-    // stop();
-    // var data = importer.fetch({
-      // success: function(strictData) {
-        // verifyImport({}, strictData);
-        // start();
-      // }
-    // });
-  // });
 
-  // // TODO: add remote delimiter parsing test through dataset API
 
-  // test("Basic delimiter parsing test", 53, function() {
+  test("Basic delimiter parsing test with Dataset API", 46, function() {
 
-    // var importer = new Miso.Importers.Local({
-      // parser : Miso.Parsers.Delimited,
-      // data : window.Miso.alphabet_csv
-    // });
-    
-    // importer.fetch({
-      // success : function(strictData) {
-        // verifyImport(Miso.alphabet_strict, strictData);
-      // }
-    // });
-  // });
+    var ds = new Miso.Dataset({ 
+      data : window.Miso.alphabet_csv,
+      delimiter : ","
+    });
+    _.when(ds.fetch()).then(function(){
+      verifyImport(Miso.alphabet_strict, ds);
+    });
+  });
 
-  // test("Basic delimiter parsing test with Dataset API", 53, function() {
+  test("Basic delimiter parsing test with custom separator with Dataset API", 46, function() {
+    var ds = new Miso.Dataset({ 
+      data : window.Miso.alphabet_customseparator,
+      delimiter : "###"
+    });
+    _.when(ds.fetch()).then(function(){
+      verifyImport(Miso.alphabet_strict, ds);
+    });
+  });
 
-    // var ds = new Miso.Dataset({ 
-      // data : window.Miso.alphabet_csv,
-      // delimiter : ","
-    // });
-    // _.when(ds.fetch()).then(function(){
-      // verifyImport(Miso.alphabet_strict, ds);
-    // });
-  // });
-
-  // test("Basic delimiter parsing test with custom separator", 53, function() {
-    // var importer = new Miso.Importers.Local({
-      // data : window.Miso.alphabet_customseparator,
-      // delimiter : "###",
-      // parser : Miso.Parsers.Delimited
-    // });
-    // importer.fetch({
-      // success : function(strictData) {
-        // verifyImport(Miso.alphabet_strict, strictData);
-      // }
-    // });
-  // });
-
-  // test("Basic delimiter parsing test with custom separator with Dataset API", 53, function() {
-    // var ds = new Miso.Dataset({ 
-      // data : window.Miso.alphabet_customseparator,
-      // delimiter : "###"
-    // });
-    // _.when(ds.fetch()).then(function(){
-      // verifyImport(Miso.alphabet_strict, ds);
-    // });
-  // });
+  test("Basic remote delimiter parsing test with custom separator with Dataset API", 46, function() {
+    var ds = new Miso.Dataset({ 
+      url : "data/alphabet_customseparator.json",
+      delimiter : "###"
+    });
+    _.when(ds.fetch()).then(function(){
+      verifyImport(Miso.alphabet_strict, ds);
+      start();
+    });
+    stop();
+  });
 
   module("Google Spreadsheet Support");
   function verifyGoogleSpreadsheet(d, obj) {
