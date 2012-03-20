@@ -57,8 +57,7 @@
     */
     cacheRows : function(dataset) {
 
-      dataset._rowPositionById = {};
-      dataset._rowIdByPosition = [];
+      Miso.Builder.clearRowCache(dataset);
 
       // cache the row id positions in both directions.
       // iterate over the _id column and grab the row ids
@@ -79,6 +78,11 @@
       } else {
         dataset.length = rowLengths[0];
       }
+    },
+
+    clearRowCache : function(dataset) {
+      dataset._rowPositionById = {};
+      dataset._rowIdByPosition = [];
     },
 
     cacheColumns : function(dataset) {
