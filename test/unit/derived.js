@@ -22,9 +22,9 @@
   function getMovingAverageData() {
     return {
       columns : [
-        { name : "A", data : [1,2,3,4,5,6,7,8,9,10], type : "numeric" },
-        { name : "B", data : [10,9,8,7,6,5,4,3,2,1], type : "numeric" },
-        { name : "C", data : [10,20,30,40,50,60,70,80,90,100], type : "numeric" }
+        { name : "A", data : [1,2,3,4,5,6,7,8,9,10],          type : "numeric" },
+        { name : "B", data : [10,9,8,7,6,5,4,3,2,1],          type : "numeric" },
+        { name : "C", data : [10,20,30,40,50,60,70,80,90,100],type : "numeric" }
       ]
     };
   }
@@ -76,6 +76,29 @@
       ok(_.isEqual(ma.column("A").data, _.movingAvg(this.column("A").data, 3, _.variance)));
       ok(_.isEqual(ma.column("B").data, _.movingAvg(this.column("B").data, 3, _.variance)));
       ok(_.isEqual(ma.column("C").data, _.movingAvg(this.column("C").data, 3, _.variance)));
+    }});
+  });
+
+  test("Syncing moving average", function() {
+    var ds = new Miso.Dataset({
+      data : getMovingAverageData(),
+      strict: true,
+      sync : true
+    }).fetch({ success :function() {
+      
+      var ma = this.movingAverage(["A", "B", "C"], 3);
+      equals(ma.length, this.length - 2);
+      ok(_.isEqual(ma.column("A").data, _.movingAvg(this.column("A").data, 3)));
+      ok(_.isEqual(ma.column("B").data, _.movingAvg(this.column("B").data, 3)));
+      ok(_.isEqual(ma.column("C").data, _.movingAvg(this.column("C").data, 3)));
+
+      this.update(this.column("_id").data[0], {
+        A : 100, B : 100, C : 100
+      });
+
+      ok(_.isEqual(ma.column("A").data, _.movingAvg([100,2,3,4,5,6,7,8,9,10], 3)));
+      ok(_.isEqual(ma.column("B").data, _.movingAvg([100,9,8,7,6,5,4,3,2,1], 3)));
+      ok(_.isEqual(ma.column("C").data, _.movingAvg([100,20,30,40,50,60,70,80,90,100], 3)));
     }});
   });
 

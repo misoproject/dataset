@@ -97,7 +97,7 @@
         
         // generate oids for the oid col
         var oidcol = this.column("_oids");
-
+        oidcol.data = [];
         for(var i = 0; i < this.length; i++) {
           oidcol.data.push(this.parent.column("_id").data.slice(i, i+size));
         }
@@ -215,6 +215,8 @@
         // now iterate over all the bins and combine their
         // values using the supplied method. 
         var oidcol = this._columns[this._columnPositionByName._oids];
+        oidcol.data = [];
+
         _.each(columns, function(colName) {
           var column = this.column(colName);
 
