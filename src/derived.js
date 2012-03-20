@@ -46,10 +46,69 @@
     /**
     * moving average
     * @param {column} column on which to calculate the average
-    * @param {width} direct each side to take into the average
+    * @param {size} direct each side to take into the average
+    * @param {options} allows you to set a method other than mean.
     */
-    movingAverage : function(column, width) {
+    movingAverage : function(columns, size, options) {
+      
+      options = options || {};
 
+      var d = new Miso.Derived({
+        parent : this,
+        method : options.method || _.mean,
+        size : size,
+        args : arguments
+      });
+
+      // copy over all columns
+      this.eachColumn(function(columnName) {
+        d.addColumn({
+          name : columnName, type : this.column(columnName).type, data : []
+        });
+      }, this);
+
+      // save column positions on new dataset.
+      Miso.Builder.cacheColumns(d);
+
+      // apply with the arguments columns, size, method
+      var computeMovingAverage = function() {
+        var win = [];
+
+        // normalize columns arg - if single string, to array it.
+        if (typeof columns === "string") {
+          columns = [columns];
+        }
+
+        // copy the ids
+        this.column("_id").data = this.parent.column("_id").data.slice(size-1, this.parent.length);
+
+        // copy the columns we are NOT combining minus the sliced size.
+        this.eachColumn(function(columnName, column, i) {
+          if (columns.indexOf(columnName) === -1 && columnName !== "_oids") {
+            // copy data
+            column.data = this.parent.column(columnName).data.slice(size-1, this.parent.length);
+          } else {
+            // compute moving average for each column and set that as the data 
+            column.data = _.movingAvg(this.parent.column(columnName).data, size, this.method);
+          }
+        }, this);
+
+        this.length = this.parent.length - size + 1;
+        
+        // generate oids for the oid col
+        var oidcol = this.column("_oids");
+
+        for(var i = 0; i < this.length; i++) {
+          oidcol.data.push(this.parent.column("_id").data.slice(i, i+size));
+        }
+        
+        Miso.Builder.cacheRows(this);
+        
+        return this;
+      };
+
+      d.func = _.bind(computeMovingAverage, d);
+      return d.func.call(d.args);
     },
 
     /**
@@ -155,9 +214,9 @@
 
         // now iterate over all the bins and combine their
         // values using the supplied method. 
-        var oidcol = d._columns[d._columnPositionByName._oids];
+        var oidcol = this._columns[this._columnPositionByName._oids];
         _.each(columns, function(colName) {
-          var column = d.column(colName);
+          var column = this.column(colName);
 
           _.each(column.data, function(bin, binPos) {
             if (_.isArray(bin)) {
@@ -168,15 +227,15 @@
               oidcol.data[binPos] = _.flatten(oidcol.data[binPos]);
 
               // compute the final value.
-              column.data[binPos] = d.method.call(this, bin);
-              d.length++;
+              column.data[binPos] = this.method(bin);
+              this.length++;
             }
-          });
+          }, this);
 
         }, this);
 
-        Miso.Builder.cacheRows(d);
-        return d;
+        Miso.Builder.cacheRows(this);
+        return this;
       };
       
       // bind the recomputation function to the dataset as the context.

@@ -3,8 +3,83 @@
   var Util  = global.Util;
   var Miso    = global.Miso || {};
 
-  module("Group By");
+  module("Moving Average");
 
+  _.mixin({
+    movingAvg : function(arr, size, method) {
+      method = method || _.mean;
+      var win, i, newarr = [];
+      for(i = size-1; i <= arr.length; i++) {
+        win = arr.slice(i-size, i);
+        if (win.length === size) {
+          newarr.push(method(win)); 
+        }
+      }
+      return newarr;
+    }
+  });
+
+  function getMovingAverageData() {
+    return {
+      columns : [
+        { name : "A", data : [1,2,3,4,5,6,7,8,9,10], type : "numeric" },
+        { name : "B", data : [10,9,8,7,6,5,4,3,2,1], type : "numeric" },
+        { name : "C", data : [10,20,30,40,50,60,70,80,90,100], type : "numeric" }
+      ]
+    };
+  }
+
+  test("Basic Moving Average", function() {
+    var ds = new Miso.Dataset({
+      data : getMovingAverageData(),
+      strict: true
+    }).fetch({ success :function() {
+      
+      var ma = this.movingAverage(["A", "B", "C"], 3);
+      equals(ma.length, this.length - 2);
+      ok(_.isEqual(ma.column("A").data, _.movingAvg(this.column("A").data, 3)));
+      ok(_.isEqual(ma.column("B").data, _.movingAvg(this.column("B").data, 3)), "Actual" + ma.column("B").data + " ,expected: " + _.movingAvg(this.column("B").data, 3));
+      ok(_.isEqual(ma.column("C").data, _.movingAvg(this.column("C").data, 3)));
+    }});
+  });
+
+  test("Singe column moving average", function() {
+    var ds = new Miso.Dataset({
+      data : getMovingAverageData(),
+      strict: true
+    }).fetch({ success :function() {
+      
+      var ma = this.movingAverage(["A"], 3);
+      equals(ma.length, this.length - 2);
+      ok(_.isEqual(ma.column("A").data, _.movingAvg(this.column("A").data, 3)));
+      ok(_.isEqual(ma.column("_id").data, this.column("_id").data.slice(2, this.length)));
+      
+      var firstId = this.column("_id").data[0];
+      var lastId = this.column("_id").data[this.length-1];
+      
+      ok(_.isEqual(ma.column("_oids").data[0], [firstId, firstId+1, firstId+2]));
+      ok(_.isEqual(ma.column("_oids").data[ma.length-1], [lastId-2, lastId-1, lastId]));
+
+      ok(_.isEqual(ma.column("B").data, [8,7,6,5,4,3,2,1]));
+      ok(_.isEqual(ma.column("C").data, [30,40,50,60,70,80,90,100]));
+    }});
+  });
+
+  test("Alternate Method Moving Average", function() {
+    var ds = new Miso.Dataset({
+      data : getMovingAverageData(),
+      strict: true
+    }).fetch({ success :function() {
+      
+      var ma = this.movingAverage(["A", "B", "C"], 3, { method : _.variance});
+      equals(ma.length, this.length - 2);
+      ok(_.isEqual(ma.column("A").data, _.movingAvg(this.column("A").data, 3, _.variance)));
+      ok(_.isEqual(ma.column("B").data, _.movingAvg(this.column("B").data, 3, _.variance)));
+      ok(_.isEqual(ma.column("C").data, _.movingAvg(this.column("C").data, 3, _.variance)));
+    }});
+  });
+
+  module("Group By");
   function getData() {
     return {
       columns : [
