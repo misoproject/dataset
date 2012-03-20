@@ -384,7 +384,7 @@
   test("Defining a custom product", function() {
 
     var ds = Util.baseSyncingSample();
-    var min = ds.calculated(ds.column('one'), function() {
+    var min = ds._calculated(ds.column('one'), function() {
       var min = Infinity;
       _.each(this._column('one').data, function(value) {
         if (value < min) {
@@ -406,7 +406,7 @@
 
     var ds = Util.baseSyncingSample();
     Miso.Dataset.prototype.custom = function() {
-      return this.calculated(ds.column('one'), function() {
+      return this._calculated(ds.column('one'), function() {
         var min = Infinity;
         _.each(this._column('one').data, function(value) {
           if (value < min) {
@@ -431,7 +431,7 @@
 
     var ds = Util.baseSyncingSample();
     ds.custom = function() {
-      return this.calculated(ds.column('one'), function() {
+      return this._calculated(ds.column('one'), function() {
         var min = Infinity;
         _.each(this._column('one').data, function(value) {
           if (value < min) {

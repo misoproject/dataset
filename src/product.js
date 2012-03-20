@@ -102,7 +102,7 @@
         };
       }(columnObjects));
 
-      return this.calculated(columnObjects, sumFunc);
+      return this._calculated(columnObjects, sumFunc);
     },
 
     /**
@@ -128,7 +128,7 @@
         };
       }(columnObjects));
 
-      return this.calculated(columnObjects, maxFunc);  
+      return this._calculated(columnObjects, maxFunc);  
       
     },
 
@@ -155,7 +155,7 @@
         };
       }(columnObjects));
 
-      return this.calculated(columnObjects, minFunc); 
+      return this._calculated(columnObjects, minFunc); 
     },
 
     /**
@@ -188,7 +188,7 @@
         };
       }(columnObjects));
 
-      return this.calculated(columnObjects, meanFunc);
+      return this._calculated(columnObjects, meanFunc);
     },
 
     /*
@@ -206,7 +206,7 @@
     * @param {producer} function which derives the product after
     * being passed each row. TODO: producer signature
     */    
-    calculated : function(columns, producer) {
+    _calculated : function(columns, producer) {
       var _self = this;
 
       var prod = new Miso.Product({
