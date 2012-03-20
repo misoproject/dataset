@@ -1,8 +1,48 @@
 (function(global, _) {
 
-  var Miso = (global.Miso = global.Miso || {});
+  var Miso = global.Miso || (global.Miso = {});
 
-  _.extend(global.Miso.Dataset.prototype, {
+  Miso.Derived = (Miso.Derived || function(options) {
+    options = options || {};
+
+    Miso.Dataset.call(this);
+    
+    // save parent dataset reference
+    this.parent = options.parent;
+
+    // save the method we apply to bins.
+    this.method = options.method;
+
+    this._addIdColumn();
+
+    this.addColumn({
+      name : "_oids",
+      type : "mixed"
+    });
+
+    this.prototype = Miso.Derived.prototype;
+
+    if (this.parent.syncable) {
+      _.extend(this, Miso.Events);
+      this.syncable = true;
+      this.parent.bind("change", this.sync, this);  
+    }
+
+    return this;
+  });
+
+  // inherit all of dataset's methods.
+  _.extend(Miso.Derived.prototype, Miso.Dataset.prototype, {
+    sync : function(event) {
+      // recompute the function on an event.
+      // TODO: would be nice to be more clever about this at some point.
+      this.func.call(this.args);
+    }
+  });
+
+
+  _.extend(Miso.Dataset.prototype, {
+
     /**
     * moving average
     * @param {column} column on which to calculate the average
@@ -26,11 +66,17 @@
       
       options = options || {};
 
-      // TODO: should we check type match here?
-      // default method is addition
-      var method = options.method || _.sum;
+      var d = new Miso.Derived({
 
-      var d = new Miso.Dataset();
+        // save a reference to parent dataset
+        parent : this,
+        
+        // default method is addition
+        method : options.method || _.sum,
+
+        // save current arguments
+        args : arguments
+      });
 
       if (options && options.preprocess) {
         d.preprocess = options.preprocess;  
@@ -41,79 +87,102 @@
       
       _.each(newCols, function(columnName) {
 
-        d.addColumn({
+        this.addColumn({
           name : columnName,
-          type : this.column(columnName).type,
+          type : this.parent.column(columnName).type,
           data : []
         });
-      }, this);
+      }, d);
 
       // save column positions on new dataset.
       Miso.Builder.cacheColumns(d);
 
-      // a cache of values
-      var categoryPositions = {},
-          categoryCount     = 0,
-          byColumnPosition  = d._columnPositionByName[byColumn],
-          originalByColumn = this.column(byColumn);
+      // will get called with all the arguments passed to this
+      // host function
+      var computeGroupBy = function() {
 
-      // bin all values by their
-      for(var i = 0; i < this.length; i++) {
-        var category = null;
-        
-        // compute category. If a pre-processing function was specified
-        // (for binning time for example,) run that first.
-        if (d.preprocess) {
-          category = d.preprocess(originalByColumn.data[i]);
-        } else {
-          category = originalByColumn.data[i];  
-        }
-         
-        if (_.isUndefined(categoryPositions[category])) {
-            
-          // this is a new value, we haven't seen yet so cache
-          // its position for lookup of row vals
-          categoryPositions[category] = categoryCount;
+        // clear row cache if it exists
+        Miso.Builder.clearRowCache(this);
 
-          // add an empty array to all columns at that position to
-          // bin the values
+        // a cache of values
+        var categoryPositions = {},
+            categoryCount     = 0,
+            byColumnPosition  = this._columnPositionByName[byColumn],
+            originalByColumn = this.parent.column(byColumn);
+
+        // bin all values by their
+        for(var i = 0; i < this.parent.length; i++) {
+          var category = null;
+          
+          // compute category. If a pre-processing function was specified
+          // (for binning time for example,) run that first.
+          if (this.preprocess) {
+            category = this.preprocess(originalByColumn.data[i]);
+          } else {
+            category = originalByColumn.data[i];  
+          }
+           
+          if (_.isUndefined(categoryPositions[category])) {
+              
+            // this is a new value, we haven't seen yet so cache
+            // its position for lookup of row vals
+            categoryPositions[category] = categoryCount;
+
+            // add an empty array to all columns at that position to
+            // bin the values
+            _.each(columns, function(columnToGroup) {
+              var column = this.column(columnToGroup);
+              var idCol  = this.column("_id");
+              column.data[categoryCount] = [];
+              idCol.data[categoryCount] = _.uniqueId();
+            }, this);
+
+            // add the actual bin number to the right col
+            this.column(byColumn).data[categoryCount] = category;
+
+            categoryCount++;
+          }
+
           _.each(columns, function(columnToGroup) {
-            var column = d.column(columnToGroup);
-            var idCol  = d.column("_id");
-            column.data[categoryCount] = [];
-            idCol.data[categoryCount] = _.uniqueId();
+            
+            var column = this.column(columnToGroup),
+                value  = this.parent.column(columnToGroup).data[i],
+                binPosition = categoryPositions[category];
+
+            column.data[binPosition].push(value);
+          }, this);
+        }
+
+        // now iterate over all the bins and combine their
+        // values using the supplied method. 
+        var oidcol = d._columns[d._columnPositionByName._oids];
+        _.each(columns, function(colName) {
+          var column = d.column(colName);
+
+          _.each(column.data, function(bin, binPos) {
+            if (_.isArray(bin)) {
+              
+              // save the original ids that created this group by?
+              oidcol.data[binPos] = oidcol.data[binPos] || [];
+              oidcol.data[binPos].push(bin);
+              oidcol.data[binPos] = _.flatten(oidcol.data[binPos]);
+
+              // compute the final value.
+              column.data[binPos] = d.method.call(this, bin);
+              d.length++;
+            }
           });
 
-          // add the actual bin number to the right col
-          d.column(byColumn).data[categoryCount] = category;
-
-          categoryCount++;
-        }
-
-        _.each(columns, function(columnToGroup) {
-          
-          var column = d.column(columnToGroup),
-              value  = this.column(columnToGroup).data[i],
-              binPosition = categoryPositions[category];
-
-          column.data[binPosition].push(value);
         }, this);
-      }
 
-      // now iterate over all the bins and combine their
-      // values using the supplied method. 
-      _.each(columns, function(colName) {
-        var column = d.column(colName);
-        _.each(column.data, function(bin, binPos) {
-          if (_.isArray(bin)) {
-            column.data[binPos] = method.call(this, bin);
-            d.length++;
-          }
-        });
-      }, this);
+        Miso.Builder.cacheRows(d);
+        return d;
+      };
+      
+      // bind the recomputation function to the dataset as the context.
+      d.func = _.bind(computeGroupBy, d);
 
-      Miso.Builder.cacheRows(d);
-      return d;
+      return d.func.call(d.args);
     }
   });
 

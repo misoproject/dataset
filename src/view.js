@@ -340,7 +340,7 @@
     columnNames : function() {
       var cols = _.pluck(this._columns, 'name');
       return _.reject(cols, function( colName ) {
-        return colName === '_id';
+        return colName === '_id' || colName === '_oids';
       });
     },
 
@@ -365,8 +365,9 @@
     */
     eachColumn : function(iterator, context) {
       // skip id col
-      for(var i = 1; i < this._columns.length; i++) {
-        iterator.apply(context || this, [this._columns[i].name, this._columns[i], i]);
+      var cols = this.columnNames();
+      for(var i = 0; i < cols.length; i++) {
+        iterator.apply(context || this, [cols[i], this.column(cols[i]), i]);
       }  
     },
 
