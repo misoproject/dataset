@@ -37,6 +37,7 @@
       // recompute the function on an event.
       // TODO: would be nice to be more clever about this at some point.
       this.func.call(this.args);
+      this.trigger("change");
     }
   });
 
