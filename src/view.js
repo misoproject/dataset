@@ -344,6 +344,17 @@
       });
     },
 
+    /** 
+    * Returns true if a column exists, false otherwise.
+    * Parameters:
+    *   name (string)
+    * Returns
+    *   true | false
+    */
+    hasColumn : function(name) {
+      return (!_.isUndefined(this._columnPositionByName[name]));
+    },
+
     /**
     * @public
     * Iterates over all rows in the dataset

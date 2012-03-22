@@ -237,5 +237,236 @@
     stop();
   });
 
+  module("Polling");
+  test("Basic polling importer api", function() {
+
+    stop();
+    var reqs = 5, madereqs = 0;
+    expect(reqs);
+
+    var importer = new Miso.Importers.Polling({
+      url : "/poller/non_overlapping/5.json",
+      interval : 100
+    });
+
+    // {
+    //   id: 11
+    //   key: "11_key"
+    //   value: "11_value"
+    // }
+
+    var initId = null;
+    importer.fetch({
+      success: function(data) {
+
+        // if we're done querying, stop the polling.
+        if (madereqs === reqs) {
+          importer.stop();
+          ok(data[0].id === (initId + (madereqs * 10) ), data[0].id + "," + (initId + (madereqs * 10)));
+          start();
+        } else if (madereqs === 0) {
+          initId = data[0].id;
+        } else {
+          ok(data[0].id === (initId + (madereqs * 10) ), data[0].id + "," + (initId + (madereqs * 10)));
+        }
+        
+        madereqs++;
+        
+      },
+      error : function(error) {
+        console.log(error);
+      }
+    });
+  });
+
+  test("Basic polling non overlapping through dataset api", function() {
+
+    stop();
+    expect(18);
+
+    var startId = Math.floor(Math.random() * 100);
+    var reqs = 6, madereqs = 1, expectedSize = reqs * 10;
+
+    var ds = new Miso.Dataset({
+      url : "/poller/non_overlapping/" + startId + ".json",
+      interval : 300
+    });
+
+    ds.fetch({ 
+      success : function() {  
+
+        // done
+        if (madereqs === reqs) {
+          ds.importer.stop();
+
+          // check that the length is correct
+          equals(ds.length, expectedSize);
+          equals(ds._columns.length, 4);
+          ds.eachColumn(function(cn, c) {
+            equals(c.data.length, expectedSize);
+          });
+
+          // check data size
+          ds.eachColumn(function(cn, c, i) {
+            equals(c.data.length, expectedSize);
+          });
+
+          // check values
+          equals(ds._columns[1].data[0], startId + "_key");
+          equals(ds._columns[2].data[0], startId + "_value");
+          equals(ds._columns[3].data[0], startId);
+
+          equals(ds._columns[1].data[expectedSize-1], (startId + expectedSize-1) + "_key");
+          equals(ds._columns[2].data[expectedSize-1], (startId + expectedSize-1) + "_value");
+          equals(ds._columns[3].data[expectedSize-1], (startId + expectedSize-1));
+
+          // check cache sizes
+          var cachedRowids = _.map(
+            _.keys(ds._rowPositionById), 
+            function(i) { 
+              return +i;
+            }
+          );
+
+          ok(_.isEqual(ds._columnPositionByName, { _id : 0, id : 3 , key : 1, value : 2 }));
+          equals(ds._rowIdByPosition.length, expectedSize);
+          
+          ok(_.isEqual(_.values(ds._rowIdByPosition), cachedRowids));
+          ok(_.isEqual(cachedRowids, ds._columns[0].data));
+          
+          start();
+        } else {
+          madereqs++;
+        }
+      
+      }, 
+      error : function(r) { 
+        console.log(r); 
+      }
+    });
+  });
+
+  test("Polling with unique constraint", function() {
+    stop();
+    expect(11);
+
+    var startId = Math.floor(Math.random() * 100);
+    var reqs = 6, madereqs = 1, expectedSize = 10 + ((reqs-2) * 5);
+
+    var ds = new Miso.Dataset({
+      url : "/poller/overlapping/" + startId + "/5.json",
+      interval : 300,
+      uniqueAgainst : "key"
+    });
+
+    ds.fetch({ 
+      success : function() {  
+
+        // done
+        if (madereqs === reqs) {
+          ds.importer.stop();
+          
+          // check dataset length
+          equals(ds.length, expectedSize);
+          ds.eachColumn(function(cn, c) {
+            equals(c.data.length, expectedSize);
+          });
+
+          // check the actual data content
+          var keycol = [], valcol = [], idscol = [];
+          for(var i = 0; i < expectedSize; i++) {
+            idscol.push(startId + i);
+            keycol.push((startId + i) + "_key");
+            valcol.push((startId + i) + "_value");
+          }
+          ok(_.isEqual(idscol, this.column("id").data));
+          ok(_.isEqual(keycol, this.column("key").data));
+          ok(_.isEqual(valcol, this.column("value").data));
+          
+           // check cache sizes
+          var cachedRowids = _.map(
+            _.keys(ds._rowPositionById), 
+            function(i) { 
+              return +i;
+            }
+          );
+
+          ok(_.isEqual(ds._columnPositionByName, { _id : 0, id : 3 , key : 1, value : 2 }));
+          equals(ds._rowIdByPosition.length, expectedSize);
+          
+          ok(_.isEqual(_.values(ds._rowIdByPosition), cachedRowids));
+          ok(_.isEqual(cachedRowids, ds._columns[0].data));
+
+          start();
+        } else {
+          madereqs++;
+        }
+      
+      }, 
+      error : function(r) { 
+        console.log(r); 
+      }
+    });
+  });
+
+  test("Polling with reset on Fetch", function() {
+    stop();
+    
+
+    var startId = Math.floor(Math.random() * 100);
+    var reqs = 6, madereqs = 1, expectedSize = 10;
+
+    var ds = new Miso.Dataset({
+      url : "/poller/overlapping/" + startId + "/5.json",
+      interval : 300,
+      resetOnFetch : true
+    });
+
+    ds.fetch({
+      success: function() {
+
+        // done
+        if (madereqs === reqs) {
+          ds.importer.stop();
+          // check dataset length
+          equals(ds.length, expectedSize);
+          ds.eachColumn(function(cn, c) {
+            equals(c.data.length, expectedSize);
+          });
+
+          // check the actual data content
+          var keycol = [], valcol = [], idscol = [];
+          for(var i = 0; i < expectedSize; i++) {
+            var _i = startId + ((reqs - 4) * 10) + i;
+            idscol.push(_i);
+            keycol.push(_i + "_key");
+            valcol.push(_i + "_value");
+          }
+          
+          ok(_.isEqual(idscol, this.column("id").data));
+          ok(_.isEqual(keycol, this.column("key").data));
+          ok(_.isEqual(valcol, this.column("value").data));
+          
+           // check cache sizes
+          var cachedRowids = _.map(
+            _.keys(ds._rowPositionById), 
+            function(i) { 
+              return +i;
+            }
+          );
+
+          ok(_.isEqual(ds._columnPositionByName, { _id : 0, id : 3 , key : 1, value : 2 }));
+          equals(ds._rowIdByPosition.length, expectedSize);
+          
+          ok(_.isEqual(_.values(ds._rowIdByPosition), cachedRowids));
+          ok(_.isEqual(cachedRowids, ds._columns[0].data));
+          start();
+        } else {
+          madereqs++;
+        }
+      }
+    });
+  });
+
 }(this));
 

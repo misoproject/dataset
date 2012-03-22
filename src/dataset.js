@@ -73,7 +73,7 @@ Version 0.0.1.2
           this.parser = Miso.Parsers.Strict;
         } else if (options.delimiter) {
           this.parser = Miso.Parsers.Delimited;
-        }
+        } 
       }
 
       if (options.delimiter) {
@@ -83,7 +83,13 @@ Version 0.0.1.2
       // initialize the proper importer
       if (this.importer === null) {
         if (options.url) {
-          this.importer = Miso.Importers.Remote;
+          if (!options.interval) {
+            this.importer = Miso.Importers.Remote;  
+          } else {
+            this.importer = Miso.Importers.Polling;
+            this.interval = options.interval;
+          }
+          
         } else {
           this.importer = Miso.Importers.Local;
         }
@@ -102,6 +108,22 @@ Version 0.0.1.2
       if (options.ready) {
         this.ready = options.ready;
       }
+
+      // If new data is being fetched and we want to just
+      // replace existing rows, save this flag.
+      if (options.resetOnFetch) {
+        this.resetOnFetch = options.resetOnFetch;
+      }
+
+      // if new data is being fetched and we want to make sure
+      // only new rows are appended, a column must be provided
+      // against which uniqueness will be checked.
+      // otherwise we are just going to blindly add rows.
+      if (options.uniqueAgainst) {
+        this.uniqueAgainst = options.uniqueAgainst;
+      }
+
+
 
       this._columns = [];
       this._columnPositionByName = {};
@@ -199,17 +221,70 @@ Version 0.0.1.2
 
       //Update existing values, used the pass column to match 
       //incoming data to existing rows.
-      againstColumn : function() {
+      againstColumn : function(data) {
+        
+        // get against unique col
+        var uniqCol = this.column(this.uniqueAgainst);
 
+        var len = data[this._columns[1].name].length;
+
+        var posToRemove = [], i;
+        for(i = 0; i < len; i++) {
+
+          var datum = data[this.uniqueAgainst][i];
+          // this is a non unique row, remove it from all the data
+          // arrays
+          if (uniqCol.data.indexOf(datum) !== -1) {
+            posToRemove.push(i);
+          }
+        }
+
+        // sort and reverse the removal ids, this way we won't
+        // lose position by removing an early id that will shift
+        // array and throw all other ids off.
+        posToRemove.sort().reverse();
+
+        _.each(data, function(columnData, columnName){
+          
+          var col = this._column(columnName);
+          
+          // remove offending ids
+          _.each(posToRemove, function(pos){
+            columnData.splice(pos, 1);
+          });
+
+          // now coerce the data.
+          col.data = col.data.concat( _.map(columnData, function(datum) {
+            return Miso.types[col.type].coerce(datum, col);
+          }, this));
+          
+        }, this);
+
+        // now fill in ids for the new rows
+        for( i = 0; i < (len - posToRemove.length); i++) {
+          this._columns[0].data.push(_.uniqueId());
+        }
+
+        this.length += (len - posToRemove.length);
       },
 
       //Always blindly add new rows
       blind : function( data ) {
-        _.each(data, function( columnData , columnName ) {
-          var col = this._column( columnName );
-          col.data = col.data.concat( _.map(columnData, function(datum) {
-            return Miso.types[col.type].coerce(datum, col);
-          }, this) );
+        var columnName, columnData;
+        _.each(this._columns, function(col) {
+          columnName = col.name;
+          if (columnName === "_id") {
+            // insert as many uniqueIds as are necessary.
+            for(var i = 0; i < data[_.keys(data)[0]].length; i++) {
+              col.data.push(_.uniqueId());
+              this.length++;
+            }
+          } else {
+            columnData = data[columnName];
+            col.data = col.data.concat( _.map(columnData, function(datum) {
+              return Miso.types[col.type].coerce(datum, col);
+            }, this) );
+          }
         }, this);
       }
     },
@@ -218,21 +293,47 @@ Version 0.0.1.2
     apply : function( data ) {
       var parsed = this.parser.parse( data );
 
+      // first time fetch
       if ( !this.fetched ) {
 
-        this._addIdColumn( parsed.data[ parsed.columns[0] ].length );
+        // create columns (inc _id col.)
+        this._addIdColumn();
         this.addColumns( _.map(parsed.columns, function( name ) {
             return { name : name };
           })
         );
         
+        // detect column types, add all rows blindly and cache them.
         Miso.Builder.detectColumnTypes(this, parsed.data);
         this.applications.blind.call( this, parsed.data );
-        Miso.Builder.cacheRows(this);
+        
+        this.fetched = true;
+      
+      // reset on fetch
+      } else if (this.resetOnFetch) {
+
+        // clear the data
+        this.reset();
+
+        // blindly add the data.
+        this.applications.blind.call( this, parsed.data );
+
+      // append
+      } else if (this.uniqueAgainst) {
+
+        // make sure we actually have this column
+        if (!this.hasColumn(this.uniqueAgainst)) {
+          throw new Error("You requested a unique add against a column that doesn't exist.");
+        }
+
+        this.applications.againstColumn.call(this, parsed.data);
+      
+      // polling fetch, just blindly add rows
       } else {
-        //TODO append functionality here
-        return true;//so I can keep this block and lint ewwww
+        this.applications.blind.call( this, parsed.data );
       }
+
+      Miso.Builder.cacheRows(this);
     },
 
     addColumns : function( columns ) {
@@ -286,6 +387,7 @@ Version 0.0.1.2
             oldIdColPos = this._columnPositionByName._id;
 
         // move col back 
+        this._columns.splice(oldIdColPos, 1);
         this._columns.unshift(idCol);
         
         this._columnPositionByName._id = 0;
@@ -295,6 +397,7 @@ Version 0.0.1.2
           }
         }, this);
       }
+      
     },
 
     /**
@@ -394,6 +497,22 @@ Version 0.0.1.2
         this.trigger('change', ev );
       }
 
+    },
+
+    /**
+    * Clears all the rows
+    * Fires a "reset" event.
+    * Parameters:
+    *   options (object)
+    *     silent : true | false.
+    */
+    reset : function(options) {
+      _.each(this._columns, function(col) {
+        col.data = [];
+      });
+      if (this.syncable && (!options || !options.silent)) {
+        this.trigger("reset");
+      }
     }
 
   });
