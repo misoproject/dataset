@@ -20,19 +20,19 @@
   test("Column max", function() {
     var ds = Util.baseSample();
     var column = ds.column("one");
-    equals(column.max(), 3);
+    equals(column._max(), 3);
   });
 
   test("Column min", function() {
     var ds = Util.baseSample();
     var column = ds.column("one");
-    equals(column.min(), 1);
+    equals(column._min(), 1);
   });
 
   test("Column sum", function() {
     var ds = Util.baseSample();
     var column = ds.column("one");
-    equals(column.sum(), 6);
+    equals(column._sum(), 6);
   });
 
   test("Column median", function() {
@@ -47,9 +47,9 @@
       strict : true
     });
     _.when(ds.fetch()).then(function(){
-      equals(ds.column('vals').median(), 5.5);
-      equals(ds.column('valsrandomorder').median(), 5.5); 
-      equals(ds.column('randomvals').median(), 22.5); 
+      equals(ds.column('vals')._median(), 5.5);
+      equals(ds.column('valsrandomorder')._median(), 5.5); 
+      equals(ds.column('randomvals')._median(), 22.5); 
     });
   });
 
@@ -65,9 +65,9 @@
       strict : true
     });
     _.when(ds.fetch()).then(function(){
-      equals(ds.column('vals').mean(), 5.5);
-      equals(ds.column('valsrandomorder').mean(), 5.5); 
-      equals(ds.column('randomvals').mean(), 44.2); 
+      equals(ds.column('vals')._mean(), 5.5);
+      equals(ds.column('valsrandomorder')._mean(), 5.5); 
+      equals(ds.column('randomvals')._mean(), 44.2); 
     });
   });
 

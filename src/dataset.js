@@ -10,33 +10,36 @@ Version 0.0.1.2
   var Miso = global.Miso;
 
   /**
-  * @constructor
-  *
   * Instantiates a new dataset.
-  * @param {object} options - optional parameters. 
+  * Parameters:
+  * options - optional parameters. 
+  *   data : "Object - an actual javascript object that already contains the data",  
   *   url : "String - url to fetch data from",
+  *   sync : Set to true to be able to bind to dataset changes. False by default.
   *   jsonp : "boolean - true if this is a jsonp request",
   *   delimiter : "String - a delimiter string that is used in a tabular datafile",
-  *   data : "Object - an actual javascript object that already contains the data",
-  *   table : "Element - a DOM table that contains the data",
-  *   format : "String - optional file format specification, otherwise we'll try to guess",
-  *   recursive : "Boolean - if true build nested arrays of objects as datasets",
   *   strict : "Whether to expect the json in our format or whether to interpret as raw array of objects, default false",
   *   extract : "function to apply to JSON before internal interpretation, optional"
   *   ready : the callback function to act on once the data is fetched. Isn't reuired for local imports
   *           but is required for remote url fetching.
-  *   columns: {
-  *     name : typeName || { type : name, ...additionalProperties }
-  *   }
-  *   sorted : true (optional) - If the dataset is already sorted, pass true
-  *     so that we don't trigger a sort otherwise.
+  *   columns: A way to manually override column type detection. Expects an array of 
+  *            objects of the following structure: 
+  *           { name : 'columnname', type: 'columntype', 
+  *             ... (additional params required for type here.) }
   *   comparator : function (optional) - takes two rows and returns 1, 0, or -1  if row1 is
   *     before, equal or after row2. 
   *   deferred : by default we use underscore.deferred, but if you want to pass your own (like jquery's) just
   *              pass it here.
+  *   importer : The classname of any importer (passes through auto detection based on parameters. 
+  *              For example: <code>Miso.Importers.Polling</code>.
+  *   parser   : The classname of any parser (passes through auto detection based on parameters. 
+  *              For example: <code>Miso.Parsers.Delimited</code>.
+  *   resetOnFetch : set to true if any subsequent fetches after first one should overwrite the
+  *                  current data.
+  *   uniqueAgainst : Set to a column name to check for duplication on subsequent fetches.
+  *   interval : Polling interval. Set to any value in milliseconds to enable polling on a url.
   }
   */
-
   Miso.Dataset = function(options) {
     options = options || (options = {});
     this.length = 0;
@@ -217,7 +220,7 @@ Version 0.0.1.2
 
     //These are the methods that will be used to determine
     //how to update a dataset's data when fetch() is called
-    applications : {
+    _applications : {
 
       //Update existing values, used the pass column to match 
       //incoming data to existing rows.
@@ -291,6 +294,7 @@ Version 0.0.1.2
 
     //Takes a dataset and some data and applies one to the other
     apply : function( data ) {
+      
       var parsed = this.parser.parse( data );
 
       // first time fetch
@@ -305,7 +309,7 @@ Version 0.0.1.2
         
         // detect column types, add all rows blindly and cache them.
         Miso.Builder.detectColumnTypes(this, parsed.data);
-        this.applications.blind.call( this, parsed.data );
+        this._applications.blind.call( this, parsed.data );
         
         this.fetched = true;
       
@@ -316,7 +320,7 @@ Version 0.0.1.2
         this.reset();
 
         // blindly add the data.
-        this.applications.blind.call( this, parsed.data );
+        this._applications.blind.call( this, parsed.data );
 
       // append
       } else if (this.uniqueAgainst) {
@@ -326,22 +330,32 @@ Version 0.0.1.2
           throw new Error("You requested a unique add against a column that doesn't exist.");
         }
 
-        this.applications.againstColumn.call(this, parsed.data);
+        this._applications.againstColumn.call(this, parsed.data);
       
       // polling fetch, just blindly add rows
       } else {
-        this.applications.blind.call( this, parsed.data );
+        this._applications.blind.call( this, parsed.data );
       }
 
       Miso.Builder.cacheRows(this);
     },
 
+    /**
+    * Adds columns to the dataset.
+    */
     addColumns : function( columns ) {
       _.each(columns, function( column ) {
         this.addColumn( column );
       }, this);
     },
 
+    /** 
+    * Adds a single column to the dataset
+    * Parameters:
+    *   column : a set of properties describing a column (name, type, data etc.)
+    * Returns
+    *   Miso.Column object.
+    */
     addColumn : function(column) {
       //don't create a column that already exists
       if ( !_.isUndefined(this.column(column.name)) ) { 
@@ -359,7 +373,8 @@ Version 0.0.1.2
     /**
     * Adds an id column to the column definition. If a count
     * is provided, also generates unique ids.
-    * @param count {number} the number of ids to generate.
+    * Parameters:
+    *   count - the number of ids to generate.
     */
     _addIdColumn : function( count ) {
       // if we have any data, generate actual ids.
@@ -401,12 +416,12 @@ Version 0.0.1.2
     },
 
     /**
-    * Add a row to the dataset
-    * TODO: multiple rows?
-    * @param {object} row - an object representing a row in the form of:
-    * {columnName: value}
-    * @param {object} options - options
-    *   silent: boolean, do not trigger an add (and thus view updates) event
+    * Add a row to the dataset. Triggers add and change.
+    * Parameters:
+    *   row - an object representing a row in the form of:
+    *         {columnName: value}
+    *   options - options
+    *     silent: boolean, do not trigger an add (and thus view updates) event
     */    
     add : function(row, options) {
       if (!row._id) {
@@ -422,11 +437,11 @@ Version 0.0.1.2
     },
 
     /**
-    * Remove all rows that match the filter
-    * TODO: single row by id?
-    * @param {function} filter - function applied to each row
-    * @param {object} options - options. Optional.
-    *   silent: boolean, do not trigger an add (and thus view updates) event
+    * Remove all rows that match the filter. Fires remove and change.
+    * Parameters:
+    *   filter - row id OR function applied to each row to see if it should be removed.
+    *   options - options. Optional.
+    *     silent: boolean, do not trigger an add (and thus view updates) event
     */    
     remove : function(filter, options) {
       filter = this._rowFilter(filter);
@@ -454,11 +469,12 @@ Version 0.0.1.2
     },
 
     /**
-    * Update all rows that match the filter
-    * TODO: dynamic values
-    * @param {function} filter - filter rows to be updated
-    * @param {object} newProperties - values to be updated.
-    * @param {object} options - options. Optional.
+    * Update all rows that match the filter. Fires update and change.
+    * Parameters:
+    *   filter - row id OR filter rows to be updated
+    *   newProperties - values to be updated.
+    *   options - options. Optional
+    *     silent - set to true to prevent event triggering..
     */    
     update : function(filter, newProperties, options) {
       filter = this._rowFilter(filter);

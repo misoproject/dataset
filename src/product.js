@@ -98,7 +98,7 @@
               throw new Error("Can't sum up time");
             }
           });
-          return _.sum(_.map(columns, function(c) { return c.sum(); }));
+          return _.sum(_.map(columns, function(c) { return c._sum(); }));
         };
       }(columnObjects));
 
@@ -117,7 +117,7 @@
       var maxFunc = (function(columns) {
         return function() {
 
-          var max = _.max(_.map(columns, function(c) { return c.max(); }));
+          var max = _.max(_.map(columns, function(c) { return c._max(); }));
           
           // save types and type options to later coerce
           var type = columns[0].type;
@@ -144,7 +144,7 @@
       var minFunc = (function(columns) {
         return function() {
 
-          var min = _.min(_.map(columns, function(c) { return c.min(); }));
+          var min = _.min(_.map(columns, function(c) { return c._min(); }));
 
            // save types and type options to later coerce
           var type = columns[0].type;
@@ -189,15 +189,6 @@
       }(columnObjects));
 
       return this._calculated(columnObjects, meanFunc);
-    },
-
-    /*
-    * return a Product with the value of the mode
-    * of the column
-    * @param {column} column on which the value is calculated 
-    */    
-    median : function(column, options) {
-
     },
 
     /*

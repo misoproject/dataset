@@ -30,11 +30,11 @@
       }, this);
     },
 
-    sum : function() {
+    _sum : function() {
       return _.sum(this.data);
     },
 
-    mean : function() {
+    _mean : function() {
       var m = 0;
       for (var j = 0; j < this.data.length; j++) {
         m += this.numericAt(j);
@@ -43,11 +43,11 @@
       return Miso.types[this.type].coerce(m, this);
     },
 
-    median : function() {
+    _median : function() {
       return Miso.types[this.type].coerce(_.median(this.data), this);
     },
 
-    max : function() {
+    _max : function() {
       var max = -Infinity;
       for (var j = 0; j < this.data.length; j++) {
         if (Miso.types[this.type].compare(this.data[j], max) > 0) {
@@ -58,7 +58,7 @@
       return Miso.types[this.type].coerce(max, this);
     },
 
-    min : function() {
+    _min : function() {
       var min = Infinity;
       for (var j = 0; j < this.data.length; j++) {
         if (Miso.types[this.type].compare(this.data[j], min) < 0) {

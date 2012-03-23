@@ -30,7 +30,7 @@
       test : function(v) {
         return true;
       },
-       compare : function(s1, s2) {
+      compare : function(s1, s2) {
         if (s1 < s2) { return -1; }
         if (s1 > s2) { return 1;  }
         return 0;
