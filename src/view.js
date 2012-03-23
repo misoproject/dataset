@@ -77,7 +77,7 @@
   *   parent : parent dataset
   *   filter : filter specification TODO: document better
   */
-  Miso.View = function(options) {
+  Miso.DataView = function(options) {
     //rowFilter, columnFilter, parent
     options = options || (options = {});
 
@@ -90,7 +90,7 @@
     return this;
   };
 
-  _.extend(Miso.View.prototype, {
+  _.extend(Miso.DataView.prototype, {
 
     _initialize: function(options) {
       
@@ -210,7 +210,7 @@
       options.parent = this;
       options.filter = filter || {};
 
-      return new Miso.View(options);
+      return new Miso.DataView(options);
     },
 
     _selectData : function() {
@@ -327,7 +327,7 @@
     * @param {array} filter - an array of column names
     */    
     columns : function(columnsArray) {
-     return new Miso.View({
+     return new Miso.DataView({
         filter : { columns : columnsArray },
         parent : this
       });
@@ -521,7 +521,7 @@
     * the same as where
     */    
     rows : function(filter) {
-      return new Miso.View({
+      return new Miso.DataView({
         filter : { rows : filter },
         parent : this
       });

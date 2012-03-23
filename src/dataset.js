@@ -44,7 +44,7 @@ Version 0.0.1.2
     return this;
   };
 
-  _.extend(Miso.Dataset.prototype, Miso.View.prototype, {
+  _.extend(Miso.Dataset.prototype, Miso.DataView.prototype, {
 
     /**
     * @private

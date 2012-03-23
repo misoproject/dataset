@@ -1,5 +1,5 @@
 /**
-* Miso.Dataset - v0.1.0 - 3/22/2012
+* Miso.Dataset - v0.1.0 - 3/23/2012
 * http://github.com/alexgraul/Dataset
 * Copyright (c) 2012 Alex Graul, Irene Ros;
 * Licensed MIT, GPL
@@ -352,7 +352,7 @@
     
   /**
   * This is a generic collection of dataset building utilities
-  * that are used by Miso.Dataset and Miso.View.
+  * that are used by Miso.Dataset and Miso.DataView.
   */
   Miso.Builder = {
 
@@ -520,7 +520,7 @@
   *   parent : parent dataset
   *   filter : filter specification TODO: document better
   */
-  Miso.View = function(options) {
+  Miso.DataView = function(options) {
     //rowFilter, columnFilter, parent
     options = options || (options = {});
 
@@ -533,7 +533,7 @@
     return this;
   };
 
-  _.extend(Miso.View.prototype, {
+  _.extend(Miso.DataView.prototype, {
 
     _initialize: function(options) {
       
@@ -653,7 +653,7 @@
       options.parent = this;
       options.filter = filter || {};
 
-      return new Miso.View(options);
+      return new Miso.DataView(options);
     },
 
     _selectData : function() {
@@ -770,7 +770,7 @@
     * @param {array} filter - an array of column names
     */    
     columns : function(columnsArray) {
-     return new Miso.View({
+     return new Miso.DataView({
         filter : { columns : columnsArray },
         parent : this
       });
@@ -964,7 +964,7 @@
     * the same as where
     */    
     rows : function(filter) {
-      return new Miso.View({
+      return new Miso.DataView({
         filter : { rows : filter },
         parent : this
       });
@@ -1126,7 +1126,7 @@ Version 0.0.1.2
     return this;
   };
 
-  _.extend(Miso.Dataset.prototype, Miso.View.prototype, {
+  _.extend(Miso.Dataset.prototype, Miso.DataView.prototype, {
 
     /**
     * @private
@@ -2579,6 +2579,76 @@ Version 0.0.1.2
 
 // }(this, _));
 
+(function(global,_){
+  
+  var Miso = (global.Miso || (global.Miso = {}));
+
+  Miso.Importers.Polling = function(options) {
+    options = options || {};
+    this.interval = options.interval || 1000;
+    this._def = null;
+
+    Miso.Importers.Remote.apply(this, [options]);
+  };
+
+  _.extend(Miso.Importers.Polling.prototype, Miso.Importers.Remote.prototype, {
+    fetch : function(options) {
+
+      if (this._def === null) {
+
+        this._def = _.Deferred();
+
+        // wrap success with deferred resolution
+        this.success_callback = _.bind(function(data) {
+          options.success(this.extract(data));
+          this._def.resolve(this);
+        }, this);
+
+        // wrap error with defered rejection
+        this.error_callback = _.bind(function(error) {
+          options.error(error);
+          this._def.reject(error);
+        }, this);
+      } 
+
+      // on success, setTimeout another call
+      _.when(this._def.promise()).then(function(importer) {
+        
+        var callback = _.bind(function() {
+          this.fetch({
+            success : this.success_callback,
+            error   : this.error_callback
+          });
+        }, importer);
+
+        setTimeout(callback, importer.interval);
+        // reset deferred
+        importer._def = _.Deferred();
+      });
+
+      Miso.Xhr(_.extend(this.params, {
+        success : this.success_callback,
+        error : this.error_callback
+      }));
+
+      window.imp = this;
+    },
+
+    stop : function() {
+      if (this._def !== null) {
+        this._def.reject();
+      }
+    },
+
+    start : function() {
+      if (this._def !== null) {
+        this._def = _.Deferred();
+        this.fetch();
+      }
+    }
+  });
+
+}(this, _));
 (function(global, _) {
   var Miso = (global.Miso || (global.Miso = {}));
   // ------ Strict Parser ---------

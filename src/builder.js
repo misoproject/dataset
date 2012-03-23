@@ -4,7 +4,7 @@
     
   /**
   * This is a generic collection of dataset building utilities
-  * that are used by Miso.Dataset and Miso.View.
+  * that are used by Miso.Dataset and Miso.DataView.
   */
   Miso.Builder = {
 

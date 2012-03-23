@@ -27,6 +27,7 @@ config.init({
       "src/importers/local.js",
       "src/importers/remote.js",
       "src/importers/google_spreadsheet.js",
+      "src/importers/polling.js",
       "src/parsers/strict.js",
       "src/parsers/object.js",
       "src/parsers/delimited.js",
