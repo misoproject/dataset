@@ -25,7 +25,7 @@
     if (this.parent.syncable) {
       _.extend(this, Miso.Events);
       this.syncable = true;
-      this.parent.bind("change", this.sync, this);  
+      this.parent.bind("change", this._sync, this);  
     }
 
     return this;
@@ -33,7 +33,7 @@
 
   // inherit all of dataset's methods.
   _.extend(Miso.Derived.prototype, Miso.Dataset.prototype, {
-    sync : function(event) {
+    _sync : function(event) {
       // recompute the function on an event.
       // TODO: would be nice to be more clever about this at some point.
       this.func.call(this.args);

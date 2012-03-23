@@ -2,12 +2,19 @@
 
   var Miso = global.Miso;
 
+  /**
+  * A single column in a dataset
+  * Parameters:
+  *   options
+  *     name
+  *     type (from Miso.types)
+  *     data (optional)
+  *     format (for time type.)
+  *     any additional arguments here..
+  * Returns:
+  *   new Miso.Column
+  */
   Miso.Column = function(options) {
-    // copy over:
-    //   type
-    //   name
-    //   format (for "time" type)
-    //   anyOtherTypeOptions... (optional)
     _.extend(this, options);
     this._id = options.id || _.uniqueId();
     this.data = options.data || [];
@@ -16,14 +23,34 @@
 
   _.extend(Miso.Column.prototype, {
 
+    /**
+    * Converts any value to this column's type for a given position
+    * in some source array.
+    * Parameters:
+    *   value
+    *   index
+    * Returns: 
+    *   number
+    */
     toNumeric : function(value, index) {
       return Miso.types[this.type].numeric(value, index);  
     },
 
+    /**
+    * Returns the numeric representation of a datum at any index in this 
+    * column.
+    * Parameters:
+    *   index - position in data array
+    * Returns
+    *   number
+    */
     numericAt : function(index) {
       return this.toNumeric(this.data[index], index);
     },
 
+    /**
+    * Coerces the entire column's data to the column type.
+    */
     coerce : function() {
       this.data = _.map(this.data, function(datum) {
         return Miso.types[this.type].coerce(datum, this);
@@ -70,15 +97,17 @@
   });
 
   /**
-  * @constructor
-  *
   * Creates a new view.
-  * @param {object} options - initialization parameters:
-  *   parent : parent dataset
-  *   filter : filter specification TODO: document better
+  * Parameters
+  *   options - initialization parameters:
+  *     parent : parent dataset
+  *     filter : filter specification TODO: document better
+  *       columns : column name or multiple names
+  *       rows : rowId or function
+  * Returns
+  *   new Miso.Dataview.
   */
   Miso.DataView = function(options) {
-    //rowFilter, columnFilter, parent
     options = options || (options = {});
 
     if (_.isUndefined(options.parent)) {
@@ -115,7 +144,7 @@
 
       // bind to parent if syncable
       if (this.syncable) {
-        this.parent.bind("change", this.sync, this);  
+        this.parent.bind("change", this._sync, this);  
       }
     },
 
@@ -125,7 +154,7 @@
     * TODO Should this be moved to sync.js? Not sure I want to separate it
     * But also not sure it still belongs here.
     */
-    sync : function(event) {
+    _sync : function(event) {
       var deltas = event.deltas, eventType = null;
  
       // iterate over deltas and update rows that are affected.
@@ -201,8 +230,11 @@
 
     /**
     * Returns a dataset view based on the filtration parameters 
-    * @param {filter} object with optional columns array and filter object/function 
-    * @param {options} options object
+    * Parameters:
+    *   filter - object with optional columns array and filter object/function 
+    *   options - Options.
+    * Returns:
+    *   new Miso.DataView
     */
     where : function(filter, options) {
       options = options || {};
@@ -248,7 +280,8 @@
     /**
     * Returns a normalized version of the column filter function
     * that can be executed.
-    * @param {name\array of names} columnFilter - function or column name
+    * Parameters:
+    *   columnFilter - function or column name
     */
     _columnFilter: function(columnFilter) {
       var columnSelector;
@@ -301,21 +334,16 @@
     },
 
     /**
-    * @public
     * Returns a dataset view of the given column name
-    * @param {string} name - name of the column to be selected
+    * Parameters:
+    *   name - name of the column to be selected
+    * Returns:
+    *   Miso.Column.
     */
     column : function(name) {
       return this._column(name);
     },
 
-    /**
-    * @private
-    * Column accessor that just returns column object
-    * witout creating a view of it. Used for Products.
-    * @param {string} name - Column name.
-    * @returns {object} column 
-    */
     _column : function(name) {
       if (_.isUndefined(this._columnPositionByName)) { return undefined; }
       var pos = this._columnPositionByName[name];
@@ -324,7 +352,10 @@
 
     /**
     * Returns a dataset view of the given columns 
-    * @param {array} filter - an array of column names
+    * Parameters:
+    *   columnsArray - an array of column names
+    * Returns:
+    *   Miso.DataView.
     */    
     columns : function(columnsArray) {
      return new Miso.DataView({
@@ -335,7 +366,8 @@
 
     /**
     * Returns the names of all columns, not including id column.
-    * @returns {array} columnNames
+    * Returns:
+    *   columnNames array
     */
     columnNames : function() {
       var cols = _.pluck(this._columns, 'name');
@@ -356,11 +388,11 @@
     },
 
     /**
-    * @public
     * Iterates over all rows in the dataset
-    * @param {function} iterator - function that is passed each row
-    * iterator(rowObject, index, dataset)
-    * @param {object} context - options object. Optional.
+    * Paramters:
+    *   iterator - function that is passed each row
+    *              iterator(rowObject, index, dataset)
+    *   context - options object. Optional.
     */    
     each : function(iterator, context) {
       for(var i = 0; i < this.length; i++) {
@@ -370,9 +402,10 @@
 
     /**
     * Iterates over each column.
-    * @param {function} iterator - function that is passed each column name
-    * iterator(colName, index, dataset)
-    * @param {object} context - options object. Optional.
+    * Parameters:
+    *   iterator - function that is passed:
+    *              iterator(colName, column, index)
+    *   context - options object. Optional.
     */
     eachColumn : function(iterator, context) {
       // skip id col
@@ -383,31 +416,27 @@
     },
 
     /**
-    * @public
     * Returns a single row based on its position (NOT ID.)
-    * @param {number} i - position index
-    * @returns {object} row
+    * Paramters:
+    *   i - position index
+    * Returns:
+    *   row object representation
     */
     rowByPosition : function(i) {
       return this._row(i);
     },
 
     /** 
-    * @public
     * Returns a single row based on its id (NOT Position.)
-    * @param {number} id - unique id
-    * @returns {object} row
+    * Parameters:
+    *   id - unique id
+    * Returns:
+    *   row object representation
     */
     rowById : function(id) {
       return this._row(this._rowPositionById[id]);
     },
 
-    /**
-    * @private
-    * A row retriever based on index position in column data.
-    * @param {number} i - position index
-    * @returns {object} row
-    */
     _row : function(pos) {
       var row = {};
       _.each(this._columns, function(column) {
@@ -415,15 +444,6 @@
       });
       return row;   
     },
-
-    /**
-    * @private
-    * Deletes a row from all columns and caches.
-    * Never manually call this. Views are immutable. This is used
-    * by the auto syncing capability. Using this against your view
-    * will result in dataloss. Only datasets can have rows be removed.
-    * @param {number} rowPos - the row to delete at any position
-    */
     _remove : function(rowId) {
       var rowPos = this._rowPositionById[rowId];
 
@@ -440,12 +460,6 @@
       return this;
     },
 
-    /**
-    * @private
-    * Adds a row to the appropriate column positions
-    * and updates caches. This should never be called directly!
-    * @param {object} row - A row representation.
-    */
     _add : function(row, options) {
       
       // first coerce all the values appropriatly
@@ -535,8 +549,9 @@
     * License:
     *   Copyright (c) 2009, Jon Bomgardner.
     *   This file is licensed under an MIT style license
-    *
-    * @param {object} options - Optional.
+    * Parameters:
+    *   options - Optional
+    *   
     */    
     sort : function(options) {
       options = options || {};
@@ -629,7 +644,7 @@
         swap(this.length - 1,this.length - 2);
       }
 
-      if (this.syncable) {
+      if (this.syncable && options.silent) {
         this.trigger("sort");
       }
     }

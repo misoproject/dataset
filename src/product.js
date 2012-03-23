@@ -34,7 +34,7 @@
     * This is a callback method that is responsible for recomputing
     * the value based on the column its closed on.
     */
-    sync : function(event) {
+    _sync : function(event) {
       this.func();
     },
 
@@ -228,7 +228,7 @@
 
       // auto bind to parent dataset if its syncable
       if (this.syncable) {
-        this.bind("change", prod.sync, prod); 
+        this.bind("change", prod._sync, prod); 
         return prod; 
       } else {
         return producer();
