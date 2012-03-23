@@ -3181,8 +3181,9 @@
     * License:
     *   Copyright (c) 2009, Jon Bomgardner.
     *   This file is licensed under an MIT style license
-    *
-    * @param {object} options - Optional.
+    * Parameters:
+    *   options - Optional
+    *   
     */    
     sort : function(options) {
       options = options || {};
