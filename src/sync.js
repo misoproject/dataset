@@ -1,15 +1,14 @@
 (function(global, _) {
 
-  /* @exports namespace */
   var Miso = global.Miso || (global.Miso = {});
 
   /**
   * A representation of an event as it is passed through the
   * system. Used for view synchronization and other default
   * CRUD ops.
-  * @constructor
-  * @param {string} ev - Name of event
-  * @param {object|array of objects} deltas - array of deltas.
+  * Parameters:
+  *   deltas - array of deltas.
+  *     each delta: { changed : {}, old : {} }
   */
   Miso.Event = function(deltas) {
     if (!_.isArray(deltas)) {
@@ -68,20 +67,18 @@
     }
   });
   
-  /**
-  * @name Miso.Events
-  * - Event Related Methods
-  * @property {object} Miso.Events - A module aggregating some functionality
-  *  related to events. Will be used to extend other classes.
-  */
+  
+  //Event Related Methods
   Miso.Events = {};
 
   /**
   * Bind callbacks to dataset events
-  * @param {string} ev - name of the event
-  * @param {function} callback - callback function
-  * @param {object} context - context for the callback. optional.
-  * @returns {object} context
+  * Parameters:
+  *   ev - name of the event
+  *   callback - callback function
+  *   context - context for the callback. optional.
+  * Returns 
+  *   object being bound to.
   */
   Miso.Events.bind = function (ev, callback, context) {
     var calls = this._callbacks || (this._callbacks = {});
@@ -97,8 +94,11 @@
   * Remove one or many callbacks. If `callback` is null, removes all
   * callbacks for the event. If `ev` is null, removes all bound callbacks
   * for all events.
-  * @param {string} ev - event name
-  * @param {function} callback - callback function to be removed
+  * Parameters:
+  *   ev - event name
+  *   callback - Optional. callback function to be removed
+  * Returns:
+  *   The object being unbound from.
   */
   Miso.Events.unbind = function(ev, callback) {
     var calls, node, prev;
@@ -122,9 +122,11 @@
   };
 
   /**
-  * @public
   * trigger a given event
-  * @param {string} eventName - name of event
+  * Parameters:
+  *   eventName - name of event
+  * Returns;
+  *   object being triggered on.
   */
   Miso.Events.trigger = function(eventName) {
     var node, calls, callback, args, ev, events = ['all', eventName];
@@ -145,13 +147,7 @@
     return this;
   };
 
-  /**
-  * Used to build event objects accross the application.
-  * @param {string} ev - event name
-  * @public
-  * @param {object|array of objects} delta - change delta object.
-  * @returns {object} event - Event object.
-  */
+  // Used to build event objects accross the application.
   Miso.Events._buildEvent = function(delta) {
     return new Miso.Event(delta);
   };

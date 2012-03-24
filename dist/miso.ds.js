@@ -190,16 +190,15 @@
 
 (function(global, _) {
 
-  /* @exports namespace */
   var Miso = global.Miso || (global.Miso = {});
 
   /**
   * A representation of an event as it is passed through the
   * system. Used for view synchronization and other default
   * CRUD ops.
-  * @constructor
-  * @param {string} ev - Name of event
-  * @param {object|array of objects} deltas - array of deltas.
+  * Parameters:
+  *   deltas - array of deltas.
+  *     each delta: { changed : {}, old : {} }
   */
   Miso.Event = function(deltas) {
     if (!_.isArray(deltas)) {
@@ -258,20 +257,18 @@
     }
   });
   
-  /**
-  * @name Miso.Events
-  * - Event Related Methods
-  * @property {object} Miso.Events - A module aggregating some functionality
-  *  related to events. Will be used to extend other classes.
-  */
+  
+  //Event Related Methods
   Miso.Events = {};
 
   /**
   * Bind callbacks to dataset events
-  * @param {string} ev - name of the event
-  * @param {function} callback - callback function
-  * @param {object} context - context for the callback. optional.
-  * @returns {object} context
+  * Parameters:
+  *   ev - name of the event
+  *   callback - callback function
+  *   context - context for the callback. optional.
+  * Returns 
+  *   object being bound to.
   */
   Miso.Events.bind = function (ev, callback, context) {
     var calls = this._callbacks || (this._callbacks = {});
@@ -287,8 +284,11 @@
   * Remove one or many callbacks. If `callback` is null, removes all
   * callbacks for the event. If `ev` is null, removes all bound callbacks
   * for all events.
-  * @param {string} ev - event name
-  * @param {function} callback - callback function to be removed
+  * Parameters:
+  *   ev - event name
+  *   callback - Optional. callback function to be removed
+  * Returns:
+  *   The object being unbound from.
   */
   Miso.Events.unbind = function(ev, callback) {
     var calls, node, prev;
@@ -312,9 +312,11 @@
   };
 
   /**
-  * @public
   * trigger a given event
-  * @param {string} eventName - name of event
+  * Parameters:
+  *   eventName - name of event
+  * Returns;
+  *   object being triggered on.
   */
   Miso.Events.trigger = function(eventName) {
     var node, calls, callback, args, ev, events = ['all', eventName];
@@ -335,13 +337,7 @@
     return this;
   };
 
-  /**
-  * Used to build event objects accross the application.
-  * @param {string} ev - event name
-  * @public
-  * @param {object|array of objects} delta - change delta object.
-  * @returns {object} event - Event object.
-  */
+  // Used to build event objects accross the application.
   Miso.Events._buildEvent = function(delta) {
     return new Miso.Event(delta);
   };
@@ -2474,133 +2470,6 @@ Version 0.0.1.2
   _.extend(Miso.Importers.GoogleSpreadsheet.prototype, Miso.Importers.Remote.prototype);
 
 }(this, _));
-
-// <<<<<<< HEAD
-//   /**
-//   * @constructor
-//   * Instantiates a new google spreadsheet importer.
-//   * @param {object} options - Options object. Requires at the very least:
-//   *     key - the google spreadsheet key
-//   *     worksheet - the index of the spreadsheet to be retrieved.
-//   *   OR
-//   *     url - a more complex url (that may include filtering.) In this case
-//   *           make sure it's returning the feed json data.
-//   */
-//   Miso.Importers.GoogleSpreadsheet = function(options) {
-//     options = options || {};
-//     if (options.url) {
-
-//       options.url = options.url;
-// =======
-// /**
-// * @constructor
-// * Google Spreadsheet Parser. 
-// * Used in conjunction with the Google Spreadsheet Importer.
-// * Requires the following:
-// * @param {object} data - the google spreadsheet data.
-// * @param {object} options - Optional options argument.
-// */
-// Miso.Parsers.GoogleSpreadsheet = function(data, options) {
-//   this.options = options || {};
-//   this._data = data;
-// };
-
-// _.extend(Miso.Parsers.GoogleSpreadsheet.prototype, Miso.Parsers.prototype, {
-
-//   _buildColumns : function(d, n) {
-//     d._columns = [];
-
-//     var positionRegex = /([A-Z]+)(\d+)/; 
-//     var columnPositions = {};
-
-//     _.each(this._data.feed.entry, function(cell, index) {
-
-//       var parts = positionRegex.exec(cell.title.$t),
-//       column = parts[1],
-//       position = parseInt(parts[2], 10);
-
-//       if (_.isUndefined(columnPositions[column])) {
-// >>>>>>> master
-
-//     } else {
-
-//       if (_.isUndefined(options.key)) {
-
-//         throw new Error("Set options.key to point to your google document.");
-//       } else {
-
-//         options.worksheet = options.worksheet || 1;
-//         options.url = "https://spreadsheets.google.com/feeds/cells/" + options.key + "/" + options.worksheet + "/public/basic?alt=json-in-script&callback=";
-//         delete options.key;
-//         delete options.worksheet;
-//       }
-//     }
-
-// <<<<<<< HEAD
-//     this.parser = Miso.Parsers.GoogleSpreadsheet;
-//     this.params = {
-//       type : "GET",
-//       url : options.url,
-//       dataType : "jsonp"
-//     };
-
-//     return this;
-//   };
-
-//   _.extend(Miso.Importers.GoogleSpreadsheet.prototype, Miso.Importers.Remote.prototype);
-// =======
-//     return d;
-//   }
-
-// });
-
-// /**
-// * @constructor
-// * Instantiates a new google spreadsheet importer.
-// * @param {object} options - Options object. Requires at the very least:
-// *     key - the google spreadsheet key
-// *     worksheet - the index of the spreadsheet to be retrieved.
-// *   OR
-// *     url - a more complex url (that may include filtering.) In this case
-// *           make sure it's returning the feed json data.
-// */
-// Miso.Importers.GoogleSpreadsheet = function(options) {
-//   options = options || {};
-//   if (options.url) {
-
-//     options.url = options.url;
-
-//   } else {
-
-//     if (_.isUndefined(options.key)) {
-
-//       throw new Error("Set options.key to point to your google document.");
-//     } else {
-
-//       options.worksheet = options.worksheet || 1;
-//       options.url = "https://spreadsheets.google.com/feeds/cells/" + options.key + "/" + options.worksheet + "/public/basic?alt=json-in-script&callback=";
-//       delete options.key;
-//       delete options.worksheet;
-//     }
-//   }
-
-//   this.parser = Miso.Parsers.GoogleSpreadsheet;
-//   this.params = {
-//     type : "GET",
-//     url : options.url,
-//     dataType : "jsonp"
-//   };
-
-//   return this;
-// };
-
-// _.extend(
-//   Miso.Importers.GoogleSpreadsheet.prototype, 
-// Miso.Importers.Remote.prototype);
-// >>>>>>> master
-
-// }(this, _));
-
 (function(global,_){
   
   var Miso = (global.Miso || (global.Miso = {}));
