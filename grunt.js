@@ -15,7 +15,6 @@ config.init({
     'dist/miso.ds.js' : [
       '<banner>',
       "src/types.js",
-      "src/core.js",
       "src/sync.js",
       "src/builder.js",
       "src/view.js",
@@ -23,15 +22,15 @@ config.init({
       "src/product.js",
       "src/derived.js",
       "src/importer.js",
-      "src/parser.js",
       "src/importers/local.js",
       "src/importers/remote.js",
-      "src/importers/google_spreadsheet.js",
       "src/importers/polling.js",
+      "src/importers/google_spreadsheet.js",
+      "src/parser.js",
       "src/parsers/strict.js",
       "src/parsers/object.js",
-      "src/parsers/delimited.js",
-      "src/parsers/google_spreadhsheet.js"
+      "src/parsers/google_spreadsheet.js",
+      "src/parsers/delimited.js"
     ],
 
     'dist/miso.ds.deps.js' : [
