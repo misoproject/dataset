@@ -209,7 +209,7 @@
                 value  = this.parent.column(columnToGroup).data[i],
                 binPosition = categoryPositions[category];
 
-            column.data[binPosition].push(value);
+            column.data[binPosition].push(this.parent.rowByPosition(i));
           }, this);
         }
 
@@ -226,11 +226,11 @@
               
               // save the original ids that created this group by?
               oidcol.data[binPos] = oidcol.data[binPos] || [];
-              oidcol.data[binPos].push(bin);
+              oidcol.data[binPos].push(_.map(bin, function(row) { return row._id; }));
               oidcol.data[binPos] = _.flatten(oidcol.data[binPos]);
 
               // compute the final value.
-              column.data[binPos] = this.method(bin);
+              column.data[binPos] = this.method(_.map(bin, function(row) { return row[colName]; }));
               this.length++;
             }
           }, this);
