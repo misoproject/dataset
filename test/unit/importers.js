@@ -77,12 +77,12 @@
       data : Miso.alphabet_strict,
       strict : true,
       columns : [
-        { name : 'name', type : 'number' }
+        { name : 'numeric_value', type : 'string' }
       ]
     });
     _.when(ds.fetch()).then(function(){
-      ok(ds._column('name').type === "number", "character is 2 column");
-      ok(_.uniq(ds._column('name').data)[0] === null, "character has been coerced to null");
+      ok(ds._column('numeric_value').type === "string", "numeric_value is type string");
+      ok(_.uniq(ds._column('numeric_value').data)[0] === "1", "numeric_value has been coerced to string");
     });
   });
 

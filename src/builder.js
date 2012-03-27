@@ -41,6 +41,7 @@
         
         // check if the column already has a type defined
         if ( column.type ) { 
+          column.force = true;
           return; 
         } else {
           Miso.Builder.detectColumnType(column, data);

@@ -226,10 +226,16 @@ Version 0.0.1.2
       //incoming data to existing rows.
       againstColumn : function(data) {
         
-        // get against unique col
-        var uniqCol = this.column(this.uniqueAgainst);
+        var rows = [],
 
-        var len = data[this._columns[1].name].length;
+            colNames = _.keys(data),   
+            row,
+            // get against unique col
+            uniqCol = this.column(this.uniqueAgainst),
+            len = data[this._columns[1].name].length,
+            dataLength = _.max(_.map(colNames, function(name) {
+              return data[name].length;
+            }, this));
 
         var posToRemove = [], i;
         for(i = 0; i < len; i++) {
@@ -247,49 +253,39 @@ Version 0.0.1.2
         // array and throw all other ids off.
         posToRemove.sort().reverse();
 
-        _.each(data, function(columnData, columnName){
-          
-          var col = this._column(columnName);
-          
-          // remove offending ids
-          _.each(posToRemove, function(pos){
-            columnData.splice(pos, 1);
-          });
-
-          // now coerce the data.
-          col.data = col.data.concat( _.map(columnData, function(datum) {
-            return Miso.types[col.type].coerce(datum, col);
-          }, this));
-          
-        }, this);
-
-        // now fill in ids for the new rows
-        for( i = 0; i < (len - posToRemove.length); i++) {
-          this._columns[0].data.push(_.uniqueId());
+        for(i = 0; i < dataLength; i++) {
+          if (posToRemove.indexOf(i) === -1) {
+            row = {};
+            for(var j = 0; j < colNames.length; j++) {
+              row[colNames[j]] = data[colNames[j]][i];
+            }
+            rows.push(row);
+          }
         }
 
-        this.length += (len - posToRemove.length);
+        this.add(rows);
       },
 
       //Always blindly add new rows
       blind : function( data ) {
-        var columnName, columnData, rows = [];
+        var columnName, columnData, rows = [], row;
 
-        _.each(this._columns, function(col) {
-          columnName = col.name;
-          if (columnName === "_id") {
-            // insert as many uniqueIds as are necessary.
-            for(var i = 0; i < data[_.keys(data)[0]].length; i++) {
-              col.data.push(_.uniqueId());
-              this.length++;
-            }
-          } else {
-            columnData = data[columnName];
-            col.data = col.data.concat( _.map(columnData, function(datum) {
-              return Miso.types[col.type].coerce(datum, col);
-            }, this) );
+        // figure out the length of rows we have.
+        var colNames = _.keys(data),
+            dataLength = _.max(_.map(colNames, function(name) {
+              return data[name].length;
+            }, this));
+
+        // build row objects
+        for( var i = 0; i < dataLength; i++) {
+          row = {};
+          for(var j = 0; j < colNames.length; j++) {
+            row[colNames[j]] = data[colNames[j]][i];
           }
-        }, this);
+          rows.push(row);
+        }
+
+        this.add(rows);
       }
     },
 

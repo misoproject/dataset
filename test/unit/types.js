@@ -7,7 +7,7 @@
   
   module("Miso Numeric Type");
   test("Check number type", function() {
-    var notNumbers = ['a', undefined, {}, 'll22'];
+    var notNumbers = ['a', {}, 'll22'];
 
     _.each(numbers, function(num) {
       ok(Miso.typeOf(num) === "number", "Value should be number");
@@ -15,8 +15,8 @@
     });
 
     _.each(notNumbers, function(nn) {
-      ok(Miso.typeOf(nn) !== "number", "Value should not be number");
-      ok(!Miso.types.number.test(nn), "Should not return true for a number");
+      ok(Miso.typeOf(nn) !== "number", "Value should not be number " + nn);
+      ok(!Miso.types.number.test(nn), "Should not return true for a number " + nn);
     });
   });
 
@@ -43,7 +43,7 @@
   var booleans = ['true', 'false', true];
 
   test("Check boolean type", function() {
-    var notBooleans = [1, 'foo', null, undefined, {}];
+    var notBooleans = [1, 'foo', {}];
     _.each(booleans, function(bool) {
       ok(Miso.typeOf(bool) === "boolean", "Value should be boolean");
       ok(Miso.types.boolean.test(bool), "Should return true for a bool");

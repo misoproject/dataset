@@ -468,14 +468,14 @@
             Type = Miso.types[column.type];
 
         // test if value matches column type
-        if (Type.test(row[column.name], column.typeOptions)) {
+        if (column.force || Type.test(row[column.name], column)) {
           
           // if so, coerce it.
-          row[column.name] = Type.coerce(row[column.name], column.typeOptions);
+          row[column.name] = Type.coerce(row[column.name], column);
 
         } else {
           throw("incorrect value '" + row[column.name] + 
-                "' of type " + Miso.typeOf(row[column.name], column.typeOptions) +
+                "' of type " + Miso.typeOf(row[column.name], column) +
                 " passed to column with type " + column.type);  
         
         }
@@ -489,7 +489,11 @@
           column.data.push(row[column.name] ? row[column.name] : null);
         });
 
+        this.length++;
+
         // add row indeces to the cache
+        this._rowIdByPosition = this._rowIdByPosition || (this._rowIdByPosition = []);
+        this._rowPositionById = this._rowPositionById || (this._rowPositionById = {});
         this._rowIdByPosition.push(row._id);
         this._rowPositionById[row._id] = this._rowIdByPosition.length;
       
@@ -502,9 +506,10 @@
         };
 
         var i;
+        this.length++;
         for(i = 0; i < this.length; i++) {
           var row2 = this.rowByPosition(i);
-          if (this.comparator(row, row2) < 0) {
+          if (_.isUndefined(row2._id) || this.comparator(row, row2) < 0) {
             
             _.each(this._columns, function(column) {
               insertAt(i, (row[column.name] ? row[column.name] : null), column.data);
@@ -523,8 +528,6 @@
           this._rowPositionById[row._id] = i;
         });
       }
-
-      this.length++;
       
       return this;
     },

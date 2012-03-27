@@ -46,7 +46,7 @@
         return _.isNull(v) ? null : v.toString();
       },
       test : function(v) {
-        return (typeof v === 'string');
+        return (v === null || typeof v === "undefined" || typeof v === 'string');
       },
       compare : function(s1, s2) {
         if (s1 < s2) { return -1; }
@@ -70,7 +70,7 @@
         return Boolean(v);
       },
       test : function(v) {
-        if (typeof v === 'boolean' || this.regexp.test( v ) ) {
+        if (v === null || typeof v === "undefined" || typeof v === 'boolean' || this.regexp.test( v ) ) {
           return true;
         } else {
           return false;
@@ -96,7 +96,7 @@
         return _.isNaN(v) ? null : v;
       },
       test : function(v) {
-        if (typeof v === 'number' || this.regexp.test( v ) ) {
+        if (v === null || typeof v === "undefined" || typeof v === 'number' || this.regexp.test( v ) ) {
           return true;
         } else {
           return false;
@@ -159,6 +159,9 @@
 
       test : function(v, options) {
         options = options || {};
+        if (v === null || typeof v === "undefined") {
+          return true;
+        }
         if (_.isString(v) ) {
           var format = options.format || this.format,
               regex = this._regexp(format);

@@ -53,7 +53,7 @@
         return _.isNull(v) ? null : v.toString();
       },
       test : function(v) {
-        return (typeof v === 'string');
+        return (v === null || typeof v === "undefined" || typeof v === 'string');
       },
       compare : function(s1, s2) {
         if (s1 < s2) { return -1; }
@@ -77,7 +77,7 @@
         return Boolean(v);
       },
       test : function(v) {
-        if (typeof v === 'boolean' || this.regexp.test( v ) ) {
+        if (v === null || typeof v === "undefined" || typeof v === 'boolean' || this.regexp.test( v ) ) {
           return true;
         } else {
           return false;
@@ -103,7 +103,7 @@
         return _.isNaN(v) ? null : v;
       },
       test : function(v) {
-        if (typeof v === 'number' || this.regexp.test( v ) ) {
+        if (v === null || typeof v === "undefined" || typeof v === 'number' || this.regexp.test( v ) ) {
           return true;
         } else {
           return false;
@@ -166,6 +166,9 @@
 
       test : function(v, options) {
         options = options || {};
+        if (v === null || typeof v === "undefined") {
+          return true;
+        }
         if (_.isString(v) ) {
           var format = options.format || this.format,
               regex = this._regexp(format);
@@ -385,6 +388,7 @@
         
         // check if the column already has a type defined
         if ( column.type ) { 
+          column.force = true;
           return; 
         } else {
           Miso.Builder.detectColumnType(column, data);
@@ -907,14 +911,14 @@
             Type = Miso.types[column.type];
 
         // test if value matches column type
-        if (Type.test(row[column.name], column.typeOptions)) {
+        if (column.force || Type.test(row[column.name], column)) {
           
           // if so, coerce it.
-          row[column.name] = Type.coerce(row[column.name], column.typeOptions);
+          row[column.name] = Type.coerce(row[column.name], column);
 
         } else {
           throw("incorrect value '" + row[column.name] + 
-                "' of type " + Miso.typeOf(row[column.name], column.typeOptions) +
+                "' of type " + Miso.typeOf(row[column.name], column) +
                 " passed to column with type " + column.type);  
         
         }
@@ -928,7 +932,11 @@
           column.data.push(row[column.name] ? row[column.name] : null);
         });
 
+        this.length++;
+
         // add row indeces to the cache
+        this._rowIdByPosition = this._rowIdByPosition || (this._rowIdByPosition = []);
+        this._rowPositionById = this._rowPositionById || (this._rowPositionById = {});
         this._rowIdByPosition.push(row._id);
         this._rowPositionById[row._id] = this._rowIdByPosition.length;
       
@@ -941,9 +949,10 @@
         };
 
         var i;
+        this.length++;
         for(i = 0; i < this.length; i++) {
           var row2 = this.rowByPosition(i);
-          if (this.comparator(row, row2) < 0) {
+          if (_.isUndefined(row2._id) || this.comparator(row, row2) < 0) {
             
             _.each(this._columns, function(column) {
               insertAt(i, (row[column.name] ? row[column.name] : null), column.data);
@@ -962,8 +971,6 @@
           this._rowPositionById[row._id] = i;
         });
       }
-
-      this.length++;
       
       return this;
     },
@@ -1319,10 +1326,16 @@ Version 0.0.1.2
       //incoming data to existing rows.
       againstColumn : function(data) {
         
-        // get against unique col
-        var uniqCol = this.column(this.uniqueAgainst);
+        var rows = [],
 
-        var len = data[this._columns[1].name].length;
+            colNames = _.keys(data),   
+            row,
+            // get against unique col
+            uniqCol = this.column(this.uniqueAgainst),
+            len = data[this._columns[1].name].length,
+            dataLength = _.max(_.map(colNames, function(name) {
+              return data[name].length;
+            }, this));
 
         var posToRemove = [], i;
         for(i = 0; i < len; i++) {
@@ -1340,52 +1353,39 @@ Version 0.0.1.2
         // array and throw all other ids off.
         posToRemove.sort().reverse();
 
-        _.each(data, function(columnData, columnName){
-          
-          var col = this._column(columnName);
-          
-          // remove offending ids
-          _.each(posToRemove, function(pos){
-            columnData.splice(pos, 1);
-          });
-
-          // now coerce the data.
-          col.data = col.data.concat( _.map(columnData, function(datum) {
-            return Miso.types[col.type].coerce(datum, col);
-          }, this));
-          
-        }, this);
-
-        // now fill in ids for the new rows
-        for( i = 0; i < (len - posToRemove.length); i++) {
-          this._columns[0].data.push(_.uniqueId());
+        for(i = 0; i < dataLength; i++) {
+          if (posToRemove.indexOf(i) === -1) {
+            row = {};
+            for(var j = 0; j < colNames.length; j++) {
+              row[colNames[j]] = data[colNames[j]][i];
+            }
+            rows.push(row);
+          }
         }
 
-        this.length += (len - posToRemove.length);
+        this.add(rows);
       },
 
       //Always blindly add new rows
       blind : function( data ) {
-        var columnName, columnData, rows = [];
+        var columnName, columnData, rows = [], row;
 
+        // figure out the length of rows we have.
+        var colNames = _.keys(data),
+            dataLength = _.max(_.map(colNames, function(name) {
+              return data[name].length;
+            }, this));
 
-
-
-        _.each(this._columns, function(col) {
-          columnName = col.name;
-          if (columnName === "_id") {
-            // insert as many uniqueIds as are necessary.
-            for(var i = 0; i < data[_.keys(data)[0]].length; i++) {
-              col.data.push(_.uniqueId());
-              this.length++;
-            }
-          } else {
-            columnData = data[columnName];
-            col.data = col.data.concat( _.map(columnData, function(datum) {
-              return Miso.types[col.type].coerce(datum, col);
-            }, this) );
+        // build row objects
+        for( var i = 0; i < dataLength; i++) {
+          row = {};
+          for(var j = 0; j < colNames.length; j++) {
+            row[colNames[j]] = data[colNames[j]][i];
           }
-        }, this);
+          rows.push(row);
+        }
+
+        this.add(rows);
       }
     },
 
