@@ -1,5 +1,5 @@
 /**
-* Miso.Dataset - v0.1.0 - 3/26/2012
+* Miso.Dataset - v0.1.0 - 3/27/2012
 * http://github.com/alexgraul/Dataset
 * Copyright (c) 2012 Alex Graul, Irene Ros;
 * Licensed MIT, GPL
@@ -1366,7 +1366,11 @@ Version 0.0.1.2
 
       //Always blindly add new rows
       blind : function( data ) {
-        var columnName, columnData;
+        var columnName, columnData, rows = [];
+
+
+
+
         _.each(this._columns, function(col) {
           columnName = col.name;
           if (columnName === "_id") {
@@ -1516,17 +1520,36 @@ Version 0.0.1.2
     *   options - options
     *     silent: boolean, do not trigger an add (and thus view updates) event
     */    
-    add : function(row, options) {
-      if (!row._id) {
-        row._id = _.uniqueId();
+    add : function(rows, options) {
+      
+      options = options || {};
+
+      if (!_.isArray(rows)) {
+        rows = [rows];
       }
 
-      this._add(row, options);
+      var deltas = [];
 
-      if (this.syncable && (!options || !options.silent)) {
-        this.trigger('add', this._buildEvent({ changed : row }) );
-        this.trigger('change', this._buildEvent({ changed : row }) );
+      _.each(rows, function(row) {
+        if (!row._id) {
+          row._id = _.uniqueId();
+        }
+
+        this._add(row, options);
+
+        // store all deltas for a single fire event.
+        if (this.syncable && !options.silent) {
+          deltas.push({ changed : row });
+        }
+      
+      }, this);
+      
+      if (this.syncable && !options.silent) {
+        var e = this._buildEvent(deltas);
+        this.trigger('add', e );
+        this.trigger('change', e );
       }
+
     },
 
     /**
