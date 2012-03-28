@@ -2,7 +2,7 @@
 
 Dataset is a javascript library makes managing the data behind client-side visualisations easy, including realtime data. It takes care of loading, parsing, sorting, filtering and querying of datasets as well as the creation of derivative datasets.
 
-Dataset is part of the Miso Toolkit.
+Dataset is part of the [Miso Toolkit](http://misoproject.com).
 
 ## Download 
 
