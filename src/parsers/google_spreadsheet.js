@@ -1,23 +1,16 @@
 // --------- Google Spreadsheet Parser -------
-// This is utilizing the format that can be obtained using this:
-// http://code.google.com/apis/gdata/samples/spreadsheet_sample.html
+// 
 
 (function(global, _) {
 
   var Miso = (global.Miso || (global.Miso = {}));
   /**
-  * @constructor
   * Google Spreadsheet Parser. 
+  * This is utilizing the format that can be obtained using this:
+  * http://code.google.com/apis/gdata/samples/spreadsheet_sample.html
   * Used in conjunction with the Google Spreadsheet Importer.
-  * Requires the following:
-  * @param {object} data - the google spreadsheet data.
-  * @param {object} options - Optional options argument.
   */
-  Miso.Parsers.GoogleSpreadsheet = function(data, options) {
-    this.options = options || {};
-    this._data = data;
-  };
-
+  Miso.Parsers.GoogleSpreadsheet = function(options) {};
 
   _.extend(Miso.Parsers.GoogleSpreadsheet.prototype, Miso.Parsers.prototype, {
 

@@ -2,6 +2,16 @@
 
   // shorthand
   var Miso = global.Miso;
+
+  /**
+  * A Miso.Product is a single computed value that can be obtained 
+  * from a Miso.Dataset. When a dataset is syncable, it will be an object
+  * that one can subscribe to the changes of. Otherwise, it returns
+  * the actual computed value.
+  * Parameters:
+  *   func - the function that derives the computation.
+  *   columns - the columns from which the function derives the computation
+  */
   Miso.Product = (Miso.Product || function(options) {
     options = options || {};
     
@@ -30,32 +40,30 @@
   _.extend(Miso.Product.prototype, Miso.Events, {
 
     /**
-    * @public
-    * This is a callback method that is responsible for recomputing
-    * the value based on the column its closed on.
-    */
-    _sync : function(event) {
-      this.func();
-    },
-
-    /**
-    * @public
     * return the raw value of the product
-    * @returns {?} value - The value of the product. Most likely a number.
+    * Returns:
+    *   The value of the product. Most likely a number.
     */
     val : function() {
       return this.value;
     },
 
     /**
-    * @public
     * return the type of product this is (numeric, time etc.)
-    * @returns {?} type.
+    * Returns
+    *   type. Matches the name of one of the Miso.types.
     */
     type : function() {
       return this.valuetype;
     },
+    
+    //This is a callback method that is responsible for recomputing
+    //the value based on the column its closed on.
+    _sync : function(event) {
+      this.func();
+    },
 
+    // builds a delta object.
     _buildDelta : function(old, changed) {
       return {
         old : old,
@@ -66,6 +74,8 @@
 
   _.extend(Miso.Dataset.prototype, {
 
+    // finds the column objects that match the single/multiple
+    // input columns. Helper method.
     _findColumns : function(columns) {
       var columnObjects = [];
 
@@ -86,6 +96,13 @@
       return columnObjects;
     },
 
+    /**
+    * Computes the sum of one or more columns.
+    * Parameters:
+    *   columns - string or array of column names on which the value is calculated 
+    *   options
+    *     silent - set to tue to prevent event propagation
+    */
     sum : function(columns, options) {
       options = options || {};
       var columnObjects = this._findColumns(columns);
@@ -108,7 +125,8 @@
     /**
     * return a Product with the value of the maximum 
     * value of the column
-    * @param {column/columns} column or array of columns on which the value is calculated 
+    * Parameters:
+    *   column - string or array of column names on which the value is calculated 
     */    
     max : function(columns, options) {
       options = options || {};
@@ -135,7 +153,8 @@
     /**
     * return a Product with the value of the minimum 
     * value of the column
-    * @param {column} column on which the value is calculated 
+    * Paramaters:
+    *   columns - string or array of column names on which the value is calculated 
     */    
     min : function(columns, options) {
       options = options || {};
@@ -161,7 +180,8 @@
     /**
     * return a Product with the value of the average
     * value of the column
-    * @param {column} column on which the value is calculated 
+    * Parameters:
+    *   column - string or array of column names on which the value is calculated 
     */    
     mean : function(columns, options) {
       options = options || {};
@@ -191,12 +211,12 @@
       return this._calculated(columnObjects, meanFunc);
     },
 
-    /*
-    * return a Product derived by running the passed function
-    * @param {column} column on which the value is calculated 
-    * @param {producer} function which derives the product after
-    * being passed each row. TODO: producer signature
-    */    
+    
+    // return a Product derived by running the passed function
+    // Parameters:
+    //   column - column on which the value is calculated 
+    //   producer - function which derives the product after
+    //              being passed each row
     _calculated : function(columns, producer) {
       var _self = this;
 

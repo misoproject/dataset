@@ -7,7 +7,7 @@ config.init({
               '* <%= pkg.title %> - v<%= pkg.version %> - <%= template.today("m/d/yyyy") %>\n' +
               '* <%= pkg.homepage %>\n' +
               '* Copyright (c) <%= template.today("yyyy") %> <%= pkg.authors %>;\n' +
-              '* Licensed <%= _.pluck(pkg.licenses, "type").join(", ") %>\n' +
+              '* Dual Licensed: <%= _.pluck(pkg.licenses, "type").join(", ") %>\n' +
               '*/'
   },
 

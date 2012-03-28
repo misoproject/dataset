@@ -148,12 +148,7 @@
       }
     },
 
-    /**
-    * @public
-    * Syncs up the current view based on a passed delta.
-    * TODO Should this be moved to sync.js? Not sure I want to separate it
-    * But also not sure it still belongs here.
-    */
+    // Syncs up the current view based on a passed delta.
     _sync : function(event) {
       var deltas = event.deltas, eventType = null;
  
@@ -554,7 +549,6 @@
     *   This file is licensed under an MIT style license
     * Parameters:
     *   options - Optional
-    *   
     */    
     sort : function(options) {
       options = options || {};

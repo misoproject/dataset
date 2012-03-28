@@ -1,10 +1,10 @@
 (function(global, _) {
   var Miso = (global.Miso || (global.Miso = {}));
-  // -------- Object Parser -----------
+
   /**
+  * Object parser
   * Converts an array of objects to strict format.
   * Each object is a flat json object of properties.
-  * @params {Object} obj = [{},{}...]
   */
   Miso.Parsers.Obj = Miso.Parsers;
 

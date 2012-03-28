@@ -4,6 +4,12 @@
   /**
   * A remote importer is responsible for fetching data from a url
   * and passing it through the right parser.
+  * Parameters:
+  *   options
+  *     url - url to query
+  *     extract - a method to pass raw data through before handing back to parser.
+  *     dataType - ajax datatype
+  *     jsonp  - true if it's a jsonp request, false otherwise.
   */
   Miso.Importers.Remote = function(options) {
     options = options || {};

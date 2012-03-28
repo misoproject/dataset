@@ -2,6 +2,18 @@
 
   var Miso = global.Miso || (global.Miso = {});
 
+  /**
+  * A Miso.Derived dataset is a regular dataset that has been derived
+  * through some computation from a parent dataset. It behaves just like 
+  * a regular dataset except it also maintains a reference to its parent
+  * and the method that computed it.
+  * Parameters:
+  *   options
+  *     parent - the parent dataset
+  *     method - the method by which this derived dataset was computed
+  * Returns
+  *   a derived dataset instance
+  */
   Miso.Derived = (Miso.Derived || function(options) {
     options = options || {};
 
@@ -46,9 +58,13 @@
 
     /**
     * moving average
-    * @param {column} column on which to calculate the average
-    * @param {size} direct each side to take into the average
-    * @param {options} allows you to set a method other than mean.
+    * Parameters:
+    *   column - The column on which to calculate the average
+    *   size - The window size to utilize for the moving average
+    *   options
+    *     method - the method to apply to all values in a window. Mean by default.
+    * Returns:
+    *   a miso.derived dataset instance
     */
     movingAverage : function(columns, size, options) {
       
@@ -114,13 +130,16 @@
 
     /**
     * group rows by values in a given column
-    * @param {byColumn} column by which rows will be grouped
-    * @param {columns} columns to be included
-    * @params {object} options 
-    *   method function to be applied, default addition
-    *   preprocess - specify a normalization function for the
-    * byColumn values if you need to group by some kind of derivation of 
-    * those values that are not just equality based.
+    * Parameters:
+    *   byColumn - The column by which rows will be grouped (string)
+    *   columns - The columns to be included (string array of column names)
+    *   options 
+    *     method - function to be applied, default is sum
+    *     preprocess - specify a normalization function for the
+    *                  byColumn values if you need to group by some kind of 
+    *                  derivation of those values that are not just equality based.
+    * Returns:
+    *   a miso.derived dataset instance
     */
     groupBy : function(byColumn, columns, options) {
       

@@ -2,6 +2,13 @@
   
   var Miso = (global.Miso || (global.Miso = {}));
 
+  /**
+  * A remote polling importer that queries a url once every 1000
+  * seconds.
+  * Parameters:
+  *   interval - poll every N milliseconds. Default is 1000.
+  *   extract  - a method to pass raw data through before handing back to parser.
+  */
   Miso.Importers.Polling = function(options) {
     options = options || {};
     this.interval = options.interval || 1000;

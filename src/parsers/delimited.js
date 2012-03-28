@@ -1,21 +1,18 @@
-// -------- Delimited Parser ----------
-
-/**
-* Handles CSV and other delimited data. Takes in a data string
-* and options that can contain: {
-*   delimiter : "someString" <default is comma> 
-* }
-*/
-
 (function(global, _) {
 
   var Miso = (global.Miso || (global.Miso = {}));
 
-
+  /**
+  * Delimited data parser.
+  * Handles CSV and other delimited data. 
+  * Parameters:
+  *   options
+  *     delimiter : ","
+  */
   Miso.Parsers.Delimited = function(options) {
-    this.options = options || {};
+    options = options || {};
 
-    this.delimiter = this.options.delimiter || ",";
+    this.delimiter = options.delimiter || ",";
 
     this.__delimiterPatterns = new RegExp(
       (

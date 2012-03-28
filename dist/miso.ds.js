@@ -1,8 +1,8 @@
 /**
-* Miso.Dataset - v0.1.0 - 3/27/2012
-* http://github.com/alexgraul/Dataset
+* Miso.Dataset - v0.1.0 - 3/28/2012
+* http://github.com/misoproject/dataset
 * Copyright (c) 2012 Alex Graul, Irene Ros;
-* Licensed MIT, GPL
+* Dual Licensed: MIT, GPL
 */
 
 (function(global, _) {
@@ -350,11 +350,19 @@
   var Miso = global.Miso || {};
     
   /**
-  * This is a generic collection of dataset building utilities
+  * This is a generic collection of dataset-building utilities
   * that are used by Miso.Dataset and Miso.DataView.
   */
   Miso.Builder = {
 
+    /**
+    * Detects the type of a column based on some input data.
+    * Parameters:
+    *   column - the Miso.Column object
+    *   data - an array of data to be scanned for type detection
+    * Returns:
+    *   input column but typed.
+    */
     detectColumnType : function(column, data) {
 
       // compute the type by assembling a sample of computed types
@@ -380,6 +388,12 @@
       return column;
     },
 
+    /**
+    * Detects the types of all columns in a dataset.
+    * Parameters:
+    *   dataset - the dataset to test the columns of
+    *   parsedData - the data to check the type of
+    */
     detectColumnTypes : function(dataset, parsedData) {
 
       _.each(parsedData, function(data, columnName) {
@@ -428,11 +442,21 @@
       }
     },
 
+    /**
+    * Clears the row cache objects of a dataset
+    * Parameters:
+    *   dataset - Miso.Dataset instance.
+    */
     clearRowCache : function(dataset) {
       dataset._rowPositionById = {};
       dataset._rowIdByPosition = [];
     },
 
+    /**
+    * Caches the column positions by name
+    * Parameters:
+    *   dataset - Miso.Dataset instance.
+    */
     cacheColumns : function(dataset) {
       dataset._columnPositionByName = {};
       _.each(dataset._columns, function(column, i) {
@@ -591,12 +615,7 @@
       }
     },
 
-    /**
-    * @public
-    * Syncs up the current view based on a passed delta.
-    * TODO Should this be moved to sync.js? Not sure I want to separate it
-    * But also not sure it still belongs here.
-    */
+    // Syncs up the current view based on a passed delta.
     _sync : function(event) {
       var deltas = event.deltas, eventType = null;
  
@@ -997,7 +1016,6 @@
     *   This file is licensed under an MIT style license
     * Parameters:
     *   options - Optional
-    *   
     */    
     sort : function(options) {
       options = options || {};
@@ -1655,6 +1673,16 @@ Version 0.0.1.2
 
   // shorthand
   var Miso = global.Miso;
+
+  /**
+  * A Miso.Product is a single computed value that can be obtained 
+  * from a Miso.Dataset. When a dataset is syncable, it will be an object
+  * that one can subscribe to the changes of. Otherwise, it returns
+  * the actual computed value.
+  * Parameters:
+  *   func - the function that derives the computation.
+  *   columns - the columns from which the function derives the computation
+  */
   Miso.Product = (Miso.Product || function(options) {
     options = options || {};
     
@@ -1683,32 +1711,30 @@ Version 0.0.1.2
   _.extend(Miso.Product.prototype, Miso.Events, {
 
     /**
-    * @public
-    * This is a callback method that is responsible for recomputing
-    * the value based on the column its closed on.
-    */
-    _sync : function(event) {
-      this.func();
-    },
-
-    /**
-    * @public
     * return the raw value of the product
-    * @returns {?} value - The value of the product. Most likely a number.
+    * Returns:
+    *   The value of the product. Most likely a number.
     */
     val : function() {
       return this.value;
     },
 
     /**
-    * @public
     * return the type of product this is (numeric, time etc.)
-    * @returns {?} type.
+    * Returns
+    *   type. Matches the name of one of the Miso.types.
     */
     type : function() {
       return this.valuetype;
     },
+    
+    //This is a callback method that is responsible for recomputing
+    //the value based on the column its closed on.
+    _sync : function(event) {
+      this.func();
+    },
 
+    // builds a delta object.
     _buildDelta : function(old, changed) {
       return {
         old : old,
@@ -1719,6 +1745,8 @@ Version 0.0.1.2
 
   _.extend(Miso.Dataset.prototype, {
 
+    // finds the column objects that match the single/multiple
+    // input columns. Helper method.
     _findColumns : function(columns) {
       var columnObjects = [];
 
@@ -1739,6 +1767,13 @@ Version 0.0.1.2
       return columnObjects;
     },
 
+    /**
+    * Computes the sum of one or more columns.
+    * Parameters:
+    *   columns - string or array of column names on which the value is calculated 
+    *   options
+    *     silent - set to tue to prevent event propagation
+    */
     sum : function(columns, options) {
       options = options || {};
       var columnObjects = this._findColumns(columns);
@@ -1761,7 +1796,8 @@ Version 0.0.1.2
     /**
     * return a Product with the value of the maximum 
     * value of the column
-    * @param {column/columns} column or array of columns on which the value is calculated 
+    * Parameters:
+    *   column - string or array of column names on which the value is calculated 
     */    
     max : function(columns, options) {
       options = options || {};
@@ -1788,7 +1824,8 @@ Version 0.0.1.2
     /**
     * return a Product with the value of the minimum 
     * value of the column
-    * @param {column} column on which the value is calculated 
+    * Paramaters:
+    *   columns - string or array of column names on which the value is calculated 
     */    
     min : function(columns, options) {
       options = options || {};
@@ -1814,7 +1851,8 @@ Version 0.0.1.2
     /**
     * return a Product with the value of the average
     * value of the column
-    * @param {column} column on which the value is calculated 
+    * Parameters:
+    *   column - string or array of column names on which the value is calculated 
     */    
     mean : function(columns, options) {
       options = options || {};
@@ -1844,12 +1882,12 @@ Version 0.0.1.2
       return this._calculated(columnObjects, meanFunc);
     },
 
-    /*
-    * return a Product derived by running the passed function
-    * @param {column} column on which the value is calculated 
-    * @param {producer} function which derives the product after
-    * being passed each row. TODO: producer signature
-    */    
+    
+    // return a Product derived by running the passed function
+    // Parameters:
+    //   column - column on which the value is calculated 
+    //   producer - function which derives the product after
+    //              being passed each row
     _calculated : function(columns, producer) {
       var _self = this;
 
@@ -1898,6 +1936,18 @@ Version 0.0.1.2
 
   var Miso = global.Miso || (global.Miso = {});
 
+  /**
+  * A Miso.Derived dataset is a regular dataset that has been derived
+  * through some computation from a parent dataset. It behaves just like 
+  * a regular dataset except it also maintains a reference to its parent
+  * and the method that computed it.
+  * Parameters:
+  *   options
+  *     parent - the parent dataset
+  *     method - the method by which this derived dataset was computed
+  * Returns
+  *   a derived dataset instance
+  */
   Miso.Derived = (Miso.Derived || function(options) {
     options = options || {};
 
@@ -1942,9 +1992,13 @@ Version 0.0.1.2
 
     /**
     * moving average
-    * @param {column} column on which to calculate the average
-    * @param {size} direct each side to take into the average
-    * @param {options} allows you to set a method other than mean.
+    * Parameters:
+    *   column - The column on which to calculate the average
+    *   size - The window size to utilize for the moving average
+    *   options
+    *     method - the method to apply to all values in a window. Mean by default.
+    * Returns:
+    *   a miso.derived dataset instance
     */
     movingAverage : function(columns, size, options) {
       
@@ -2010,13 +2064,16 @@ Version 0.0.1.2
 
     /**
     * group rows by values in a given column
-    * @param {byColumn} column by which rows will be grouped
-    * @param {columns} columns to be included
-    * @params {object} options 
-    *   method function to be applied, default addition
-    *   preprocess - specify a normalization function for the
-    * byColumn values if you need to group by some kind of derivation of 
-    * those values that are not just equality based.
+    * Parameters:
+    *   byColumn - The column by which rows will be grouped (string)
+    *   columns - The columns to be included (string array of column names)
+    *   options 
+    *     method - function to be applied, default is sum
+    *     preprocess - specify a normalization function for the
+    *                  byColumn values if you need to group by some kind of 
+    *                  derivation of those values that are not just equality based.
+    * Returns:
+    *   a miso.derived dataset instance
     */
     groupBy : function(byColumn, columns, options) {
       
@@ -2195,6 +2252,12 @@ Version 0.0.1.2
   /**
   * A remote importer is responsible for fetching data from a url
   * and passing it through the right parser.
+  * Parameters:
+  *   options
+  *     url - url to query
+  *     extract - a method to pass raw data through before handing back to parser.
+  *     dataType - ajax datatype
+  *     jsonp  - true if it's a jsonp request, false otherwise.
   */
   Miso.Importers.Remote = function(options) {
     options = options || {};
@@ -2418,6 +2481,13 @@ Version 0.0.1.2
   
   var Miso = (global.Miso || (global.Miso = {}));
 
+  /**
+  * A remote polling importer that queries a url once every 1000
+  * seconds.
+  * Parameters:
+  *   interval - poll every N milliseconds. Default is 1000.
+  *   extract  - a method to pass raw data through before handing back to parser.
+  */
   Miso.Importers.Polling = function(options) {
     options = options || {};
     this.interval = options.interval || 1000;
@@ -2487,10 +2557,11 @@ Version 0.0.1.2
 (function(global, _) {
 
   var Miso = (global.Miso || (global.Miso = {}));
+  
   /**
-  * @constructor
   * Instantiates a new google spreadsheet importer.
-  * @param {object} options - Options object. Requires at the very least:
+  * Parameters
+  *   options - Options object. Requires at the very least:
   *     key - the google spreadsheet key
   *     worksheet - the index of the spreadsheet to be retrieved.
   *   OR
@@ -2538,7 +2609,9 @@ Version 0.0.1.2
 
   var Miso = (global.Miso || (global.Miso = {}));
 
-  // ------ data parsers ---------
+  /**
+  * Base Miso.Parser class.
+  */
   Miso.Parsers = function( options ) {
     this.options = options || {};
   };
@@ -2548,27 +2621,24 @@ Version 0.0.1.2
     //this is the main function for the parser,
     //it must return an object with the columns names
     //and the data in columns
-    parse : function() {},
-
-    _coerceTypes : function(d) {
-
-      // also save raw type function onto column for future computable
-      // value extraction
-      _.each(d._columns, function(column, index) {
-        column.coerce();
-      });
-      return d;
-    }
+    parse : function() {}
 
   });
 }(this, _));
 
 (function(global, _) {
   var Miso = (global.Miso || (global.Miso = {}));
-  // ------ Strict Parser ---------
+
   /**
+  * Strict format parser.
   * Handles basic strict data format.
-  * TODO: add verify flag to disable auto id assignment for example.
+  * Looks like: {
+  *   data : {
+  *     columns : [
+  *       { name : colName, type : colType, data : [...] }
+  *     ]
+  *   }
+  * }
   */
   Miso.Parsers.Strict = function( options ) {
     this.options = options || {};
@@ -2596,11 +2666,11 @@ Version 0.0.1.2
 
 (function(global, _) {
   var Miso = (global.Miso || (global.Miso = {}));
-  // -------- Object Parser -----------
+
   /**
+  * Object parser
   * Converts an array of objects to strict format.
   * Each object is a flat json object of properties.
-  * @params {Object} obj = [{},{}...]
   */
   Miso.Parsers.Obj = Miso.Parsers;
 
@@ -2634,25 +2704,18 @@ Version 0.0.1.2
 }(this, _));
 
 // --------- Google Spreadsheet Parser -------
-// This is utilizing the format that can be obtained using this:
-// http://code.google.com/apis/gdata/samples/spreadsheet_sample.html
+// 
 
 (function(global, _) {
 
   var Miso = (global.Miso || (global.Miso = {}));
   /**
-  * @constructor
   * Google Spreadsheet Parser. 
+  * This is utilizing the format that can be obtained using this:
+  * http://code.google.com/apis/gdata/samples/spreadsheet_sample.html
   * Used in conjunction with the Google Spreadsheet Importer.
-  * Requires the following:
-  * @param {object} data - the google spreadsheet data.
-  * @param {object} options - Optional options argument.
   */
-  Miso.Parsers.GoogleSpreadsheet = function(data, options) {
-    this.options = options || {};
-    this._data = data;
-  };
-
+  Miso.Parsers.GoogleSpreadsheet = function(options) {};
 
   _.extend(Miso.Parsers.GoogleSpreadsheet.prototype, Miso.Parsers.prototype, {
 
@@ -2719,24 +2782,21 @@ Version 0.0.1.2
 }(this, _));
 
 
-// -------- Delimited Parser ----------
-
-/**
-* Handles CSV and other delimited data. Takes in a data string
-* and options that can contain: {
-*   delimiter : "someString" <default is comma> 
-* }
-*/
-
 (function(global, _) {
 
   var Miso = (global.Miso || (global.Miso = {}));
 
-
+  /**
+  * Delimited data parser.
+  * Handles CSV and other delimited data. 
+  * Parameters:
+  *   options
+  *     delimiter : ","
+  */
   Miso.Parsers.Delimited = function(options) {
-    this.options = options || {};
+    options = options || {};
 
-    this.delimiter = this.options.delimiter || ",";
+    this.delimiter = options.delimiter || ",";
 
     this.__delimiterPatterns = new RegExp(
       (

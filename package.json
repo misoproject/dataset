@@ -1,29 +1,29 @@
 {
 	"name"				: "Miso.Dataset",
 	"title" 			: "Miso.Dataset",
-	"description" : "A quick and easy way to import local and remote data into one common structure.",
+	"description" : "Dataset is a javascript library makes managing the data behind client-side visualisations easy, including realtime data. It takes care of loading, parsing, sorting, filtering and querying of datasets as well as the creation of derivative datasets. Dataset is part of the Miso Toolkit",
 	"version" 		: "0.1.0",
-	"homepage" 		: "http://github.com/alexgraul/Dataset",
+	"homepage" 		: "http://github.com/misoproject/dataset",
 	"authors"			: "Alex Graul, Irene Ros",
 	
 	"bugs" : {
-		"url" : "http://github.com:alexgraul/Dataset/issues"
+		"url" : "http://github.com:misoproject/Dataset/issues"
 	},
 
 	"licenses" : [	
 		{
 			"type" : "MIT",
-			"url" : "http://github.com:alexgraul/Dataset/blob/master/LICENSE-MIT"
+			"url" : "http://github.com:misoproject/dataset/blob/master/LICENSE-MIT"
 		},
 		{
 			"type" : "GPL",
-			"url" : "http://github.com:alexgraul/Dataset/blob/master/LICENSE-GPL"
+			"url" : "http://github.com:misoproject/dataset/blob/master/LICENSE-GPL"
 		}
 	],
 
 	"repository": {
 		"type": "git",
-		"url": "git@github.com:alexgraul/Dataset.git"
+		"url": "git@github.com:misoproject/dataset.git"
 	},
 
 	"keywords" : [ "data", "dataset" ],

@@ -1,10 +1,11 @@
 (function(global, _) {
 
   var Miso = (global.Miso || (global.Miso = {}));
+  
   /**
-  * @constructor
   * Instantiates a new google spreadsheet importer.
-  * @param {object} options - Options object. Requires at the very least:
+  * Parameters
+  *   options - Options object. Requires at the very least:
   *     key - the google spreadsheet key
   *     worksheet - the index of the spreadsheet to be retrieved.
   *   OR

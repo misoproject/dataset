@@ -1,9 +1,16 @@
 (function(global, _) {
   var Miso = (global.Miso || (global.Miso = {}));
-  // ------ Strict Parser ---------
+
   /**
+  * Strict format parser.
   * Handles basic strict data format.
-  * TODO: add verify flag to disable auto id assignment for example.
+  * Looks like: {
+  *   data : {
+  *     columns : [
+  *       { name : colName, type : colType, data : [...] }
+  *     ]
+  *   }
+  * }
   */
   Miso.Parsers.Strict = function( options ) {
     this.options = options || {};
