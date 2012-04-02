@@ -1,48 +1,48 @@
 {
-	"name"				: "Miso.Dataset",
-	"title" 			: "Miso.Dataset",
-	"description" : "Dataset is a javascript library makes managing the data behind client-side visualisations easy, including realtime data. It takes care of loading, parsing, sorting, filtering and querying of datasets as well as the creation of derivative datasets. Dataset is part of the Miso Toolkit",
-	"version" 		: "0.1.0",
-	"homepage" 		: "http://github.com/misoproject/dataset",
-	"authors"			: "Alex Graul, Irene Ros",
-	
-	"bugs" : {
-		"url" : "http://github.com:misoproject/Dataset/issues"
-	},
+  "name"        : "Miso.Dataset",
+  "title"       : "Miso.Dataset",
+  "description" : "Dataset is a javascript library makes managing the data behind client-side visualisations easy, including realtime data. It takes care of loading, parsing, sorting, filtering and querying of datasets as well as the creation of derivative datasets. Dataset is part of the Miso Toolkit",
+  "version"     : "0.1.0",
+  "homepage"    : "http://github.com/misoproject/dataset",
+  "authors"     : "Alex Graul, Irene Ros",
+  
+  "bugs" : {
+    "url" : "http://github.com:misoproject/Dataset/issues"
+  },
 
-	"licenses" : [	
-		{
-			"type" : "MIT",
-			"url" : "http://github.com:misoproject/dataset/blob/master/LICENSE-MIT"
-		},
-		{
-			"type" : "GPL",
-			"url" : "http://github.com:misoproject/dataset/blob/master/LICENSE-GPL"
-		}
-	],
+  "licenses" : [  
+    {
+      "type" : "MIT",
+      "url" : "http://github.com:misoproject/dataset/blob/master/LICENSE-MIT"
+    },
+    {
+      "type" : "GPL",
+      "url" : "http://github.com:misoproject/dataset/blob/master/LICENSE-GPL"
+    }
+  ],
 
-	"repository": {
-		"type": "git",
-		"url": "git@github.com:misoproject/dataset.git"
-	},
+  "repository": {
+    "type": "git",
+    "url": "git@github.com:misoproject/dataset.git"
+  },
 
-	"keywords" : [ "data", "dataset" ],
+  "keywords" : [ "data", "dataset" ],
 
-	"engines": {
-		"node": ">=v0.4.8"
-	},
-	
-	"devDependencies": {
-		"jake": "*",
-		"underscore": "*",
-		"jshint": "*",
-		"uglify-js": "*",
-		"express": "*",
-		"vows": "*",
-		"colors": "*",
-		"zlib": "*",
-		"dateformat": "*",
-		"jsonlint": "*",
-		"stats":"*"
-	}
+  "engines": {
+    "node": ">=v0.4.8"
+  },
+  
+  "devDependencies": {
+    "jake": "*",
+    "underscore": "*",
+    "jshint": "*",
+    "uglify-js": "*",
+    "express": "*",
+    "vows": "*",
+    "colors": "*",
+    "zlib": "*",
+    "dateformat": "*",
+    "jsonlint": "*",
+    "stats":"*"
+  }
 }
