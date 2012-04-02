@@ -1214,6 +1214,7 @@ Version 0.0.1.2
       // initialize the proper importer
       if (this.importer === null) {
         if (options.url) {
+
           if (!options.interval) {
             this.importer = Miso.Importers.Remote;  
           } else {
@@ -1670,6 +1671,7 @@ Version 0.0.1.2
       _.each(this._columns, function(col) {
         col.data = [];
       });
+      this.length = 0;
       if (this.syncable && (!options || !options.silent)) {
         this.trigger("reset");
       }
@@ -2278,7 +2280,7 @@ Version 0.0.1.2
     // Default ajax request parameters
     this.params = {
       type : "GET",
-      url : this._url,
+      url : _.isFunction(this._url) ? _.bind(this._url, this) : this._url,
       dataType : options.dataType ? options.dataType : (options.jsonp ? "jsonp" : "json")
     };
   };
@@ -2319,11 +2321,13 @@ Version 0.0.1.2
     // json|jsonp etc.
     options.dataType = options.dataType && options.dataType.toLowerCase() || null;
 
+    var url = _.isFunction(options.url) ? options.url() : options.url;
+
     if (options.dataType &&
       (options.dataType === "jsonp" || options.dataType === "script" )) {
 
         Miso.Xhr.getJSONP(
-          options.url,
+          url, 
           options.success,
           options.dataType === "script",
           options.error
@@ -2332,7 +2336,7 @@ Version 0.0.1.2
         return;
       }
 
-      var settings = _.extend({}, _xhrSetup, options);
+      var settings = _.extend({}, _xhrSetup, options, { url : url });
 
       // create new xhr object
       settings.ajax = settings.xhr();

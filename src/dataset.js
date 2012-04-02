@@ -86,6 +86,7 @@ Version 0.0.1.2
       // initialize the proper importer
       if (this.importer === null) {
         if (options.url) {
+
           if (!options.interval) {
             this.importer = Miso.Importers.Remote;  
           } else {
@@ -542,6 +543,7 @@ Version 0.0.1.2
       _.each(this._columns, function(col) {
         col.data = [];
       });
+      this.length = 0;
       if (this.syncable && (!options || !options.silent)) {
         this.trigger("reset");
       }

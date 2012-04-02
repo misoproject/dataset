@@ -149,6 +149,22 @@
     stop();
   });
 
+  test("Basic json url fetch through Dataset API + url is a function", 46, function() {
+    var ds = new Miso.Dataset({ 
+      url : function() {
+        return "data/alphabet_strict.json";
+      }, 
+      jsonp : false, 
+      strict: true,
+      ready : function() {
+        verifyImport({}, this);   
+        start();
+      }
+    });
+    ds.fetch();
+    stop();
+  });
+
   test("Basic jsonp url fetch with Dataset API", 46, function() {
     var url = "data/alphabet_obj.json?callback=";
     var ds = new Miso.Dataset({ 
