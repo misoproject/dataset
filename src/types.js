@@ -92,8 +92,7 @@
         if (_.isNull(v)) {
           return null;
         }
-        v = Number(v);
-        return _.isNaN(v) ? null : v;
+        return _.isNaN(v) ? null : +v;
       },
       test : function(v) {
         if (v === null || typeof v === "undefined" || typeof v === 'number' || this.regexp.test( v ) ) {
@@ -107,7 +106,7 @@
         return (n1 < n2 ? -1 : 1);
       },
       numeric : function(value) {
-        return +value;
+        return value;
       }
     },
 

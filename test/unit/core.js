@@ -3,6 +3,26 @@
   var Util  = global.Util;
   var Miso    = global.Miso || {};
 
+  module("Bug Drive Tests");
+  test("Zero vals convert to null", function() {
+    var data = [
+      { a : 0, b : 0, c: 1},
+      { a : 0, b : 0, c: 1},
+      { a : 0, b : 1, c: 1},
+      { a : 1, b : 0, c: 1}
+    ];
+
+    var ds = new Miso.Dataset({
+      data : data 
+    });
+
+    ds.fetch();
+
+    ok(_.isEqual(ds.column("a").data, [0,0,0,1]));
+    ok(_.isEqual(ds.column("b").data, [0,0,1,0]));
+    ok(_.isEqual(ds.column("c").data, [1,1,1,1]));
+  });
+
   module("Fetching");
   test("Basic fetch + success callback", function() {
     var ds = new Miso.Dataset({

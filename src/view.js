@@ -481,7 +481,7 @@
         
         // add all data
         _.each(this._columns, function(column) {
-          column.data.push(row[column.name] ? row[column.name] : null);
+          column.data.push(!_.isUndefined(row[column.name]) && !_.isNull(row[column.name]) ? row[column.name] : null);
         });
 
         this.length++;
