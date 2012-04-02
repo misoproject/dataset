@@ -173,8 +173,12 @@
         if (isFired) {
 
           //  Garbage collect the callback
-          delete window[callback];
-
+          try {
+            delete window[callback];
+          } catch(e) {
+            window[callback] = void 0;
+          }
+          
           //  Garbage collect the script resource
           head.removeChild(script);
         }
