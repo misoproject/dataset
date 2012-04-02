@@ -1,7 +1,7 @@
 (function(global, _) {
   
   var Miso = global.Miso || {};
-    
+  
   /**
   * This is a generic collection of dataset-building utilities
   * that are used by Miso.Dataset and Miso.DataView.
@@ -117,4 +117,15 @@
       });
     }
   };
+
+  // fix lack of IE indexOf. Again.
+  if (!Array.prototype.indexOf) { 
+    Array.prototype.indexOf = function(obj, start) {
+     for (var i = (start || 0), j = this.length; i < j; i++) {
+         if (this[i] === obj) { return i; }
+     }
+     return -1;
+    }
+  }
+
 }(this, _));
