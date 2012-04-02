@@ -125,7 +125,7 @@
          if (this[i] === obj) { return i; }
      }
      return -1;
-    }
+    };
   }
 
 }(this, _));

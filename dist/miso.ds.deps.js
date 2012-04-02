@@ -1,5 +1,5 @@
 /**
-* Miso.Dataset - v0.1.0 - 3/28/2012
+* Miso.Dataset - v0.1.0 - 4/2/2012
 * http://github.com/misoproject/dataset
 * Copyright (c) 2012 Alex Graul, Irene Ros;
 * Dual Licensed: MIT, GPL
@@ -2188,7 +2188,7 @@
 })(this);
 
 /**
-* Miso.Dataset - v0.1.0 - 3/28/2012
+* Miso.Dataset - v0.1.0 - 4/2/2012
 * http://github.com/misoproject/dataset
 * Copyright (c) 2012 Alex Graul, Irene Ros;
 * Dual Licensed: MIT, GPL
@@ -2537,7 +2537,7 @@
 (function(global, _) {
   
   var Miso = global.Miso || {};
-    
+  
   /**
   * This is a generic collection of dataset-building utilities
   * that are used by Miso.Dataset and Miso.DataView.
@@ -2653,6 +2653,17 @@
       });
     }
   };
+
+  // fix lack of IE indexOf. Again.
+  if (!Array.prototype.indexOf) { 
+    Array.prototype.indexOf = function(obj, start) {
+     for (var i = (start || 0), j = this.length; i < j; i++) {
+         if (this[i] === obj) { return i; }
+     }
+     return -1;
+    };
+  }
+
 }(this, _));
 (function(global, _) {
 
@@ -4610,8 +4621,12 @@ Version 0.0.1.2
         if (isFired) {
 
           //  Garbage collect the callback
-          delete window[callback];
-
+          try {
+            delete window[callback];
+          } catch(e) {
+            window[callback] = void 0;
+          }
+          
           //  Garbage collect the script resource
           head.removeChild(script);
         }
