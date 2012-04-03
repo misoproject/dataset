@@ -21,11 +21,6 @@ module.exports = function(grunt) {
       }
     },
 
-    server : {
-      port: 9292,
-      base: "."
-    },
-
     concat : {
       "dist/miso.ds.js" : [
         "<banner>",
@@ -58,7 +53,8 @@ module.exports = function(grunt) {
       ],
 
       // Update to the latest node-specific build version
-      "node/index.js" : [
+      "dist/node/miso.ds.deps.js" : [
+        
         // Ensure _ and moment are loaded
         "<banner:meta.node.deps>",
 
@@ -156,6 +152,6 @@ module.exports = function(grunt) {
   });
 
   // Default task.
-  grunt.registerTask('default', 'lint server qunit concat min');
+  grunt.registerTask('default', 'lint qunit concat min');
 
 };
