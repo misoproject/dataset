@@ -14,7 +14,8 @@ module.exports = function(grunt) {
 
       node : {
         deps:   'var _ = require("underscore");\n' +
-                'var moment = require("moment");',
+                'var moment = require("moment");\n' +
+                '_.mixin(require("underscore.deferred"));',
         
         exports: '\nmodule.exports = this.Miso;'
       }
@@ -61,10 +62,9 @@ module.exports = function(grunt) {
         // Ensure _ and moment are loaded
         "<banner:meta.node.deps>",
 
-        // Include the last two dependencies, these will automatically hook
-        // into the loaded _ variable.
+        // Include the remaining dependency, will automatically hook into the
+        // loaded _ variable.
         "lib/underscore.math.js",
-        "lib/underscore.deferred.js",
 
         // Include the main Miso.DS application source
         "dist/miso.ds.js",
