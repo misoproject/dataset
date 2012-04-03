@@ -6,9 +6,9 @@ module.exports = function(grunt) {
 
     meta : {
       banner :  '/**\n' +
-                '* <%= pkg.title %> - v<%= pkg.version %> - <%= template.today("m/d/yyyy") %>\n' +
+                '* <%= pkg.title %> - v<%= pkg.version %> - <%= grunt.template.today("m/d/yyyy") %>\n' +
                 '* <%= pkg.homepage %>\n' +
-                '* Copyright (c) <%= template.today("yyyy") %> <%= pkg.authors %>;\n' +
+                '* Copyright (c) <%= grunt.template.today("yyyy") %> <%= pkg.authors %>;\n' +
                 '* Dual Licensed: <%= _.pluck(pkg.licenses, "type").join(", ") %>\n' +
                 '*/'
     },
