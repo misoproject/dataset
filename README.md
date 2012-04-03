@@ -49,7 +49,7 @@ http://misoproject.com/dataset/examples.html
 
 ```javascript
 var Miso = require("miso.dataset");
-var ds = new Miso.Dataset…
+var ds = new Miso.Dataset...
 ```
 
 ## Contributing
