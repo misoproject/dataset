@@ -87,5 +87,5 @@ We welcome pull requests! Some things to keep in mind:
 
 Follow @themisoproject on twitter.
 Issues are a great way to let us know what's up.
-Join #miso on irc.
-If need be, feel ping @iros or @agraul.
+Join #misoproject on irc.
+If need be, feel free to ping @iros or @agraul.
