@@ -57,7 +57,7 @@
         error : this.error_callback
       }));
 
-      window.imp = this;
+      global.imp = this;
     },
 
     stop : function() {
