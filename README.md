@@ -6,23 +6,23 @@ Dataset is part of the [Miso Toolkit](http://misoproject.com).
 
 ## Download 
 
-### Including Dependancies
+### Including Dependencies
 
-[miso.ds.deps.js](https://github.com/misoproject/dataset/tree/master/dist/miso.ds.deps.js) - Download Production With Dependancies - 0.0.1
+[miso.ds.deps.js](https://github.com/misoproject/dataset/tree/master/dist/miso.ds.deps.js) - Download Production With Dependencies - 0.0.1
 
-[miso.ds.deps.min.js](https://github.com/misoproject/dataset/tree/master/dist/) - Download Development With Dependancies - 0.0.1
+[miso.ds.deps.min.js](https://github.com/misoproject/dataset/tree/master/dist/) - Download Development With Dependencies - 0.0.1
 
-### Without Dependancies
+### Without Dependencies
 
 The following builds do not have any of the dependancies built in. It is your own responsability to include them as appropriate script elements in your page.
 
-[miso.ds.js](https://github.com/misoproject/dataset/tree/master/dist/miso.ds.js) - Download Production No Dependancies - 0.0.1
+[miso.ds.js](https://github.com/misoproject/dataset/tree/master/dist/miso.ds.js) - Download Production No Dependencies - 0.0.1
 
-[miso.ds.min.js](https://github.com/misoproject/dataset/tree/master/dist/) - Download Development No Dependancies - 0.0.1
+[miso.ds.min.js](https://github.com/misoproject/dataset/tree/master/dist/) - Download Development No Dependencies - 0.0.1
 
-### Dependancies
+### Dependencies
 
-Dataset has the following dependancies:
+Dataset has the following dependencies:
 
 * [Underscore.js 1.3.1](http://underscorejs.org/)
 * [Underscore.math.js (version unknown)](https://github.com/syntagmatic/underscore.math) 
@@ -87,5 +87,5 @@ We welcome pull requests! Some things to keep in mind:
 
 Follow @themisoproject on twitter.
 Issues are a great way to let us know what's up.
-Join #miso on irc.
-If need be, feel ping @iros or @agraul.
+Join #misoproject on irc.
+If need be, feel free to ping @iros or @agraul.
