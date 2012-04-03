@@ -55,9 +55,9 @@ module.exports = function(grunt) {
       // Update to the latest node version
       "node/index.js" : [
         // Need to figure these two out...
-        //"lib/underscore.math.js",
-        //"lib/underscore.deferred.js",
         "<banner:meta.node>",
+        "lib/underscore.math.js",
+        "lib/underscore.deferred.js",
         "dist/miso.ds.js"
       ]
     },
