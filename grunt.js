@@ -12,8 +12,12 @@ module.exports = function(grunt) {
                 '* Dual Licensed: <%= _.pluck(pkg.licenses, "type").join(", ") %>\n' +
                 '*/',
 
-      node :    'var _ = require("underscore");\n' +
-                'var moment = require("moment");'
+      node : {
+        deps:   'var _ = require("underscore");\n' +
+                'var moment = require("moment");',
+        
+        exports: '\nmodule.exports = this.Miso;'
+      }
     },
 
     server : {
@@ -52,13 +56,21 @@ module.exports = function(grunt) {
         "dist/miso.ds.js"
       ],
 
-      // Update to the latest node version
+      // Update to the latest node-specific build version
       "node/index.js" : [
-        // Need to figure these two out...
-        "<banner:meta.node>",
+        // Ensure _ and moment are loaded
+        "<banner:meta.node.deps>",
+
+        // Include the last two dependencies, these will automatically hook
+        // into the loaded _ variable.
         "lib/underscore.math.js",
         "lib/underscore.deferred.js",
-        "dist/miso.ds.js"
+
+        // Include the main Miso.DS application source
+        "dist/miso.ds.js",
+
+        // Ensure the proper object is exported
+        "<banner:meta.node.exports>"
       ]
     },
 

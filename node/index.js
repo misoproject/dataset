@@ -3475,3 +3475,6 @@ Version 0.0.1.2
 
 
 }(this, _));
+
+
+module.exports = this.Miso;
