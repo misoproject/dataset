@@ -203,7 +203,8 @@ Version 0.0.1.2
             options.success.call(this);
           }
 
-          dfd.resolve(this);
+          // Ensure the context of the promise is set to the Dataset
+          dfd.resolveWith(this, [this]);
 
         }, this),
 
