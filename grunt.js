@@ -10,7 +10,10 @@ module.exports = function(grunt) {
                 '* <%= pkg.homepage %>\n' +
                 '* Copyright (c) <%= grunt.template.today("yyyy") %> <%= pkg.authors %>;\n' +
                 '* Dual Licensed: <%= _.pluck(pkg.licenses, "type").join(", ") %>\n' +
-                '*/'
+                '*/',
+
+      node :    'var _ = require("underscore");\n' +
+                'var moment = require("moment");'
     },
 
     server : {
@@ -19,8 +22,8 @@ module.exports = function(grunt) {
     },
 
     concat : {
-      'dist/miso.ds.js' : [
-        '<banner>',
+      "dist/miso.ds.js" : [
+        "<banner>",
         "src/types.js",
         "src/sync.js",
         "src/builder.js",
@@ -40,70 +43,79 @@ module.exports = function(grunt) {
         "src/parsers/delimited.js"
       ],
 
-      'dist/miso.ds.deps.js' : [
-        '<banner>',
+      "dist/miso.ds.deps.js" : [
+        "<banner>",
         "lib/moment.js",
         "lib/underscore.js",
         "lib/underscore.math.js",
         "lib/underscore.deferred.js",
         "dist/miso.ds.js"
+      ],
+
+      // Update to the latest node version
+      "node/index.js" : [
+        // Need to figure these two out...
+        //"lib/underscore.math.js",
+        //"lib/underscore.deferred.js",
+        "<banner:meta.node>",
+        "dist/miso.ds.js"
       ]
     },
 
     min : {
-      'dist/miso.ds.min.js' : [
-        '<banner>',
-        'dist/miso.ds.js'
+      "dist/miso.ds.min.js" : [
+        "<banner>",
+        "dist/miso.ds.js"
       ],
 
-      'dist/miso.ds.deps.min.js' : [
-        '<banner>',
-        'dist/miso.ds.deps.js'
+      "dist/miso.ds.deps.min.js" : [
+        "<banner>",
+        "dist/miso.ds.deps.js"
       ]
     },
 
     qunit : {
       urls : [ 
-        'http://localhost:9292/test/index.html'
+        "http://localhost:9292/test/index.html"
       ]
     },
 
     lint : {
       files : [
-        'grunt.js',
-        'src/**/*.js',
-        'test/unit/**/*.js'
+        "grunt.js",
+        "src/**/*.js",
+        "test/unit/**/*.js"
       ]
     },
 
     watch : {
-      files : '<config:lint.files>',
-      tasks : 'lint qunit'
+      files : "<config:lint.files>",
+      tasks : "lint qunit"
     },
 
     jshint : {
       options : {
-        unused: true,
-        unuseds: true,
-        devel: true,
-        noempty: true,
-        forin: false,
-        evil: true,
-        maxerr: 100,
-        boss: true,
-        curly: true,
-        eqeqeq: true,
-        immed: true,
-        latedef: true,
-        newcap: true,
-        noarg: true,
-        sub: true,
-        undef: true,
-        eqnull: true,
-        browser: true,
-        bitwise : true,
-        loopfunc: true,
-        predef: [ "_", "moment" ]
+        unused : true,
+        unuseds : true,
+        devel : true,
+        noempty : true,
+        forin : false,
+        evil : true,
+        maxerr : 100,
+        boss : true,
+        curly : true,
+        eqeqeq : true,
+        immed : true,
+        latedef : true,
+        newcap : true,
+        noarg : true,
+        sub : true,
+        undef : true,
+        eqnull : true,
+        browser : true,
+        bitwise  : true,
+        loopfunc : true,
+        predef : [ "_", "moment" ]
       },
       globals : {
         QUnit : true,
@@ -118,16 +130,16 @@ module.exports = function(grunt) {
         stop : true,
         $ : true,
         strictEqual : true,
-        raises: true
+        raises : true
       }
     },
 
     uglify : {
-      "mangle": {
-        "except": [ "_", "$", "moment" ]
+      "mangle" : {
+        "except" : [ "_", "$", "moment" ]
       },
-      "squeeze": {},
-      "codegen": {}
+      "squeeze" : {},
+      "codegen" : {}
     }
   });
 
