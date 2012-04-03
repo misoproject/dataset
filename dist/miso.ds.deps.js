@@ -1,5 +1,5 @@
 /**
-* Miso.Dataset - v0.1.0 - 4/2/2012
+* Miso.Dataset - v0.1.0 - 4/3/2012
 * http://github.com/misoproject/dataset
 * Copyright (c) 2012 Alex Graul, Irene Ros;
 * Dual Licensed: MIT, GPL
@@ -2188,7 +2188,7 @@
 })(this);
 
 /**
-* Miso.Dataset - v0.1.0 - 4/2/2012
+* Miso.Dataset - v0.1.0 - 4/3/2012
 * http://github.com/misoproject/dataset
 * Copyright (c) 2012 Alex Graul, Irene Ros;
 * Dual Licensed: MIT, GPL
@@ -3125,20 +3125,25 @@
       
       // first coerce all the values appropriatly
       _.each(row, function(value, key) {
-        var column = this.column(key),
-            Type = Miso.types[column.type];
+        var column = this.column(key);
 
-        // test if value matches column type
-        if (column.force || Type.test(row[column.name], column)) {
+        // if we suddenly see values for data that didn't exist before as a column
+        // just drop it. First fetch defines the column structure.
+        if (typeof column !== "undefined") {
+          var Type = Miso.types[column.type];
+
+          // test if value matches column type
+          if (column.force || Type.test(row[column.name], column)) {
+            
+            // if so, coerce it.
+            row[column.name] = Type.coerce(row[column.name], column);
+
+          } else {
+            throw("incorrect value '" + row[column.name] + 
+                  "' of type " + Miso.typeOf(row[column.name], column) +
+                  " passed to column with type " + column.type);  
           
-          // if so, coerce it.
-          row[column.name] = Type.coerce(row[column.name], column);
-
-        } else {
-          throw("incorrect value '" + row[column.name] + 
-                "' of type " + Miso.typeOf(row[column.name], column) +
-                " passed to column with type " + column.type);  
-        
+          }
         }
       }, this);
 
@@ -3310,6 +3315,19 @@
       if (this.syncable && options.silent) {
         this.trigger("sort");
       }
+    },
+
+    /**
+    * Exports a version of the dataset in json format.
+    * Returns:
+    *   Array of rows.
+    */
+    toJSON : function() {
+      var rows = [];
+      for(var i = 0; i < this.length; i++) {
+        rows.push(this.rowByPosition(i));
+      }
+      return rows;
     }
   });
 

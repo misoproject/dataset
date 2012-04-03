@@ -23,6 +23,58 @@
     ok(_.isEqual(ds.column("c").data, [1,1,1,1]));
   });
 
+  test("Resetting dataset should set length to 0", function() {
+    var data = [
+      { a : 0, b : 0, c: 1},
+      { a : 0, b : 0, c: 1},
+      { a : 0, b : 1, c: 1},
+      { a : 1, b : 0, c: 1}
+    ];
+
+    var ds = new Miso.Dataset({
+      data : data 
+    });
+
+    ds.fetch();
+    equals(ds.length, 4);
+    ds.reset();
+    equals(ds.length, 0);
+  });
+
+  test("On subsequent row additions, a derived dataset should update correctly", function() {
+    var data = [
+      { seq : 0, q : 1, e : 0, x : 1 },
+      { seq : 0, q : 2, e : 1, x : 2 } 
+    ];
+
+    var ds = new Miso.Dataset({
+      data : data,
+      sync : true
+    });
+
+    var gb;
+    ds.fetch({ success: function() {
+      gb = ds.groupBy("seq", ["q","e","x"]);
+
+      equals(gb.length, 1);
+      ok(_.isEqual(gb.column("q").data, [3]));
+      ok(_.isEqual(gb.column("e").data, [1]));
+      ok(_.isEqual(gb.column("x").data, [3]));
+
+      gb.bind("change", function() {
+         equals(gb.length, 2);
+        ok(_.isEqual(gb.column("q").data, [3,50]));
+        ok(_.isEqual(gb.column("e").data, [1,12]));
+        ok(_.isEqual(gb.column("x").data, [3,70]));
+      });
+
+      ds.add([
+        { seq : 1, q : 10, e : 1,  x : 30 },
+        { seq : 1, q : 40, e : 11, x : 40 }
+      ]);      
+    }});
+  });
+
   module("Fetching");
   test("Basic fetch + success callback", function() {
     var ds = new Miso.Dataset({
