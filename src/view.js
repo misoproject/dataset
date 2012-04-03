@@ -649,6 +649,19 @@
       if (this.syncable && options.silent) {
         this.trigger("sort");
       }
+    },
+
+    /**
+    * Exports a version of the dataset in json format.
+    * Returns:
+    *   Array of rows.
+    */
+    toJSON : function() {
+      var rows = [];
+      for(var i = 0; i < this.length; i++) {
+        rows.push(this.rowByPosition(i));
+      }
+      return rows;
     }
   });
 

@@ -581,4 +581,29 @@ module("Views :: Syncing");
       ok(_.isEqual(ds._columns[3].data, [8,1,1,5,9,7,1].reverse()));
     });
   });
+
+  module("export");
+  test("Export to json", function(){
+    var ds = new Miso.Dataset({
+      data: { columns : [ 
+        { name : "one",   data : [10, 2, 6, 14, 3, 4] },
+        { name : "two",   data : [4,  5, 6, 1,  1, 1] },
+        { name : "three", data : [7,  8, 9, 1,  1, 1] } 
+      ]},
+      strict: true
+    });
+
+    _.when(ds.fetch()).then(function() {
+      var j = ds.toJSON();
+    
+      ok(_.isEqual(j[0], { _id : ds._columns[0].data[0], one : 10, two : 4, three : 7}), j[0]);
+      ok(_.isEqual(j[1], { _id : ds._columns[0].data[1], one : 2, two : 5, three : 8}), j[1]);
+      ok(_.isEqual(j[2], { _id : ds._columns[0].data[2], one : 6, two : 6, three : 9}), j[2]);
+      ok(_.isEqual(j[3], { _id : ds._columns[0].data[3], one : 14, two : 1, three : 1}), j[3]);
+      ok(_.isEqual(j[4], { _id : ds._columns[0].data[4], one : 3, two : 1, three : 1}), j[4]);
+      ok(_.isEqual(j[5], { _id : ds._columns[0].data[5], one : 4, two : 1, three : 1}), j[5]);  
+    });
+    
+  });
+
 }(this));
