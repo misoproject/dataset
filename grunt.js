@@ -10,15 +10,13 @@ module.exports = function(grunt) {
                 '* <%= pkg.homepage %>\n' +
                 '* Copyright (c) <%= grunt.template.today("yyyy") %> <%= pkg.authors %>;\n' +
                 '* Dual Licensed: <%= _.pluck(pkg.licenses, "type").join(", ") %>\n' +
-                '*/',
+                '*/'
+    },
 
-      node : {
-        deps:   'var _ = require("underscore");\n' +
-                'var moment = require("moment");\n' +
-                '_.mixin(require("underscore.deferred"));',
-        
-        exports: '\nmodule.exports = this.Miso;'
-      }
+    node: {
+      wrapper: "src/node/compat.js",
+      misoLib: "dist/miso.ds.js",
+      _Math: "lib/underscore.math.js"
     },
 
     concat : {
@@ -50,23 +48,6 @@ module.exports = function(grunt) {
         "lib/underscore.math.js",
         "lib/underscore.deferred.js",
         "dist/miso.ds.js"
-      ],
-
-      // Update to the latest node-specific build version
-      "dist/node/miso.ds.deps.js" : [
-        
-        // Ensure _ and moment are loaded
-        "<banner:meta.node.deps>",
-
-        // Include the remaining dependency, will automatically hook into the
-        // loaded _ variable.
-        "lib/underscore.math.js",
-
-        // Include the main Miso.DS application source
-        "dist/miso.ds.js",
-
-        // Ensure the proper object is exported
-        "<banner:meta.node.exports>"
       ]
     },
 
@@ -91,7 +72,23 @@ module.exports = function(grunt) {
     lint : {
       files : [
         "grunt.js",
-        "src/**/*.js",
+        "src/types.js",
+        "src/sync.js",
+        "src/builder.js",
+        "src/view.js",
+        "src/dataset.js",
+        "src/product.js",
+        "src/derived.js",
+        "src/importer.js",
+        "src/importers/local.js",
+        "src/importers/remote.js",
+        "src/importers/polling.js",
+        "src/importers/google_spreadsheet.js",
+        "src/parser.js",
+        "src/parsers/strict.js",
+        "src/parsers/object.js",
+        "src/parsers/google_spreadsheet.js",
+        "src/parsers/delimited.js",
         "test/unit/**/*.js"
       ]
     },
@@ -151,7 +148,20 @@ module.exports = function(grunt) {
     }
   });
 
-  // Default task.
-  grunt.registerTask('default', 'lint qunit concat min');
+  // Task specific for building Node compatible version
+  grunt.registerTask('node', function() {
+    var nodeConfig = grunt.config("node");
+    var read = grunt.file.read;
 
+    var output = grunt.template.process(read(nodeConfig.wrapper), {
+      underscoreMath: read(nodeConfig._Math),
+      misoDataSet: read(nodeConfig.misoLib)
+    });
+
+    // Write the contents out
+    grunt.file.write("dist/node/miso.ds.deps.js", output);
+  });
+
+  // Default task.
+  grunt.registerTask('default', 'lint qunit concat min node');
 };
