@@ -72,7 +72,23 @@ module.exports = function(grunt) {
     lint : {
       files : [
         "grunt.js",
-        "src/**/*.js",
+        "src/types.js",
+        "src/sync.js",
+        "src/builder.js",
+        "src/view.js",
+        "src/dataset.js",
+        "src/product.js",
+        "src/derived.js",
+        "src/importer.js",
+        "src/importers/local.js",
+        "src/importers/remote.js",
+        "src/importers/polling.js",
+        "src/importers/google_spreadsheet.js",
+        "src/parser.js",
+        "src/parsers/strict.js",
+        "src/parsers/object.js",
+        "src/parsers/google_spreadsheet.js",
+        "src/parsers/delimited.js",
         "test/unit/**/*.js"
       ]
     },
@@ -147,5 +163,5 @@ module.exports = function(grunt) {
   });
 
   // Default task.
-  grunt.registerTask('default', 'lint qunit concat min');
+  grunt.registerTask('default', 'lint qunit concat min node');
 };
