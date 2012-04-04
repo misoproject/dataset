@@ -10,7 +10,8 @@ module.exports = function(grunt) {
                 '* <%= pkg.homepage %>\n' +
                 '* Copyright (c) <%= grunt.template.today("yyyy") %> <%= pkg.authors %>;\n' +
                 '* Dual Licensed: <%= _.pluck(pkg.licenses, "type").join(", ") %>\n' +
-                '*/'
+                '*/',
+      lastbuild : '<%= grunt.template.today("yyyy/mm/dd hh:ss") %>'
     },
 
     node: {
@@ -48,6 +49,30 @@ module.exports = function(grunt) {
         "lib/underscore.math.js",
         "lib/underscore.deferred.js",
         "dist/miso.ds.js"
+      ],
+
+      "dist/development/miso.ds.js" : [
+        "dist/miso.ds.js"
+      ],
+
+      "dist/development/lib/moment.js" : [
+        "lib/moment.js"
+      ],
+
+      "dist/development/lib/underscore.js" : [
+        "lib/underscore.js"
+      ],
+
+      "dist/development/lib/underscore.math.js" : [
+        "lib/underscore.math.js"
+      ],
+
+      "dist/development/lib/underscore.deferred.js" : [
+        "lib/underscore.deferred.js"
+      ],
+
+      "dist/LASTBUILD" : [
+        "<banner:meta.lastbuild>"
       ]
     },
 
@@ -62,6 +87,19 @@ module.exports = function(grunt) {
         "dist/miso.ds.deps.js"
       ]
     },
+
+    zip: {
+      development: {
+        cwd : 'dist',
+        src: 'development',
+        dest: 'miso.ds.dev.zip',
+        deletesrc : true
+      }
+    },
+
+    rm : [
+      "dist/development"
+    ],
 
     qunit : {
       urls : [ 
@@ -120,7 +158,7 @@ module.exports = function(grunt) {
         browser : true,
         bitwise  : true,
         loopfunc : true,
-        predef : [ "_", "moment" ]
+        predef : [ "_", "moment", "log", "template" ]
       },
       globals : {
         QUnit : true,
@@ -148,6 +186,73 @@ module.exports = function(grunt) {
     }
   });
 
+  // task specific to zipping up file for development purposes.
+  // taken from jQuery-ui 
+  // https://github.com/jquery/jquery-ui/blob/2865a629871b1534b6e32418137f5d249da6f7fb/grunt.js#L298
+  grunt.registerTask('zip', 'Create a zip file for release', function() {
+    var done = this.async();
+    var zipConfig = grunt.config("zip");
+    var filesLen = Object.keys(zipConfig).length;
+    var filesZipped = 0;
+
+    Object.keys(zipConfig).forEach(function(key) {
+      var conf = zipConfig[key];
+      grunt.utils.spawn({
+        cmd: "zip",
+        args: ["-r", grunt.template.process(conf.dest), conf.src],
+        opts : {
+          cwd : conf.cwd
+        }
+      }, function(err, result, code) {
+        // handle error
+        if (err) {
+          grunt.log.error(err);
+          done();
+          return;
+        } 
+
+        grunt.log.writeln("Zipped " + conf.cwd + "/" + grunt.template.process(conf.dest));
+        
+        // increment counter
+        filesZipped+=1;
+
+        if (filesZipped === filesLen) {
+          done();
+        }
+      });
+    });
+  
+  });
+
+  // remove files.
+  grunt.registerTask("rm", function() {
+    var done = this.async();
+    var rmConfig = grunt.config("rm");
+    var filesRemoved = 0;
+    for (var i = 0; i < rmConfig.length; i++) {
+      var file = rmConfig[i];
+      
+      grunt.utils.spawn({
+        cmd : 'rm',
+        args : ["-rf", file]
+      }, function(err, result) {
+
+        if (err) {
+          grunt.log.error(err);
+          done();
+          return;
+        }
+        grunt.log.writeln("Removed: " + file);
+
+        filesRemoved+=1;
+
+        if (filesRemoved === rmConfig.length) {
+          done();
+        }
+      });
+    }
+  });
+
   // Task specific for building Node compatible version
   grunt.registerTask('node', function() {
     var nodeConfig = grunt.config("node");
@@ -163,5 +268,5 @@ module.exports = function(grunt) {
   });
 
   // Default task.
-  grunt.registerTask('default', 'lint qunit concat min node');
+  grunt.registerTask('default', 'lint qunit concat min zip node rm');
 };
