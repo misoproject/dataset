@@ -75,6 +75,45 @@
 
   module("Miso Time Type");
 
+  test("Check date parsing formats", function() {
+    var testtimes = [
+      { input : "2011", format : "YYYY" },
+      { input : "11", format : "YY" },
+      { input : "2011/03", format : "YYYY/MM" },
+      { input : "2011/04/3", format : "YYYY/MM/D" },
+      { input : "2011/04/30", format : "YYYY/MM/D" },
+      { input : "2011/4/03", format : "YYYY/M/DD" },
+      { input : "2011/4/30", format : "YYYY/M/DD" },
+      { input : "2011/6/2", format : "YYYY/M/D" },
+      { input : "2011/6/20", format : "YYYY/M/D" },
+      { input : "2011/6/20 4PM", format : "YYYY/M/D hA" },
+      { input : "2011/6/20 4PM", format : "YYYY/M/D hhA" },
+      { input : "2011/6/20 12PM", format : "YYYY/M/D hA" },
+      { input : "12PM", format : "hA" },
+      { input : "12:30 PM", format : "h:m A" },
+      { input : "5:05 PM", format : "h:m A" },
+      { input : "12:05 PM", format : "hh:mm A" },
+      { input : "-04:00", format : "Z" },
+      { input : "+04:00", format : "Z" },
+      { input : "-0400", format : "ZZ" },
+      { input : "+0400", format : "ZZ" },
+      { input : "AM -04:00", format : "A Z" },
+      { input : "PM +04:00", format : "A Z" },
+      { input : "AM -0400", format : "A ZZ" },
+      { input : "PM +0400", format : "A ZZ" },
+      { input : "12:05 -04:00", format : "hh:mm Z" },
+      { input : "12:05 +04:00", format : "hh:mm Z" },
+      { input : "12:05 -0400", format : "hh:mm ZZ" },
+      { input : "12:05 +0400", format : "hh:mm ZZ" },
+      { input : "12:05:30 +0400", format : "hh:mm:s ZZ" },
+      { input : "12:05:30 -0400", format : "hh:mm:ss ZZ" }
+    ];
+    _.each(testtimes, function(t) {
+      ok(Miso.types.time.test(t.input, {format : t.format}), t.input);
+      ok(Miso.types.time.coerce(t.input, {format:t.format}).valueOf(), moment(t.input, t.format).valueOf());
+    });
+  });
+
   test("Check date type", function() {
     ok(Miso.types.time.test("22/22/2001"), "date in correct format");
     ok(!Miso.types.time.test("20"), "date incorrect format");
@@ -82,8 +121,8 @@
 
   test("Compare date type", function() {
     var m = moment("2011/05/01",  "YYYY/MM/DD"),
-    m2 = moment("2011/05/05", "YYYY/MM/DD"),
-    m3 = moment("2011/05/01", "YYYY/MM/DD");
+        m2 = moment("2011/05/05", "YYYY/MM/DD"),
+        m3 = moment("2011/05/01", "YYYY/MM/DD");
 
     equals(Miso.types.time.compare(m,m2), -1);
     equals(Miso.types.time.compare(m2,m),  1);
