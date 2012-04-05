@@ -8,9 +8,9 @@ Dataset is part of the [Miso Toolkit](http://misoproject.com).
 
 ### Including Dependencies
 
-[miso.ds.deps.js](https://github.com/misoproject/dataset/tree/master/dist/miso.ds.deps.js) - Download Production With Dependencies - 0.0.1
+[miso.ds.dev.zip](https://github.com/misoproject/dataset/tree/master/dist/miso.ds.dev.zip) - Download Development With Dependencies - 0.0.1
 
-[miso.ds.deps.min.js](https://github.com/misoproject/dataset/tree/master/dist/) - Download Development With Dependencies - 0.0.1
+[miso.ds.deps.min.js](https://github.com/misoproject/dataset/tree/master/dist/) - Download Production With Dependencies - 0.0.1
 
 ### Without Dependencies
 
@@ -32,9 +32,17 @@ Dataset has the following dependencies:
 ## Documentation
 
 The full documentation set can be found here:
-http://misoproject.com/dataset/docs.html
+[http://misoproject.com/dataset/docs.html](http://misoproject.com/dataset/docs.html)
 
-Miso.Dataset works in node as well. You can require it like so:
+Miso.Dataset works in the browser and in Node.js.
+
+#### Browser support
+
+Include the appropriate libs as script tags in your web pages
+
+#### Node Support
+
+You can require it like so:
 
 ```javascript
 var Miso = require("miso.dataset");
@@ -44,12 +52,12 @@ var ds = new Miso.Dataset...
 ### API
 
 For a detailed API listing, see here:
-http://misoproject.com/dataset/api.html
+[http://misoproject.com/dataset/api.html](http://misoproject.com/dataset/api.html)
 
 ### Examples
 
 For some more complex examples, see the following page:
-http://misoproject.com/dataset/examples.html
+[http://misoproject.com/dataset/examples.html](http://misoproject.com/dataset/examples.html)
 
 ## Contributing
 
@@ -84,7 +92,7 @@ We welcome pull requests! Some things to keep in mind:
 
 ## Contact
 
-Follow @themisoproject on twitter.
-Issues are a great way to let us know what's up.
-Join #misoproject on irc.
-If need be, feel free to ping @iros or @agraul.
+* For announcements follow @themisoproject on twitter.
+* Openning issues here is a great way to let us know when something is broken!
+* If you want to chat with us, join #misoproject on irc.
+* Feel free to ping Irene Ros(@ireneros on twitter, @iros on github) or Alex Graul (@alexgraul on both.)
