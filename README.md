@@ -36,6 +36,10 @@ http://misoproject.com/dataset/docs.html
 
 Miso.Dataset works in node as well. You can require it like so:
 
+```javascript
+var Miso = require("miso.dataset");
+var ds = new Miso.Dataset...
+```
 
 ### API
 
@@ -46,11 +50,6 @@ http://misoproject.com/dataset/api.html
 
 For some more complex examples, see the following page:
 http://misoproject.com/dataset/examples.html
-
-```javascript
-var Miso = require("miso.dataset");
-var ds = new Miso.Dataset...
-```
 
 ## Contributing
 
