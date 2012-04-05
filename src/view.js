@@ -247,12 +247,12 @@
         
         // check if this column passes the column filter
         if (this.filter.columns(parentColumn)) {
-          selectedColumns.push({
+          selectedColumns.push(new Miso.Column({
             name : parentColumn.name,
             data : [], 
             type : parentColumn.type,
             _id : parentColumn._id
-          });
+          }));
         }
 
       }, this);

@@ -72,7 +72,7 @@
     }
   });
 
-  _.extend(Miso.Dataset.prototype, {
+  _.extend(Miso.DataView.prototype, {
 
     // finds the column objects that match the single/multiple
     // input columns. Helper method.
@@ -135,7 +135,9 @@
       var maxFunc = (function(columns) {
         return function() {
 
-          var max = _.max(_.map(columns, function(c) { return c._max(); }));
+          var max = _.max(_.map(columns, function(c) { 
+            return c._max(); 
+          }));
           
           // save types and type options to later coerce
           var type = columns[0].type;

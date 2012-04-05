@@ -103,7 +103,7 @@
     });
   });
 
-  test("Function Row Filter View creation", function() {
+  test("Function Row Filter View creation ", function() {
     var ds = Util.baseSample();
     var view = ds.where({
       rows : function(row) {
@@ -115,6 +115,21 @@
       ok(_.isEqual(ds._columns[i].data.slice(0, 1), view._columns[i].data), "data has been copied");
     });
   });
+
+  test("Function Row Filter View creation with computed product", function() {
+    var ds = Util.baseSample();
+    var view = ds.where({
+      rows : function(row) {
+        return true;
+      }
+    });
+
+    equals(view.mean("three"), 8);
+    equals(view.max("three"), 9);
+    equals(view.min(["three"]), 7);
+  });
+
+
 
   test("Columns View creation", function() {
     var ds = Util.baseSample();
