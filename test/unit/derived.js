@@ -3,6 +3,47 @@
   var Util  = global.Util;
   var Miso    = global.Miso || {};
 
+  module("CountBy");
+  var countData = {
+    columns : [
+      { name : "things", 
+        data : [1,2,3,4,5,6,7,8,9,10], 
+        type : "numeric" 
+      },
+      { name : "category", 
+        data : ['a','b','a','a','c','c', null,'a','b','c'], 
+        type : "numeric" 
+      },
+    ]
+  }
+
+
+  test("Counting rows", function() {
+  var ds = new Miso.Dataset({
+      data : countData,
+      strict: true
+    }).fetch({ success :function() {
+      
+      var counted = this.countBy('category'),
+          aCount = counted.rows(function(row) {
+            return row.category === 'a';
+          }).rowByPosition(0).count,
+          bCount = counted.rows(function(row) {
+            return row.category === 'b';
+          }).rowByPosition(0).count,
+          nullCount = counted.rows(function(row) {
+            return row.category === null;
+          }).rowByPosition(0).count;
+      
+      equals(4, counted.columns().length);
+      equals(4, aCount);
+      equals(2, bCount);
+      equals(1, nullCount);
+
+      // equals(ma.length, this.length - 2);
+    }});
+  });
+
   module("Moving Average");
 
   _.mixin({
@@ -300,3 +341,4 @@
 
   });
 }(this));
+
