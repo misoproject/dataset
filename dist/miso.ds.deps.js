@@ -3281,6 +3281,10 @@
     */    
     sort : function(options) {
       options = options || {};
+
+      if (options.comparator) {
+        this.comparator = options.comparator;
+      }
       
       if (_.isUndefined(this.comparator)) {
         throw new Error("Cannot sort without this.comparator.");
@@ -3373,6 +3377,7 @@
       if (this.syncable && options.silent) {
         this.trigger("sort");
       }
+      return this;
     },
 
     /**
@@ -4343,7 +4348,8 @@ Version 0.0.1.2
     },
 
     /**
-    * Group by the column passed and count the matching rows
+    * Group rows by the column passed and return a column with the
+    * counts of the instance of each value in the column passed.
     */
     countBy : function(byColumn, options) {
 

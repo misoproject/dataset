@@ -700,6 +700,7 @@
       if (this.syncable && options.silent) {
         this.trigger("sort");
       }
+      return this;
     },
 
     /**
