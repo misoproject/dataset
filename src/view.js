@@ -604,6 +604,10 @@
     */    
     sort : function(options) {
       options = options || {};
+
+      if (options.comparator) {
+        this.comparator = options.comparator;
+      }
       
       if (_.isUndefined(this.comparator)) {
         throw new Error("Cannot sort without this.comparator.");

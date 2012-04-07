@@ -129,7 +129,8 @@
     },
 
     /**
-    * Group by the column passed and count the matching rows
+    * Group rows by the column passed and return a column with the
+    * counts of the instance of each value in the column passed.
     */
     countBy : function(byColumn, options) {
 
