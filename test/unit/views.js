@@ -176,6 +176,47 @@ module("Views :: Rows Selection");
     ok(_.isEqual(row, expectedRow), "Row by position is equal");
   });
 
+
+  test("Get row by first", function() {
+    var ds = Util.baseSample();
+    var row = ds.first(function(row) {
+      return row.one === 1;
+    });
+
+    var expectedRow = {
+      _id : ds._columns[0].data[0],
+      one : 1,
+      two : 4,
+      three : 7
+    };
+    ok(_.isEqual(row, expectedRow), "Row by position is equal");
+  });
+
+  test("Get row by last", function() {
+    var ds = Util.baseSample();
+    var row = ds.last(function(row) {
+      return row.one > 1;
+    });
+
+    var expectedRow = {
+      _id : ds._columns[0].data[2],
+      one : 3,
+      two : 6,
+      three : 9 
+    };
+    ok(_.isEqual(row, expectedRow), "Row by position is equal");
+  });
+
+  test("Get row by all", function() {
+    var ds = Util.baseSample();
+    var rows = ds.all(function(row) {
+      return row.one > 1;
+    });
+
+    ok(rows[0].one === 2);
+    ok(rows[1].one === 3);
+  });
+
   test("Get row internal", function() {
     var ds = Util.baseSample();
     var row = ds._row(0);

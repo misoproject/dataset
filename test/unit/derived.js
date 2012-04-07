@@ -13,9 +13,9 @@
       { name : "category", 
         data : ['a','b','a','a','c','c', null,'a','b','c'], 
         type : "numeric" 
-      },
+      }
     ]
-  }
+  };
 
 
   test("Counting rows", function() {

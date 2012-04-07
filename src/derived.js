@@ -143,7 +143,7 @@
       //add columns
       d.addColumn({
         name : byColumn,
-        type : this.column(byColumn).type,
+        type : this.column(byColumn).type
       });
       d.addColumn({ name : 'count', type : 'numeric' });
       d.addColumn({ name : '_oids', type : 'numeric' });
@@ -157,10 +157,10 @@
       this.each(function(row) {
         var index = _.indexOf(names, row[byColumn]);
         if ( index === -1 ) {
-          names.push( row[byColumn] )
+          names.push( row[byColumn] );
           _ids.push( _.uniqueId() );
-          values.push( 1 )
-          _oids.push( [row._id] )
+          values.push( 1 );
+          _oids.push( [row._id] );
         } else {
           values[index] += 1;
           _oids[index].push( row._id ); 
@@ -211,7 +211,7 @@
 
         this.addColumn({
           name : columnName,
-          type : this.parent.column(columnName).type,
+          type : this.parent.column(columnName).type
         });
       }, d);
 
