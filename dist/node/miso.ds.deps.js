@@ -999,6 +999,53 @@ var request = require("request");
     },
 
     /**
+    * Returns a copy of the first row to pass the filter
+    * Paramters:
+    *   filter - same syntax as .where and .rows
+    */    
+    first : function(filter) {
+      filter = this._rowFilter( filter );
+      for(var i = 0; i < this.length; i++) {
+        var row = this.rowByPosition(i);
+        if ( filter( row ) ) {
+          return row;
+        }
+      }
+    },
+
+    /**
+    * Returns a copy of the last row to pass the filter
+    * Paramters:
+    *   filter - same syntax as .where and .rows
+    */    
+    last : function(filter) {
+      filter = this._rowFilter( filter );
+      for(var i = this.length-1; i >= 0 ; i--) {
+        var row = this.rowByPosition(i);
+        if ( filter( row ) ) {
+          return row;
+        }
+      }
+    },
+
+    /**
+    * Returns a copy of all the rows to pass the filter
+    * Paramters:
+    *   filter - same syntax as .where and .rows
+    */  
+    all : function(filter) {
+      filter = this._rowFilter( filter );
+      var rows = [];
+      for(var i = 0; i < this.length; i++) {
+        var row = this.rowByPosition(i);
+        if ( filter( row ) ) {
+          rows.push( row );
+        }
+      }
+      return rows;
+    },
+
+    /**
     * Iterates over each column.
     * Parameters:
     *   iterator - function that is passed:
@@ -1165,6 +1212,10 @@ var request = require("request");
     */    
     sort : function(options) {
       options = options || {};
+
+      if (options.comparator) {
+        this.comparator = options.comparator;
+      }
       
       if (_.isUndefined(this.comparator)) {
         throw new Error("Cannot sort without this.comparator.");
@@ -1257,6 +1308,7 @@ var request = require("request");
       if (this.syncable && options.silent) {
         this.trigger("sort");
       }
+      return this;
     },
 
     /**
@@ -2234,6 +2286,50 @@ Version 0.0.1.2
     },
 
     /**
+    * Group rows by the column passed and return a column with the
+    * counts of the instance of each value in the column passed.
+    */
+    countBy : function(byColumn, options) {
+
+      options = options || {};
+      var d = new Miso.Derived({
+        parent : this,
+        method : _.sum,
+        args : arguments
+      });
+
+      //add columns
+      d.addColumn({
+        name : byColumn,
+        type : this.column(byColumn).type
+      });
+      d.addColumn({ name : 'count', type : 'numeric' });
+      d.addColumn({ name : '_oids', type : 'numeric' });
+      Miso.Builder.cacheColumns(d);
+
+      var names = d._column(byColumn).data, 
+          values = d._column('count').data, 
+          _oids = d._column('_oids').data,
+          _ids = d._column('_id').data;
+
+      this.each(function(row) {
+        var index = _.indexOf(names, row[byColumn]);
+        if ( index === -1 ) {
+          names.push( row[byColumn] );
+          _ids.push( _.uniqueId() );
+          values.push( 1 );
+          _oids.push( [row._id] );
+        } else {
+          values[index] += 1;
+          _oids[index].push( row._id ); 
+        }
+      });
+
+      Miso.Builder.cacheRows(d);
+      return d;
+    },
+
+    /**
     * group rows by values in a given column
     * Parameters:
     *   byColumn - The column by which rows will be grouped (string)
@@ -2273,8 +2369,7 @@ Version 0.0.1.2
 
         this.addColumn({
           name : columnName,
-          type : this.parent.column(columnName).type,
-          data : []
+          type : this.parent.column(columnName).type
         });
       }, d);
 
@@ -3074,6 +3169,10 @@ Version 0.0.1.2
             // Now that we have our value string, let's add
             // it to the data array.
             if (columnCountComputed) {
+
+              if (strMatchedValue === '') {
+                strMatchedValue = null;
+              }
 
               columnData[columns[columnIndex]].push(strMatchedValue);
             

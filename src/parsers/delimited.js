@@ -113,6 +113,10 @@
             // it to the data array.
             if (columnCountComputed) {
 
+              if (strMatchedValue === '') {
+                strMatchedValue = null;
+              }
+
               columnData[columns[columnIndex]].push(strMatchedValue);
             
             } else {
