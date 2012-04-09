@@ -9,6 +9,7 @@
   *     name
   *     type (from Miso.types)
   *     data (optional)
+  *     before (a pre coercion formatter)
   *     format (for time type.)
   *     any additional arguments here..
   * Returns:
@@ -469,7 +470,12 @@
           // test if value matches column type
           if (column.force || Type.test(row[column.name], column)) {
             
-            // if so, coerce it.
+            // do we have a before filter? If so, pass it through that first
+            if (!_.isUndefined(column.before)) {
+              row[column.name] = column.before(row[column.name]);
+            }
+
+            // coerce it.
             row[column.name] = Type.coerce(row[column.name], column);
 
           } else {

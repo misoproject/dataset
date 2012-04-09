@@ -71,6 +71,31 @@
     });
   });
 
+  test("Column before function", function() {
+    var ds = new Miso.Dataset({
+      data : {
+        columns : [
+          { name : 'vals', data : [1,2,3,4,5,6,7,8,9,10] }
+        ]
+      },
+      columns : [
+        { name : 'vals', type : 'number', before : function(v) {
+            return v * 10;
+        }}
+      ],
+      strict : true
+    });
+    
+    _.when(ds.fetch()).then(function() {
+      ok(_.isEqual(ds.sum("vals"), 550));
+      ok(_.isEqual(ds.column("vals").data, [10,20,30,40,50,60,70,80,90,100]), ds.column("vals").data);
+      ds.update(ds._columns[0].data[0], {
+        vals : 4
+      });
+      equals(ds.column('vals').data[0], 40);
+    });
+  });
+
   module("Views");
 
   test("Basic View creation", function() {

@@ -510,6 +510,13 @@ Version 0.0.1.2
               
               if (Type) {
                 if (Miso.typeOf(newProperties[c.name], c) === c.type) {
+
+                  // do we have a before filter on the column? If so, apply it
+                  if (!_.isUndefined(c.before)) {
+                    newProperties[c.name] = c.before(newProperties[c.name]);
+                  }
+
+                  // coerce it.
                   newProperties[c.name] = Type.coerce(newProperties[c.name], c);
                 } else {
                   throw("incorrect value '" + newProperties[c.name] + 

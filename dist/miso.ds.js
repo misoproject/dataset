@@ -1,8 +1,10 @@
 /**
-* Miso.Dataset - v0.1.0 - 4/4/2012
+* Miso.Dataset - v0.1.0 - 4/9/2012
 * http://github.com/misoproject/dataset
 * Copyright (c) 2012 Alex Graul, Irene Ros;
 * Dual Licensed: MIT, GPL
+* https://github.com/misoproject/dataset/blob/master/LICENSE-MIT 
+* https://github.com/misoproject/dataset/blob/master/LICENSE-GPL 
 */
 
 (function(global, _) {
@@ -497,6 +499,7 @@
   *     name
   *     type (from Miso.types)
   *     data (optional)
+  *     before (a pre coercion formatter)
   *     format (for time type.)
   *     any additional arguments here..
   * Returns:
@@ -957,7 +960,12 @@
           // test if value matches column type
           if (column.force || Type.test(row[column.name], column)) {
             
-            // if so, coerce it.
+            // do we have a before filter? If so, pass it through that first
+            if (!_.isUndefined(column.before)) {
+              row[column.name] = column.before(row[column.name]);
+            }
+
+            // coerce it.
             row[column.name] = Type.coerce(row[column.name], column);
 
           } else {
@@ -1932,6 +1940,13 @@ Version 0.0.1.2
               
               if (Type) {
                 if (Miso.typeOf(newProperties[c.name], c) === c.type) {
+
+                  // do we have a before filter on the column? If so, apply it
+                  if (!_.isUndefined(c.before)) {
+                    newProperties[c.name] = c.before(newProperties[c.name]);
+                  }
+
+                  // coerce it.
                   newProperties[c.name] = Type.coerce(newProperties[c.name], c);
                 } else {
                   throw("incorrect value '" + newProperties[c.name] + 
