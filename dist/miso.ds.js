@@ -887,53 +887,6 @@
     },
 
     /**
-    * Returns a copy of the first row to pass the filter
-    * Paramters:
-    *   filter - same syntax as .where and .rows
-    */    
-    first : function(filter) {
-      filter = this._rowFilter( filter );
-      for(var i = 0; i < this.length; i++) {
-        var row = this.rowByPosition(i);
-        if ( filter( row ) ) {
-          return row;
-        }
-      }
-    },
-
-    /**
-    * Returns a copy of the last row to pass the filter
-    * Paramters:
-    *   filter - same syntax as .where and .rows
-    */    
-    last : function(filter) {
-      filter = this._rowFilter( filter );
-      for(var i = this.length-1; i >= 0 ; i--) {
-        var row = this.rowByPosition(i);
-        if ( filter( row ) ) {
-          return row;
-        }
-      }
-    },
-
-    /**
-    * Returns a copy of all the rows to pass the filter
-    * Paramters:
-    *   filter - same syntax as .where and .rows
-    */  
-    all : function(filter) {
-      filter = this._rowFilter( filter );
-      var rows = [];
-      for(var i = 0; i < this.length; i++) {
-        var row = this.rowByPosition(i);
-        if ( filter( row ) ) {
-          rows.push( row );
-        }
-      }
-      return rows;
-    },
-
-    /**
     * Iterates over each column.
     * Parameters:
     *   iterator - function that is passed:
