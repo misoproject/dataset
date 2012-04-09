@@ -2243,7 +2243,7 @@
     string : {
       name : "string",
       coerce : function(v) {
-        return _.isNull(v) ? null : v.toString();
+        return v == null ? null : v.toString();
       },
       test : function(v) {
         return (v === null || typeof v === "undefined" || typeof v === 'string');
