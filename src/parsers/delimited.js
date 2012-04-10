@@ -130,6 +130,10 @@
                   strMatchedValue = null;
                 }
 
+                if (typeof columnData[columns[columnIndex]] === "undefined") {
+                  throw new Error("Too many items in row"); 
+                }
+                
                 columnData[columns[columnIndex]].push(strMatchedValue);
               
               } else {

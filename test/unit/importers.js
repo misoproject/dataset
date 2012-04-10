@@ -228,7 +228,7 @@
       });
       ds.fetch();
     } catch(e) {
-      ok(e.message.indexOf("Error while parsing delimited data on row 2") > -1);
+      ok(e.message.indexOf("Error while parsing delimited data on row 2. Message: Too many items in row") > -1);
     }
   });
 
@@ -243,7 +243,6 @@
         delimiter : ","
       });
       ds.fetch();
-      console.log(ds);
     } catch(e) {
       equals(e.message, "Error while parsing delimited data on row 2. Message: Not enough items in row");
     }
