@@ -216,6 +216,39 @@
     stop();
   });
 
+  test("Delimiter error catching too many items", 1, function() {
+    var data = "Col1,Col2,Col3\n"+
+               "1,2,3\n" +
+               "1,,4,5\n" +
+               "5,3,4";
+    try {
+      var ds = new Miso.Dataset({
+        data : data,
+        delimiter : ","
+      });
+      ds.fetch();
+    } catch(e) {
+      ok(e.message.indexOf("Error while parsing delimited data on row 2") > -1);
+    }
+  });
+
+  test("Delimiter error catching not enough items", 1, function() {
+    var data = "Col1,Col2,Col3\n"+
+               "1,2,3\n" +
+               "1,5\n" +
+               "5,3,4";
+    try {
+      var ds = new Miso.Dataset({
+        data : data,
+        delimiter : ","
+      });
+      ds.fetch();
+      console.log(ds);
+    } catch(e) {
+      equals(e.message, "Error while parsing delimited data on row 2. Message: Not enough items in row");
+    }
+  });
+
   module("Google Spreadsheet Support");
   function verifyGoogleSpreadsheet(d, obj) {
 
