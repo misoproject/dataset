@@ -49,6 +49,8 @@
         return (v === null || typeof v === "undefined" || typeof v === 'string');
       },
       compare : function(s1, s2) {
+        if (s1 == null && s2 != null) { return -1; }
+        if (s1 != null && s2 == null) { return 1; }
         if (s1 < s2) { return -1; }
         if (s1 > s2) { return 1;  }
         return 0;
@@ -77,6 +79,9 @@
         }
       },
       compare : function(n1, n2) {
+        if (n1 == null && n2 != null) { return -1; }
+        if (n1 != null && n2 == null) { return 1; }
+        if (n1 == null && n2 == null) { return 0; }
         if (n1 === n2) { return 0; }
         return (n1 < n2 ? -1 : 1);
       },
@@ -102,6 +107,9 @@
         }
       },
       compare : function(n1, n2) {
+        if (n1 == null && n2 != null) { return -1; }
+        if (n1 != null && n2 == null) { return 1; }
+        if (n1 == null && n2 == null) { return 0; }
         if (n1 === n2) { return 0; }
         return (n1 < n2 ? -1 : 1);
       },

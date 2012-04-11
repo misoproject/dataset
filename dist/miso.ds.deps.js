@@ -1,5 +1,5 @@
 /**
-* Miso.Dataset - v0.1.0 - 4/10/2012
+* Miso.Dataset - v0.1.0 - 4/11/2012
 * http://github.com/misoproject/dataset
 * Copyright (c) 2012 Alex Graul, Irene Ros;
 * Dual Licensed: MIT, GPL
@@ -2190,7 +2190,7 @@
 })(this);
 
 /**
-* Miso.Dataset - v0.1.0 - 4/10/2012
+* Miso.Dataset - v0.1.0 - 4/11/2012
 * http://github.com/misoproject/dataset
 * Copyright (c) 2012 Alex Graul, Irene Ros;
 * Dual Licensed: MIT, GPL
@@ -2249,6 +2249,8 @@
         return (v === null || typeof v === "undefined" || typeof v === 'string');
       },
       compare : function(s1, s2) {
+        if (s1 == null && s2 != null) { return -1; }
+        if (s1 != null && s2 == null) { return 1; }
         if (s1 < s2) { return -1; }
         if (s1 > s2) { return 1;  }
         return 0;
@@ -2277,6 +2279,9 @@
         }
       },
       compare : function(n1, n2) {
+        if (n1 == null && n2 != null) { return -1; }
+        if (n1 != null && n2 == null) { return 1; }
+        if (n1 == null && n2 == null) { return 0; }
         if (n1 === n2) { return 0; }
         return (n1 < n2 ? -1 : 1);
       },
@@ -2302,6 +2307,9 @@
         }
       },
       compare : function(n1, n2) {
+        if (n1 == null && n2 != null) { return -1; }
+        if (n1 != null && n2 == null) { return 1; }
+        if (n1 == null && n2 == null) { return 0; }
         if (n1 === n2) { return 0; }
         return (n1 < n2 ? -1 : 1);
       },
@@ -4330,10 +4338,11 @@ Version 0.0.1.2
         args : arguments
       });
 
+      var parentByColumn = this.column(byColumn);
       //add columns
       d.addColumn({
         name : byColumn,
-        type : this.column(byColumn).type
+        type : parentByColumn.type
       });
       d.addColumn({ name : 'count', type : 'numeric' });
       d.addColumn({ name : '_oids', type : 'numeric' });
@@ -4344,8 +4353,18 @@ Version 0.0.1.2
           _oids = d._column('_oids').data,
           _ids = d._column('_id').data;
 
+      function findIndex(names, datum, type) {
+        var i;
+        for(i = 0; i < names.length; i++) {
+          if (Miso.types[type].compare(names[i], datum) === 0) {
+            return i;
+          }
+        }
+        return -1;
+      }
+
       this.each(function(row) {
-        var index = _.indexOf(names, row[byColumn]);
+        var index = findIndex(names, row[byColumn], parentByColumn.type);
         if ( index === -1 ) {
           names.push( row[byColumn] );
           _ids.push( _.uniqueId() );

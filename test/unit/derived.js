@@ -44,6 +44,25 @@
     }});
   });
 
+  test("Counting rows with moment objs", function() {
+  var ds = new Miso.Dataset({
+      data : [
+
+        { a : "2002 01 01", b : 1 },
+        { a : "2002 01 01", b : 3 }
+      ],
+      columns : [
+        { name : 'a', type : 'time', format : 'YYYY MM DD'}
+      ]
+    }).fetch({ success :function() {
+      var counted = this.countBy('a'),
+          aCount = counted.column('count').data;
+
+      equals(counted.length, 1);
+      ok(_.isEqual(aCount, [2]));
+    }});
+  });
+
   module("Moving Average");
 
   _.mixin({

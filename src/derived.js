@@ -141,10 +141,11 @@
         args : arguments
       });
 
+      var parentByColumn = this.column(byColumn);
       //add columns
       d.addColumn({
         name : byColumn,
-        type : this.column(byColumn).type
+        type : parentByColumn.type
       });
       d.addColumn({ name : 'count', type : 'numeric' });
       d.addColumn({ name : '_oids', type : 'numeric' });
@@ -155,8 +156,18 @@
           _oids = d._column('_oids').data,
           _ids = d._column('_id').data;
 
+      function findIndex(names, datum, type) {
+        var i;
+        for(i = 0; i < names.length; i++) {
+          if (Miso.types[type].compare(names[i], datum) === 0) {
+            return i;
+          }
+        }
+        return -1;
+      }
+
       this.each(function(row) {
-        var index = _.indexOf(names, row[byColumn]);
+        var index = findIndex(names, row[byColumn], parentByColumn.type);
         if ( index === -1 ) {
           names.push( row[byColumn] );
           _ids.push( _.uniqueId() );

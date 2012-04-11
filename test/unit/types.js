@@ -73,6 +73,38 @@
     equals(Miso.types.boolean.numeric(false), 0, "False returns 0");
   });
 
+  test("Check weird types", function() {
+    equals(Miso.types.string.compare(null, "a"), -1);
+    equals(Miso.types.string.compare("a", null), 1);
+    equals(Miso.types.string.compare(null, null), 0);
+    equals(Miso.types.string.compare(null, undefined), 0);
+    equals(Miso.types.string.compare(undefined, undefined), 0);
+    equals(Miso.types.string.compare(undefined, null), 0);
+
+    equals(Miso.types.number.compare(null, 1), -1);
+    equals(Miso.types.number.compare(null, 0), -1);
+    equals(Miso.types.number.compare(1, null), 1);
+    equals(Miso.types.number.compare(0, null), 1);
+    equals(Miso.types.number.compare(null, null), 0);
+    equals(Miso.types.number.compare(null, undefined), 0);
+    equals(Miso.types.number.compare(undefined, undefined), 0);
+    equals(Miso.types.number.compare(undefined, null), 0);
+
+    equals(Miso.types.boolean.compare(null, true), -1);
+    equals(Miso.types.boolean.compare(true, null), 1);
+    equals(Miso.types.boolean.compare(null, null), 0);
+    equals(Miso.types.boolean.compare(null, undefined), 0);
+    equals(Miso.types.boolean.compare(undefined, undefined), 0);
+    equals(Miso.types.boolean.compare(undefined, null), 0);
+
+    equals(Miso.types.time.compare(null, moment()), -1);
+    equals(Miso.types.time.compare(moment(), null), 1);
+    equals(Miso.types.time.compare(null, null), 0);
+    equals(Miso.types.time.compare(null, undefined), 0);
+    equals(Miso.types.time.compare(undefined, undefined), 0);
+    equals(Miso.types.time.compare(undefined, null), 0);
+  });
+
   module("Miso Time Type");
 
   test("Check date parsing formats", function() {
