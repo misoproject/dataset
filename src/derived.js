@@ -147,8 +147,8 @@
         name : byColumn,
         type : parentByColumn.type
       });
-      d.addColumn({ name : 'count', type : 'numeric' });
-      d.addColumn({ name : '_oids', type : 'numeric' });
+      d.addColumn({ name : 'count', type : 'number' });
+      d.addColumn({ name : '_oids', type : 'mixed' });
       Miso.Builder.cacheColumns(d);
 
       var names = d._column(byColumn).data, 
