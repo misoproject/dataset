@@ -1,3 +1,4 @@
+var path = require("path");
 var _ = require("underscore");
 var moment = require("moment");
 _.mixin(require("underscore.deferred"));
@@ -11,7 +12,18 @@ var request = require("request");
 
 // Load function that makes Miso plugin loading more formal.
 this.Miso.load = function(moduleName) {
-  require(moduleName);
+  try {
+    // Attempt to load from node_modules
+    require(moduleName);
+  } catch (ex) {
+    // If path is not already full qualified prefix with cwd
+    if (!path.existsSync(moduleName)) {
+      moduleName = path.resolve(process.cwd(), moduleName);
+    }
+
+    // Load the correct module
+    require(moduleName);
+  }
 };
 
 // Ensure compatibility with Remote Importer
