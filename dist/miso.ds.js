@@ -1,5 +1,5 @@
 /**
-* Miso.Dataset - v0.1.0 - 4/11/2012
+* Miso.Dataset - v0.1.0 - 4/12/2012
 * http://github.com/misoproject/dataset
 * Copyright (c) 2012 Alex Graul, Irene Ros;
 * Dual Licensed: MIT, GPL
@@ -607,15 +607,15 @@
   *   new Miso.Dataview.
   */
   Miso.DataView = function(options) {
-    options = options || (options = {});
+    if (typeof options !== "undefined") {
+      options = options || (options = {});
 
-    if (_.isUndefined(options.parent)) {
-      throw new Error("A view must have a parent specified.");
-    } 
-    this.parent = options.parent;
-    this._initialize(options);
-
-    return this;
+      if (_.isUndefined(options.parent)) {
+        throw new Error("A view must have a parent specified.");
+      } 
+      this.parent = options.parent;
+      this._initialize(options);
+    }
   };
 
   _.extend(Miso.DataView.prototype, {
@@ -1484,13 +1484,22 @@ Version 0.0.1.2
   }
   */
   Miso.Dataset = function(options) {
-    options = options || (options = {});
     this.length = 0;
-    this._initialize(options);
-    return this;
+    
+    this._columns = [];
+    this._columnPositionByName = {};
+    
+    if (typeof options !== "undefined") {
+      options = options || {};
+      this._initialize(options);
+    }
   };
 
-  _.extend(Miso.Dataset.prototype, Miso.DataView.prototype, {
+  // take on miso dataview's prototype
+  Miso.Dataset.prototype = new Miso.DataView();
+
+  // add dataset methods to dataview.
+  _.extend(Miso.Dataset.prototype, {
 
     /**
     * @private
@@ -1570,10 +1579,7 @@ Version 0.0.1.2
         this.uniqueAgainst = options.uniqueAgainst;
       }
 
-
-
-      this._columns = [];
-      this._columnPositionByName = {};
+      
 
       // if there is no data and no url set, we must be building
       // the dataset from scratch, so create an id column.
@@ -2020,7 +2026,8 @@ Version 0.0.1.2
   * Returns
   *   a derived dataset instance
   */
-  Miso.Derived = (Miso.Derived || function(options) {
+
+  Miso.Derived = function(options) {
     options = options || {};
 
     Miso.Dataset.call(this);
@@ -2038,19 +2045,18 @@ Version 0.0.1.2
       type : "mixed"
     });
 
-    this.prototype = Miso.Derived.prototype;
-
     if (this.parent.syncable) {
       _.extend(this, Miso.Events);
       this.syncable = true;
       this.parent.bind("change", this._sync, this);  
     }
+  };
 
-    return this;
-  });
+  // take in dataset's prototype.
+  Miso.Derived.prototype = new Miso.Dataset();
 
   // inherit all of dataset's methods.
-  _.extend(Miso.Derived.prototype, Miso.Dataset.prototype, {
+  _.extend(Miso.Derived.prototype, {
     _sync : function(event) {
       // recompute the function on an event.
       // TODO: would be nice to be more clever about this at some point.
@@ -2060,7 +2066,8 @@ Version 0.0.1.2
   });
 
 
-  _.extend(Miso.Dataset.prototype, {
+  // add derived methods to dataview (and thus dataset & derived)
+  _.extend(Miso.DataView.prototype, {
 
     /**
     * moving average
@@ -2153,8 +2160,8 @@ Version 0.0.1.2
         name : byColumn,
         type : parentByColumn.type
       });
-      d.addColumn({ name : 'count', type : 'numeric' });
-      d.addColumn({ name : '_oids', type : 'numeric' });
+      d.addColumn({ name : 'count', type : 'number' });
+      d.addColumn({ name : '_oids', type : 'mixed' });
       Miso.Builder.cacheColumns(d);
 
       var names = d._column(byColumn).data, 
@@ -2376,8 +2383,7 @@ Version 0.0.1.2
   var Miso = (global.Miso || (global.Miso = {}));
 
   /**
-  * A remote importer is responsible for fetching data from a url
-  * and passing it through the right parser.
+  * A remote importer is responsible for fetching data from a url.
   * Parameters:
   *   options
   *     url - url to query
@@ -2725,7 +2731,6 @@ Version 0.0.1.2
       }
     }
     
-    this.parser = Miso.Parsers.GoogleSpreadsheet;
     this.params = {
       type : "GET",
       url : options.url,

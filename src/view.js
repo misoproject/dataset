@@ -109,15 +109,15 @@
   *   new Miso.Dataview.
   */
   Miso.DataView = function(options) {
-    options = options || (options = {});
+    if (typeof options !== "undefined") {
+      options = options || (options = {});
 
-    if (_.isUndefined(options.parent)) {
-      throw new Error("A view must have a parent specified.");
-    } 
-    this.parent = options.parent;
-    this._initialize(options);
-
-    return this;
+      if (_.isUndefined(options.parent)) {
+        throw new Error("A view must have a parent specified.");
+      } 
+      this.parent = options.parent;
+      this._initialize(options);
+    }
   };
 
   _.extend(Miso.DataView.prototype, {

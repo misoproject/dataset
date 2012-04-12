@@ -14,7 +14,8 @@
   * Returns
   *   a derived dataset instance
   */
-  Miso.Derived = (Miso.Derived || function(options) {
+
+  Miso.Derived = function(options) {
     options = options || {};
 
     Miso.Dataset.call(this);
@@ -32,19 +33,18 @@
       type : "mixed"
     });
 
-    this.prototype = Miso.Derived.prototype;
-
     if (this.parent.syncable) {
       _.extend(this, Miso.Events);
       this.syncable = true;
       this.parent.bind("change", this._sync, this);  
     }
+  };
 
-    return this;
-  });
+  // take in dataset's prototype.
+  Miso.Derived.prototype = new Miso.Dataset();
 
   // inherit all of dataset's methods.
-  _.extend(Miso.Derived.prototype, Miso.Dataset.prototype, {
+  _.extend(Miso.Derived.prototype, {
     _sync : function(event) {
       // recompute the function on an event.
       // TODO: would be nice to be more clever about this at some point.
@@ -54,7 +54,8 @@
   });
 
 
-  _.extend(Miso.Dataset.prototype, {
+  // add derived methods to dataview (and thus dataset & derived)
+  _.extend(Miso.DataView.prototype, {
 
     /**
     * moving average

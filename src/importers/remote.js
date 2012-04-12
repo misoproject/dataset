@@ -2,8 +2,7 @@
   var Miso = (global.Miso || (global.Miso = {}));
 
   /**
-  * A remote importer is responsible for fetching data from a url
-  * and passing it through the right parser.
+  * A remote importer is responsible for fetching data from a url.
   * Parameters:
   *   options
   *     url - url to query

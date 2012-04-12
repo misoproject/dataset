@@ -41,13 +41,22 @@ Version 0.0.1.2
   }
   */
   Miso.Dataset = function(options) {
-    options = options || (options = {});
     this.length = 0;
-    this._initialize(options);
-    return this;
+    
+    this._columns = [];
+    this._columnPositionByName = {};
+    
+    if (typeof options !== "undefined") {
+      options = options || {};
+      this._initialize(options);
+    }
   };
 
-  _.extend(Miso.Dataset.prototype, Miso.DataView.prototype, {
+  // take on miso dataview's prototype
+  Miso.Dataset.prototype = new Miso.DataView();
+
+  // add dataset methods to dataview.
+  _.extend(Miso.Dataset.prototype, {
 
     /**
     * @private
@@ -127,10 +136,7 @@ Version 0.0.1.2
         this.uniqueAgainst = options.uniqueAgainst;
       }
 
-
-
-      this._columns = [];
-      this._columnPositionByName = {};
+      
 
       // if there is no data and no url set, we must be building
       // the dataset from scratch, so create an id column.

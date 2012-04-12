@@ -36,7 +36,6 @@
       }
     }
     
-    this.parser = Miso.Parsers.GoogleSpreadsheet;
     this.params = {
       type : "GET",
       url : options.url,

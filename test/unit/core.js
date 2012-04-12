@@ -3,6 +3,123 @@
   var Util  = global.Util;
   var Miso    = global.Miso || {};
 
+  module("Inheritance tests");
+
+  function verifyHasDataViewPrototype(ds) {
+    ok(!_.isUndefined(ds._initialize));
+    ok(!_.isUndefined(ds._sync));
+    ok(!_.isUndefined(ds.where));
+    ok(!_.isUndefined(ds._selectData));
+    ok(!_.isUndefined(ds._columnFilter));
+    ok(!_.isUndefined(ds._rowFilter));
+    ok(!_.isUndefined(ds._column));
+    ok(!_.isUndefined(ds.column));
+    ok(!_.isUndefined(ds.columns));
+    ok(!_.isUndefined(ds.columnNames));
+    ok(!_.isUndefined(ds.hasColumn));
+    ok(!_.isUndefined(ds.each));
+    ok(!_.isUndefined(ds.eachColumn));
+    ok(!_.isUndefined(ds.rowByPosition));
+    ok(!_.isUndefined(ds.rowById));
+    ok(!_.isUndefined(ds._row));
+    ok(!_.isUndefined(ds._remove));
+    ok(!_.isUndefined(ds._add));
+    ok(!_.isUndefined(ds.rows));
+    ok(!_.isUndefined(ds.toJSON));
+    ok(!_.isUndefined(ds.movingAverage));
+    ok(!_.isUndefined(ds.groupBy));
+    ok(!_.isUndefined(ds.countBy));
+  }
+
+  function verifyDatasetPrototypeMethods(ds) {
+    ok(!_.isUndefined(ds.fetch));
+    ok(!_.isUndefined(ds._applications));
+    ok(!_.isUndefined(ds.apply));
+    ok(!_.isUndefined(ds.addColumns));
+    ok(!_.isUndefined(ds.addColumn));
+    ok(!_.isUndefined(ds._addIdColumn));
+    ok(!_.isUndefined(ds.add));
+    ok(!_.isUndefined(ds.update));
+    ok(!_.isUndefined(ds.remove));
+    ok(!_.isUndefined(ds.reset));
+  }
+
+  function verifyNODatasetPrototypeMethods(ds) {
+    ok(_.isUndefined(ds.fetch));
+    ok(_.isUndefined(ds._applications));
+    ok(_.isUndefined(ds.apply));
+    ok(_.isUndefined(ds.addColumns));
+    ok(_.isUndefined(ds.addColumn));
+    ok(_.isUndefined(ds._addIdColumn));
+    ok(_.isUndefined(ds.add));
+    ok(_.isUndefined(ds.update));
+    ok(_.isUndefined(ds.remove));
+    ok(_.isUndefined(ds.reset));
+  }
+
+  test("Dataset ineritance", function() {
+    var data = [
+      { a : 0, b : 0, c: 1},
+      { a : 0, b : 0, c: 1},
+      { a : 0, b : 1, c: 1},
+      { a : 1, b : 0, c: 1}
+    ];
+
+    var ds = new Miso.Dataset({
+      data : data 
+    });
+
+    ds.fetch({ success : function() {
+      verifyHasDataViewPrototype(this);
+      verifyDatasetPrototypeMethods(this); 
+    }});
+  });
+  test("DataView ineritance", function() {
+    var data = [
+      { a : 0, b : 0, c: 1},
+      { a : 0, b : 0, c: 1},
+      { a : 0, b : 1, c: 1},
+      { a : 1, b : 0, c: 1}
+    ];
+
+    var ds = new Miso.Dataset({
+      data : data 
+    });
+
+    ds.fetch({ success : function() {
+      var dv = ds.where({ rows : function(row) {
+        return row.a === 0;
+      }});
+      verifyHasDataViewPrototype(dv);    
+      verifyNODatasetPrototypeMethods(dv);
+      Miso.DataView.prototype.lol = function() {};
+      ok(!_.isUndefined(this.lol));
+    }});
+
+  });
+  test("Derived ineritance", function() {
+    var data = [
+      { a : 0, b : 0, c: 1},
+      { a : 0, b : 0, c: 1},
+      { a : 0, b : 1, c: 1},
+      { a : 1, b : 0, c: 1}
+    ];
+
+    var ds = new Miso.Dataset({
+      data : data 
+    });
+
+    ds.fetch({ success : function() {
+      var gb = ds.groupBy("a", ["b"]);
+      verifyHasDataViewPrototype(gb);   
+      verifyDatasetPrototypeMethods(gb); 
+      Miso.DataView.prototype.lol = function() {};
+      ok(!_.isUndefined(gb.lol));
+    }});
+  });
+  
+
+
   module("Bug Drive Tests");
   test("Zero vals convert to null", function() {
     var data = [
