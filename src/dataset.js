@@ -458,6 +458,8 @@ Version 0.0.1.2
         this.trigger('change', e );
       }
 
+      return this;
+
     },
 
     /**
