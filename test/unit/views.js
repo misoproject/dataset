@@ -106,6 +106,7 @@
     });
    });
 
+
   test("One Row Filter View creation", function() {
     var ds = Util.baseSample();
     var view = ds.where({
@@ -155,6 +156,16 @@
   });
 
 
+  test("Using string syntax for columns", function() {
+    var ds = Util.baseSample();
+    var view = ds.where({ columns : 'one' });
+    equals(view._columns.length, 2, "one data columns + _id"); //one column + _id
+    _.each(view._columns, function(column, columnIndex) {
+      _.each(column.data, function(d, rowIndex) {
+        equals(d, ds._columns[columnIndex].data[rowIndex], "data matches parent");
+      });
+    });
+  });
 
   test("Columns View creation", function() {
     var ds = Util.baseSample();

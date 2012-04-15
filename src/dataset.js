@@ -459,7 +459,6 @@ Version 0.0.1.2
       }
 
       return this;
-
     },
 
     /**
@@ -545,7 +544,7 @@ Version 0.0.1.2
         this.trigger('update', ev );
         this.trigger('change', ev );
       }
-
+      return this;
     },
 
     /**

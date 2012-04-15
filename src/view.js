@@ -290,6 +290,9 @@
           return true;
         };
       } else { //array
+        if (_.isString(columnFilter) ) {
+          columnFilter = [ columnFilter ];
+        }
         columnFilter.push('_id');
         columnSelector = function(column) {
           return _.indexOf(columnFilter, column.name) === -1 ? false : true;
