@@ -1,5 +1,5 @@
 /**
-* Miso.Dataset - v0.1.0 - 4/12/2012
+* Miso.Dataset - v0.1.0 - 4/16/2012
 * http://github.com/misoproject/dataset
 * Copyright (c) 2012 Alex Graul, Irene Ros;
 * Dual Licensed: MIT, GPL
@@ -788,6 +788,9 @@
           return true;
         };
       } else { //array
+        if (_.isString(columnFilter) ) {
+          columnFilter = [ columnFilter ];
+        }
         columnFilter.push('_id');
         columnSelector = function(column) {
           return _.indexOf(columnFilter, column.name) === -1 ? false : true;
@@ -1901,6 +1904,7 @@ Version 0.0.1.2
         this.trigger('change', e );
       }
 
+      return this;
     },
 
     /**
@@ -1986,7 +1990,7 @@ Version 0.0.1.2
         this.trigger('update', ev );
         this.trigger('change', ev );
       }
-
+      return this;
     },
 
     /**

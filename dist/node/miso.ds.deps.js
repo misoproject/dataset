@@ -1,3 +1,4 @@
+var path = require("path");
 var _ = require("underscore");
 var moment = require("moment");
 _.mixin(require("underscore.deferred"));
@@ -111,7 +112,7 @@ var request = require("request");
 
 // Include Miso Dataset lib
 /**
-* Miso.Dataset - v0.1.0 - 4/12/2012
+* Miso.Dataset - v0.1.0 - 4/16/2012
 * http://github.com/misoproject/dataset
 * Copyright (c) 2012 Alex Graul, Irene Ros;
 * Dual Licensed: MIT, GPL
@@ -900,6 +901,9 @@ var request = require("request");
           return true;
         };
       } else { //array
+        if (_.isString(columnFilter) ) {
+          columnFilter = [ columnFilter ];
+        }
         columnFilter.push('_id');
         columnSelector = function(column) {
           return _.indexOf(columnFilter, column.name) === -1 ? false : true;
@@ -2013,6 +2017,7 @@ Version 0.0.1.2
         this.trigger('change', e );
       }
 
+      return this;
     },
 
     /**
@@ -2098,7 +2103,7 @@ Version 0.0.1.2
         this.trigger('update', ev );
         this.trigger('change', ev );
       }
-
+      return this;
     },
 
     /**
@@ -3201,7 +3206,18 @@ Version 0.0.1.2
 
 // Load function that makes Miso plugin loading more formal.
 this.Miso.load = function(moduleName) {
-  require(moduleName);
+  try {
+    // Attempt to load from node_modules
+    require(moduleName);
+  } catch (ex) {
+    // If path is not already full qualified prefix with cwd
+    if (!path.existsSync(moduleName)) {
+      moduleName = path.resolve(process.cwd(), moduleName);
+    }
+
+    // Load the correct module
+    require(moduleName);
+  }
 };
 
 // Ensure compatibility with Remote Importer
