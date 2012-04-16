@@ -2061,42 +2061,64 @@ Version 0.0.1.2
     *     silent - set to true to prevent event triggering..
     */    
     update : function(filter, newProperties, options) {
-      filter = this._rowFilter(filter);
 
-      var newKeys = _.keys(newProperties),
-          deltas = [];
+      var newKeys = _.keys(newProperties), deltas = [];
 
-      this.each(function(row, rowIndex) {
-        if (filter(row)) {
-          _.each(this._columns, function(c) {
-            if (_.indexOf(newKeys, c.name) !== -1) {
+      var updateRow = _.bind(function(row, rowIndex) {
+        var c;
+        _.each(newKeys, function(columnName) {
+          c = this.column(columnName);
 
-              // test if the value passes the type test
-              var Type = Miso.types[c.type];
-              
-              if (Type) {
-                if (Miso.typeOf(newProperties[c.name], c) === c.type) {
+          // test if the value passes the type test
+          var Type = Miso.types[c.type];
+          
+          if (Type) {
+            if (Miso.typeOf(newProperties[c.name], c) === c.type) {
 
-                  // do we have a before filter on the column? If so, apply it
-                  if (!_.isUndefined(c.before)) {
-                    newProperties[c.name] = c.before(newProperties[c.name]);
-                  }
-
-                  // coerce it.
-                  newProperties[c.name] = Type.coerce(newProperties[c.name], c);
-                } else {
-                  throw("incorrect value '" + newProperties[c.name] + 
-                        "' of type " + Miso.typeOf(newProperties[c.name], c) +
-                        " passed to column with type " + c.type);  
-                }
+              // do we have a before filter on the column? If so, apply it
+              if (!_.isUndefined(c.before)) {
+                newProperties[c.name] = c.before(newProperties[c.name]);
               }
-              c.data[rowIndex] = newProperties[c.name];
-            }
-          }, this);
 
-          deltas.push( { _id : row._id, old : row, changed : newProperties } );
-        }
+              // coerce it.
+              newProperties[c.name] = Type.coerce(newProperties[c.name], c);
+            } else {
+              throw("incorrect value '" + newProperties[c.name] + 
+                    "' of type " + Miso.typeOf(newProperties[c.name], c) +
+                    " passed to column with type " + c.type);  
+            }
+          }
+          c.data[rowIndex] = newProperties[c.name];
+        }, this);
+
+        deltas.push( { _id : row._id, old : row, changed : newProperties } );
       }, this);
+
+      // do we just have a single id? array it up.
+      if (_.isString(filter)) {
+        filter = [filter];
+      }
+      // do we have an array of ids instead of filter functions?
+      if (_.isArray(filter)) {
+        var row, rowIndex;
+        _.each(filter, function(rowId) {
+          row = this.rowById(rowId);
+          rowIndex = this._rowPositionById[rowId];
+          
+          updateRow(row, rowIndex);
+        });
+
+      } else {
+
+        // make a filter function.
+        filter = this._rowFilter(filter);
+
+        this.each(function(row, rowIndex) {
+          if (filter(row)) {
+            updateRow(row, rowIndex);
+          }
+        }, this);
+      }
 
       if (this.syncable && (!options || !options.silent)) {
         var ev = this._buildEvent( deltas );

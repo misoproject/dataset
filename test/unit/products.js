@@ -245,7 +245,7 @@
         equals(this.val(), 5.95);
       });
 
-      ds.update(ds._rowIdByPosition[0], { vals : 10, valusrandomorder : 10 });
+      ds.update(ds._rowIdByPosition[0], { vals : 10, valsrandomorder : 10 });
     });
   });
 
@@ -273,7 +273,7 @@
       equals(m3, 5.5);
       equals(m4, 18.4);
 
-      ds.update(ds._rowIdByPosition[0], { vals : 10, valusrandomorder : 10 });
+      ds.update(ds._rowIdByPosition[0], { vals : 10, valsrandomorder : 10 });
 
       equals(m, 5.5);
       equals(m2, 5.5);
