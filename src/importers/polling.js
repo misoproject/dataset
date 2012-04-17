@@ -47,7 +47,7 @@
           });
         }, importer);
 
-        setTimeout(callback, importer.interval);
+        importer._timeout = setTimeout(callback, importer.interval);
         // reset deferred
         importer._def = _.Deferred();
       });
@@ -63,6 +63,9 @@
     stop : function() {
       if (this._def !== null) {
         this._def.reject();
+      }
+      if (typeof this._timeout !== "undefined") {
+        clearTimeout(this._timeout);
       }
     },
 
