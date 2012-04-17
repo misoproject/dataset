@@ -112,7 +112,7 @@ var request = require("request");
 
 // Include Miso Dataset lib
 /**
-* Miso.Dataset - v0.1.0 - 4/16/2012
+* Miso.Dataset - v0.1.0 - 4/17/2012
 * http://github.com/misoproject/dataset
 * Copyright (c) 2012 Alex Graul, Irene Ros;
 * Dual Licensed: MIT, GPL
