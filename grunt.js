@@ -18,45 +18,55 @@ module.exports = function(grunt) {
 
     node: {
       wrapper: "src/node/compat.js",
-      misoLib: "dist/miso.ds.js",
+      misoLib: "dist/miso.ds.<%= pkg.version %>.js",
       _Math: "lib/underscore.math.js"
     },
 
+
     concat : {
-      "dist/miso.ds.js" : [
-        "<banner>",
-        "src/types.js",
-        "src/sync.js",
-        "src/builder.js",
-        "src/view.js",
-        "src/product.js",
-        "src/dataset.js",
-        "src/derived.js",
-        "src/importer.js",
-        "src/importers/local.js",
-        "src/importers/remote.js",
-        "src/importers/polling.js",
-        "src/importers/google_spreadsheet.js",
-        "src/parser.js",
-        "src/parsers/strict.js",
-        "src/parsers/object.js",
-        "src/parsers/google_spreadsheet.js",
-        "src/parsers/delimited.js"
-      ],
+      fullnodeps: {
+        dest: "dist/miso.ds.<%= pkg.version %>.js",
+        src: [
+          "<banner>",
+          "src/types.js",
+          "src/sync.js",
+          "src/builder.js",
+          "src/view.js",
+          "src/product.js",
+          "src/dataset.js",
+          "src/derived.js",
+          "src/importer.js",
+          "src/importers/local.js",
+          "src/importers/remote.js",
+          "src/importers/polling.js",
+          "src/importers/google_spreadsheet.js",
+          "src/parser.js",
+          "src/parsers/strict.js",
+          "src/parsers/object.js",
+          "src/parsers/google_spreadsheet.js",
+          "src/parsers/delimited.js"
+        ]
+      },
 
-      "dist/miso.ds.deps.js" : [
-        "<banner>",
-        "lib/moment.js",
-        "lib/underscore.js",
-        "lib/underscore.math.js",
-        "lib/underscore.deferred.js",
-        "dist/miso.ds.js"
-      ],
+      fulldeps: {
+        dest : "dist/miso.ds.deps.<%= pkg.version %>.js",
+        src : [
+          "<banner>",
+          "lib/moment.js",
+          "lib/underscore.js",
+          "lib/underscore.math.js",
+          "lib/underscore.deferred.js",
+          "dist/miso.ds.<%= pkg.version %>.js"
+        ]
+      },
 
-      "dist/development/miso.ds.js" : [
-        "dist/miso.ds.js"
-      ],
-
+      devnodeps : {
+        dest : "dist/development/miso.ds.<%= pkg.version %>.js",
+        src : [
+          "dist/miso.ds.<%= pkg.version %>.js" 
+        ]
+      },
+     
       "dist/development/lib/moment.js" : [
         "lib/moment.js"
       ],
@@ -73,28 +83,37 @@ module.exports = function(grunt) {
         "lib/underscore.deferred.js"
       ],
 
-      "dist/LASTBUILD" : [
-        "<banner:meta.lastbuild>"
-      ]
+      buildstatus : {
+        dest : "dist/LASTBUILD",
+        src : [
+          "<banner:meta.lastbuild>"
+        ]
+      }
     },
 
     min : {
-      "dist/miso.ds.min.js" : [
-        "<banner>",
-        "dist/miso.ds.js"
-      ],
-
-      "dist/miso.ds.deps.min.js" : [
-        "<banner>",
-        "dist/miso.ds.deps.js"
-      ]
+      minnodeps : {
+        dest : "dist/miso.ds.min.<%= pkg.version %>.js",
+        src : [
+          "<banner>",
+          "dist/miso.ds.<%= pkg.version %>.js" 
+        ]
+      },
+      
+      mindeps : {
+        dest : "dist/miso.ds.deps.min.<%= pkg.version %>.js",
+        src : [
+          "<banner>",
+          "dist/miso.ds.deps.<%= pkg.version %>.js" 
+        ]
+      }
     },
 
     zip: {
       development: {
         cwd : 'dist',
         src: 'development',
-        dest: 'miso.ds.dev.zip',
+        dest: 'miso.ds.dev.<%= pkg.version %>.zip',
         deletesrc : true
       }
     },
@@ -262,11 +281,11 @@ module.exports = function(grunt) {
 
     var output = grunt.template.process(read(nodeConfig.wrapper), {
       underscoreMath: read(nodeConfig._Math),
-      misoDataSet: read(nodeConfig.misoLib)
+      misoDataSet: read(grunt.template.process(nodeConfig.misoLib))
     });
 
     // Write the contents out
-    grunt.file.write("dist/node/miso.ds.deps.js", output);
+    grunt.file.write("dist/node/miso.ds.deps." + grunt.template.process(grunt.config("pkg").version) + ".js", output);
   });
 
   // Default task.
