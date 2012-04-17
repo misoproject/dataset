@@ -23,8 +23,8 @@
       
       _.each(this.deltas, function(delta) {
         cols = _.union(cols, 
-          _.keys(delta.old),
-          _.keys(delta.changed)
+          ( _.isUndefined(delta.old) ? [] : _.keys(delta.old) ),
+          ( _.isUndefined(delta.changed) ? [] : _.keys(delta.changed) )
         );
       });
 
