@@ -56,7 +56,7 @@
     });
     ds.fetch({ success: function() {
       this.bind('add', function(event) {
-        equals( event.affectedColumns().length, 2)
+        equals( event.affectedColumns().length, 2);
       });
       }
     });
@@ -74,7 +74,7 @@
     });
     ds.fetch({ success: function() {
       this.bind('remove', function(event) {
-        equals( event.affectedColumns().length, 2)
+        equals( event.affectedColumns().length, 2);
       });
       }
     });
@@ -92,7 +92,7 @@
     });
     ds.fetch({ success: function() {
       this.bind('change', function(event) {
-        equals( event.affectedColumns().length, 2)
+        equals( event.affectedColumns().length, 2);
       });
       }
     });
