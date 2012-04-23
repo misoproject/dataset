@@ -192,6 +192,24 @@
     }});
   });
 
+  test("Empty row at the end of csv breaks parsing", function() {
+
+    var data = "Col1,Col2,Col3\n"+
+               "1,2,3\n" +
+               "1,4,5\n" +
+               "5,3,4\n" + 
+               "";
+    
+    var ds = new Miso.Dataset({
+      data : data,
+      delimiter : ","
+    });
+
+    _.when(ds.fetch()).then(function() {
+      equals(ds.length, 3);
+    });
+  });
+
   module("Fetching");
   test("Basic fetch + success callback", function() {
     var ds = new Miso.Dataset({

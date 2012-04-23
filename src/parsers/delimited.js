@@ -41,10 +41,6 @@
         // then default to comma.
         strDelimiter = (strDelimiter || ",");
 
-        // Create an array to hold our data. Give the array
-        // a default empty first row.
-
-
         // Create an array to hold our individual pattern
         // matching groups.
         var arrMatches = null;
@@ -62,6 +58,9 @@
         var rowIndex = 0;
 
         try {
+
+          // trim any empty lines at the end
+          strData = strData.trim();
 
           // Keep looping over the regular expression matches
           // until we can no longer find a match.
@@ -121,6 +120,7 @@
                 // We found a non-quoted value.
                 strMatchedValue = arrMatches[ 3 ];
               }
+
 
               // Now that we have our value string, let's add
               // it to the data array.
