@@ -1,6 +1,6 @@
 # Dataset.js
 
-Dataset is a javascript library makes managing the data behind client-side visualisations easy, including realtime data. It takes care of loading, parsing, sorting, filtering and querying of datasets as well as the creation of derivative datasets.
+Dataset is a JavaScript library that makes managing the data behind client-side visualisations easy, including realtime data. It takes care of the loading, parsing, sorting, filtering and querying of datasets as well as the creation of derivative datasets.
 
 Dataset is part of the [Miso Toolkit](http://misoproject.com).
 
@@ -14,7 +14,7 @@ Dataset is part of the [Miso Toolkit](http://misoproject.com).
 
 ### Without Dependencies
 
-The following builds do not have any of the dependancies built in. It is your own responsability to include them as appropriate script elements in your page.
+The following builds do not have any of the dependencies built in. It is your own responsibility to include them as appropriate script elements in your page.
 
 [miso.ds.js](https://github.com/misoproject/dataset/tree/master/dist/miso.ds.js) - Download Production No Dependencies - 0.0.1
 
@@ -88,11 +88,11 @@ We welcome pull requests! Some things to keep in mind:
   ```cd test && rackup ```
   
 * Any new functionality must have tests and ensure all current tests still pass. All tests are located in the ```test/unit``` directory.
-* We use cowboy's grunt library to build all our final dependancies. You will need to install grunt per the instructions here: [https://github.com/cowboy/grunt](https://github.com/cowboy/grunt).
+* We use cowboy's grunt library to build all our final dependencies. You will need to install grunt per the instructions here: [https://github.com/cowboy/grunt](https://github.com/cowboy/grunt).
 
 ## Contact
 
 * For announcements follow @themisoproject on twitter.
-* Openning issues here is a great way to let us know when something is broken!
+* Opening issues here is a great way to let us know when something is broken!
 * If you want to chat with us, join #misoproject on irc.
 * Feel free to ping Irene Ros(@ireneros on twitter, @iros on github) or Alex Graul (@alexgraul on both.)
