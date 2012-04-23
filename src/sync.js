@@ -20,12 +20,14 @@
   _.extend(Miso.Event.prototype, {
     affectedColumns : function() {
       var cols = [];
-      
       _.each(this.deltas, function(delta) {
-        cols = _.union(cols, 
-          ( _.isUndefined(delta.old) ? [] : _.keys(delta.old) ),
-          ( _.isUndefined(delta.changed) ? [] : _.keys(delta.changed) )
-        );
+        delta.old = (delta.old || []);
+        delta.changed = (delta.changed || []);
+        cols = _.chain(cols)
+          .union(_.keys(delta.old), _.keys(delta.changed) )
+          .reject(function(col) {
+            return col === '_id';
+          }).value();
       });
 
       return cols;

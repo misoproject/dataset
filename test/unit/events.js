@@ -56,7 +56,8 @@
     });
     ds.fetch({ success: function() {
       this.bind('add', function(event) {
-        equals( event.affectedColumns().length, 2);
+        equals( event.affectedColumns().length, 1);
+        ok( event.affectedColumns()[0] === 'one' );
       });
       }
     });
@@ -74,7 +75,8 @@
     });
     ds.fetch({ success: function() {
       this.bind('remove', function(event) {
-        equals( event.affectedColumns().length, 2);
+        equals( event.affectedColumns().length, 1);
+        ok( event.affectedColumns()[0] === 'one' );
       });
       }
     });
@@ -92,7 +94,8 @@
     });
     ds.fetch({ success: function() {
       this.bind('change', function(event) {
-        equals( event.affectedColumns().length, 2);
+        equals( event.affectedColumns().length, 1);
+        ok( event.affectedColumns()[0] === 'one' );
       });
       }
     });
