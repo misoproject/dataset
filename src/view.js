@@ -29,12 +29,11 @@
     * in some source array.
     * Parameters:
     *   value
-    *   index
     * Returns: 
     *   number
     */
-    toNumeric : function(value, index) {
-      return Miso.types[this.type].numeric(value, index);  
+    toNumeric : function(value) {
+      return Miso.types[this.type].numeric(value);
     },
 
     /**
@@ -46,7 +45,7 @@
     *   number
     */
     numericAt : function(index) {
-      return this.toNumeric(this.data[index], index);
+      return this.toNumeric(this.data[index]);
     },
 
     /**
