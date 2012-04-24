@@ -216,6 +216,26 @@
     stop();
   });
 
+  test("Delimiter empty value override", 2, function() {
+    var data = "Col1,Col2,Col3\n"+
+               "1,2,3\n" +
+               "1,,5\n" +
+               "5,,4";
+    
+    var ds = new Miso.Dataset({
+      data : data,
+      delimiter : ",",
+      emptyValue : "CAT"
+    });
+    ds.fetch({
+      success : function() {
+        equals(ds.column("Col2").data[1], "CAT");
+        equals(ds.column("Col2").data[2], "CAT");
+      }
+    });
+    
+  });
+
   test("Delimiter error catching too many items", 1, function() {
     var data = "Col1,Col2,Col3\n"+
                "1,2,3\n" +
@@ -241,7 +261,7 @@
     var ds = new Miso.Dataset({
       data : data,
       delimiter : ",",
-      skiprows : 1
+      skipRows : 1
     });
 
     ds.fetch({ success : function() {
@@ -261,7 +281,7 @@
     var ds = new Miso.Dataset({
       data : data,
       delimiter : ",",
-      skiprows : 3
+      skipRows : 3
     });
 
     ds.fetch({ success : function() {

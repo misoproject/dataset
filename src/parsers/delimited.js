@@ -14,7 +14,9 @@
 
     this.delimiter = options.delimiter || ",";
 
-    this.skiprows = options.skiprows || 0;
+    this.skipRows = options.skipRows || 0;
+
+    this.emptyValue = options.emptyValue || null;
 
     this.__delimiterPatterns = new RegExp(
       (
@@ -37,7 +39,7 @@
       var columns = [];
       var columnData = {};
 
-      var parseCSV = function(delimiterPattern, strData, strDelimiter, skiprows) {
+      var parseCSV = function(delimiterPattern, strData, strDelimiter, skipRows, emptyValue) {
 
         // Check to see if the delimiter is defined. If not,
         // then default to comma.
@@ -65,12 +67,12 @@
           strData = strData.trim();
 
           // do we have any rows to skip? if so, remove them from the string
-          if (skiprows > 0) {
+          if (skipRows > 0) {
             var rowsSeen = 0,
                 charIndex = 0,
                 strLen = strData.length;
 
-            while (rowsSeen < skiprows && charIndex < strLen) {
+            while (rowsSeen < skipRows && charIndex < strLen) {
               if (/\n|\r|\r\n/.test(strData[charIndex])) {
                 rowsSeen++;
               } 
@@ -147,7 +149,7 @@
               if (columnCountComputed) {
 
                 if (strMatchedValue === '') {
-                  strMatchedValue = null;
+                  strMatchedValue = emptyValue;
                 }
 
                 if (typeof columnData[columns[columnIndex]] === "undefined") {
@@ -178,7 +180,8 @@
         this.__delimiterPatterns, 
         data, 
         this.delimiter,
-        this.skiprows);
+        this.skipRows,
+        this.emptyValue);
     }
 
   });
