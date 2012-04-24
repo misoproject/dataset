@@ -171,6 +171,13 @@
     equals(Miso.types.string.compare("bbbb", "bbb"),  1);
     equals(Miso.types.string.compare("bbb", "bbb"),  0);
   });
+
+  test("String type returns 0 or coerced form", function() {
+    equals(Miso.types.string.numeric("A"), 0);
+    equals(Miso.types.string.numeric(null), 0);
+    equals(Miso.types.string.numeric("99"), 99);
+    equals(Miso.types.string.numeric("99.3"), 99.3);
+  });
 }(this));
 
 

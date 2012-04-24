@@ -55,12 +55,9 @@
         if (s1 > s2) { return 1;  }
         return 0;
       },
-      // returns a raw value that can be used for computations
-      // should be numeric. In the case of a string, just return its index.
-      // TODO: not sure what this should really be... thinking about scales here
-      // for now, but we may want to return a hash or something instead...
-      numeric : function(value, index) {
-        return index;
+
+      numeric : function(value) {
+        return _.isNaN(+value) ? 0 : +value;
       }
     },
 
