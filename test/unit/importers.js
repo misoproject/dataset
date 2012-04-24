@@ -232,6 +232,44 @@
     }
   });
 
+  test("Delimiter skip rows", 1, function() {
+    var data = "bla bla skip this!\n" +
+               "Col1,Col2,Col3\n"+
+               "1,2,3\n" +
+               "1,4,5\n" +
+               "5,3,4";
+    var ds = new Miso.Dataset({
+      data : data,
+      delimiter : ",",
+      skiprows : 1
+    });
+
+    ds.fetch({ success : function() {
+      equals(ds.length, 3);
+    }});
+    
+  });
+
+  test("Delimiter skip rows 2", 1, function() {
+    var data = "bla bla skip this!\n" +
+               "bla bla skip this!\n" +
+               "bla bla skip this!\n" +
+               "Col1,Col2,Col3\n"+
+               "1,2,3\n" +
+               "1,4,5\n" +
+               "5,3,4";
+    var ds = new Miso.Dataset({
+      data : data,
+      delimiter : ",",
+      skiprows : 3
+    });
+
+    ds.fetch({ success : function() {
+      equals(ds.length, 3);
+    }});
+    
+  });
+
   test("Delimiter error catching not enough items", 1, function() {
     var data = "Col1,Col2,Col3\n"+
                "1,2,3\n" +
