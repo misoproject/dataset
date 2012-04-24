@@ -14,6 +14,8 @@
 
     this.delimiter = options.delimiter || ",";
 
+    this.skiprows = options.skiprows || 0;
+
     this.__delimiterPatterns = new RegExp(
       (
         // Delimiters.
@@ -35,7 +37,7 @@
       var columns = [];
       var columnData = {};
 
-      var parseCSV = function(delimiterPattern, strData, strDelimiter) {
+      var parseCSV = function(delimiterPattern, strData, strDelimiter, skiprows) {
 
         // Check to see if the delimiter is defined. If not,
         // then default to comma.
@@ -62,9 +64,25 @@
           // trim any empty lines at the end
           strData = strData.trim();
 
+          // do we have any rows to skip? if so, remove them from the string
+          if (skiprows > 0) {
+            var rowsSeen = 0,
+                charIndex = 0,
+                strLen = strData.length;
+
+            while (rowsSeen < skiprows && charIndex < strLen) {
+              if (/\n|\r|\r\n/.test(strData[charIndex])) {
+                rowsSeen++;
+              } 
+              charIndex++;
+            }
+
+            strData = strData.slice(charIndex, strLen);
+          }
+
           // Keep looping over the regular expression matches
           // until we can no longer find a match.
-          while (arrMatches = delimiterPattern.exec(strData)){
+          while (arrMatches = delimiterPattern.exec(strData)) {
 
             // Get the delimiter that was found.
             var strMatchedDelimiter = arrMatches[ 1 ];
@@ -74,7 +92,7 @@
             // field delimiter. If id does not, then we know
             // that this delimiter is a row delimiter.
             if ( strMatchedDelimiter.length &&
-              ( strMatchedDelimiter !== strDelimiter )){
+               ( strMatchedDelimiter !== strDelimiter )){
                 
                 // we have reached a new row.
                 rowIndex++;
@@ -90,6 +108,7 @@
 
                 // when we're done with a row, reset the row index to 0
                 columnIndex = 0;
+              
               } else {
 
                 // Find the number of columns we're fetching and
@@ -124,6 +143,7 @@
 
               // Now that we have our value string, let's add
               // it to the data array.
+              
               if (columnCountComputed) {
 
                 if (strMatchedValue === '') {
@@ -134,14 +154,15 @@
                   throw new Error("Too many items in row"); 
                 }
                 
-                columnData[columns[columnIndex]].push(strMatchedValue);
-              
+                columnData[columns[columnIndex]].push(strMatchedValue);  
+          
               } else {
                 // we are building the column names here
                 columns.push(strMatchedValue);
                 columnData[strMatchedValue] = [];
               }
-          }
+            
+          } // end while
         } catch (e) {
           throw new Error("Error while parsing delimited data on row " + rowIndex + ". Message: " + e.message);
         }
@@ -156,7 +177,8 @@
       return parseCSV(
         this.__delimiterPatterns, 
         data, 
-        this.delimiter);
+        this.delimiter,
+        this.skiprows);
     }
 
   });
