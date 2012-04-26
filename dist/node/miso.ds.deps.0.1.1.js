@@ -1646,10 +1646,6 @@ Version 0.0.1.2
         } 
       }
 
-      if (options.delimiter) {
-        options.dataType = "text";
-      }
-
       // initialize the proper importer
       if (this.importer === null) {
         if (options.url) {
@@ -1668,6 +1664,11 @@ Version 0.0.1.2
 
       // initialize importer and parser
       this.parser = new this.parser(options);
+
+      if (this.parser instanceof Miso.Parsers.Delimited) {
+        options.dataType = "text";
+      }
+
       this.importer = new this.importer(options);
 
       // save comparator if we have one
