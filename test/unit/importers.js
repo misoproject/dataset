@@ -194,6 +194,21 @@
     });
   });
 
+  test("Basic delimiter parsing test with Dataset API via url", 46, function() {
+    stop();
+    var ds = new Miso.Dataset({ 
+      url : "data/alphabet.csv",
+      parser: Miso.Parsers.Delimited
+    });
+
+    ds.fetch({
+      success: function() {
+        verifyImport(Miso.alphabet_strict, this);  
+        start();
+      }
+    });
+  });
+
   test("Basic delimiter parsing test with custom separator with Dataset API", 46, function() {
     var ds = new Miso.Dataset({ 
       data : window.Miso.alphabet_customseparator,
