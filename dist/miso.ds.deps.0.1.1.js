@@ -1,5 +1,5 @@
 /**
-* Miso.Dataset - v0.1.0 - 4/17/2012
+* Miso.Dataset - v0.1.1 - 4/26/2012
 * http://github.com/misoproject/dataset
 * Copyright (c) 2012 Alex Graul, Irene Ros;
 * Dual Licensed: MIT, GPL
@@ -2190,7 +2190,7 @@
 })(this);
 
 /**
-* Miso.Dataset - v0.1.0 - 4/17/2012
+* Miso.Dataset - v0.1.1 - 4/26/2012
 * http://github.com/misoproject/dataset
 * Copyright (c) 2012 Alex Graul, Irene Ros;
 * Dual Licensed: MIT, GPL
@@ -2255,12 +2255,9 @@
         if (s1 > s2) { return 1;  }
         return 0;
       },
-      // returns a raw value that can be used for computations
-      // should be numeric. In the case of a string, just return its index.
-      // TODO: not sure what this should really be... thinking about scales here
-      // for now, but we may want to return a hash or something instead...
-      numeric : function(value, index) {
-        return index;
+
+      numeric : function(value) {
+        return _.isNaN(+value) ? 0 : +value;
       }
     },
 
@@ -2424,12 +2421,14 @@
   _.extend(Miso.Event.prototype, {
     affectedColumns : function() {
       var cols = [];
-      
       _.each(this.deltas, function(delta) {
-        cols = _.union(cols, 
-          ( _.isUndefined(delta.old) ? [] : _.keys(delta.old) ),
-          ( _.isUndefined(delta.changed) ? [] : _.keys(delta.changed) )
-        );
+        delta.old = (delta.old || []);
+        delta.changed = (delta.changed || []);
+        cols = _.chain(cols)
+          .union(_.keys(delta.old), _.keys(delta.changed) )
+          .reject(function(col) {
+            return col === '_id';
+          }).value();
       });
 
       return cols;
@@ -2719,12 +2718,11 @@
     * in some source array.
     * Parameters:
     *   value
-    *   index
     * Returns: 
     *   number
     */
-    toNumeric : function(value, index) {
-      return Miso.types[this.type].numeric(value, index);  
+    toNumeric : function(value) {
+      return Miso.types[this.type].numeric(value);
     },
 
     /**
@@ -2736,7 +2734,7 @@
     *   number
     */
     numericAt : function(index) {
-      return this.toNumeric(this.data[index], index);
+      return this.toNumeric(this.data[index]);
     },
 
     /**
@@ -5157,6 +5155,10 @@ Version 0.0.1.2
 
     this.delimiter = options.delimiter || ",";
 
+    this.skipRows = options.skipRows || 0;
+
+    this.emptyValue = options.emptyValue || null;
+
     this.__delimiterPatterns = new RegExp(
       (
         // Delimiters.
@@ -5178,15 +5180,11 @@ Version 0.0.1.2
       var columns = [];
       var columnData = {};
 
-      var parseCSV = function(delimiterPattern, strData, strDelimiter) {
+      var parseCSV = function(delimiterPattern, strData, strDelimiter, skipRows, emptyValue) {
 
         // Check to see if the delimiter is defined. If not,
         // then default to comma.
         strDelimiter = (strDelimiter || ",");
-
-        // Create an array to hold our data. Give the array
-        // a default empty first row.
-
 
         // Create an array to hold our individual pattern
         // matching groups.
@@ -5206,9 +5204,28 @@ Version 0.0.1.2
 
         try {
 
+          // trim any empty lines at the end
+          strData = strData.trim();
+
+          // do we have any rows to skip? if so, remove them from the string
+          if (skipRows > 0) {
+            var rowsSeen = 0,
+                charIndex = 0,
+                strLen = strData.length;
+
+            while (rowsSeen < skipRows && charIndex < strLen) {
+              if (/\n|\r|\r\n/.test(strData[charIndex])) {
+                rowsSeen++;
+              } 
+              charIndex++;
+            }
+
+            strData = strData.slice(charIndex, strLen);
+          }
+
           // Keep looping over the regular expression matches
           // until we can no longer find a match.
-          while (arrMatches = delimiterPattern.exec(strData)){
+          while (arrMatches = delimiterPattern.exec(strData)) {
 
             // Get the delimiter that was found.
             var strMatchedDelimiter = arrMatches[ 1 ];
@@ -5218,7 +5235,7 @@ Version 0.0.1.2
             // field delimiter. If id does not, then we know
             // that this delimiter is a row delimiter.
             if ( strMatchedDelimiter.length &&
-              ( strMatchedDelimiter !== strDelimiter )){
+               ( strMatchedDelimiter !== strDelimiter )){
                 
                 // we have reached a new row.
                 rowIndex++;
@@ -5234,6 +5251,7 @@ Version 0.0.1.2
 
                 // when we're done with a row, reset the row index to 0
                 columnIndex = 0;
+              
               } else {
 
                 // Find the number of columns we're fetching and
@@ -5265,26 +5283,29 @@ Version 0.0.1.2
                 strMatchedValue = arrMatches[ 3 ];
               }
 
+
               // Now that we have our value string, let's add
               // it to the data array.
+              
               if (columnCountComputed) {
 
                 if (strMatchedValue === '') {
-                  strMatchedValue = null;
+                  strMatchedValue = emptyValue;
                 }
 
                 if (typeof columnData[columns[columnIndex]] === "undefined") {
                   throw new Error("Too many items in row"); 
                 }
                 
-                columnData[columns[columnIndex]].push(strMatchedValue);
-              
+                columnData[columns[columnIndex]].push(strMatchedValue);  
+          
               } else {
                 // we are building the column names here
                 columns.push(strMatchedValue);
                 columnData[strMatchedValue] = [];
               }
-          }
+            
+          } // end while
         } catch (e) {
           throw new Error("Error while parsing delimited data on row " + rowIndex + ". Message: " + e.message);
         }
@@ -5299,7 +5320,9 @@ Version 0.0.1.2
       return parseCSV(
         this.__delimiterPatterns, 
         data, 
-        this.delimiter);
+        this.delimiter,
+        this.skipRows,
+        this.emptyValue);
     }
 
   });
