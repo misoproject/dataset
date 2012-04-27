@@ -36,6 +36,7 @@
           columns[columnPositions[column]]    = cell.content.$t;
           columnData[columnPositions[column]] = [];
 
+
         } else {
 
           // find position: 
@@ -43,16 +44,15 @@
 
           // this is a value for an existing column, so push it.
           columnData[colpos][position-1] = cell.content.$t; 
+
         }
       }, this);
 
-      // fill whatever empty spaces we might have in the data due to 
-      // empty cells
-      columnData.length = _.max(_.pluck(columnData, "length")) - 1; // for column name
-
-      var keyedData = {};
+     var keyedData = {};
 
       _.each(columnData, function(coldata, column) {
+        // fill whatever empty spaces we might have in the data due to empty cells
+        coldata.length = _.max(_.pluck(columnData, "length"));
 
         // slice off first space. It was alocated for the column name
         // and we've moved that off.

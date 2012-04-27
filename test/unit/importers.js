@@ -358,6 +358,30 @@
     stop();
   });
 
+  test("more columns than rows in Google Spreadsheet", function() {
+    var ds = new Miso.Dataset({
+      key : "0AgzGUzeWla8QdDZLZnVieS1pOU5VRGxJNERvZ000SUE",
+      worksheet : "1",
+      importer: Miso.Importers.GoogleSpreadsheet,
+      parser : Miso.Parsers.GoogleSpreadsheet
+    });
+    ds.fetch({
+      success : function() {
+        ok(this._columns.length === 5);
+        var ds = this;
+        var row = {'_id': this.rowByPosition(0)._id, 'one': 1, 'two': 2, 'three': 9, 'four': 9};
+
+        _.each(row, function(v,k) {
+          equals(ds.rowByPosition(0)[k], v);
+        });
+        start();
+      },
+      error : function() {
+      }
+    });
+    stop();
+  });
+
   module("Polling");
   test("Basic polling importer api", function() {
 
