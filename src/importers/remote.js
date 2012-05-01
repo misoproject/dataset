@@ -34,9 +34,15 @@
         options.success( this.extract(data) );
       }, this);
 
+      // do we have a named callback? We need to wrap our
+      // success callback in this name
+      if (this.callback) {
+        window[this.callback] = callback;
+      }
+
       // make ajax call to fetch remote url.
       Miso.Xhr(_.extend(this.params, {
-        success : callback,
+        success : this.callback ? this.callback : callback,
         error   : options.error
       }));
     }
