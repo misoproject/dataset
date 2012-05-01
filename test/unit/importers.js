@@ -358,10 +358,58 @@
     stop();
   });
 
+  test("Google spreadsheet fast parsing", function() {
+    var key = "0Asnl0xYK7V16dFpFVmZUUy1taXdFbUJGdGtVdFBXbFE";
+    var sheetName = "States";
+
+    var ds = new Miso.Dataset({
+      key : key,
+      sheetName : sheetName,
+      fast : true,
+      importer: Miso.Importers.GoogleSpreadsheet,
+      parser : Miso.Parsers.GoogleSpreadsheet
+    });
+    stop();
+    ds.fetch({
+      success : function() {
+        equals(ds.length, 6);
+        ok(this._columns.length === 3);
+        ok(_.isEqual(ds.column("State").data, ["AZ","AZ","AZ","MA","MA","MA"]));
+        ok(_.isEqual(ds.column("Value").data, [10,20,30,1,4,7]));
+        start();
+      }
+    });
+  });
+
   test("more columns than rows in Google Spreadsheet", function() {
     var ds = new Miso.Dataset({
       key : "0AgzGUzeWla8QdDZLZnVieS1pOU5VRGxJNERvZ000SUE",
       worksheet : "1",
+      importer: Miso.Importers.GoogleSpreadsheet,
+      parser : Miso.Parsers.GoogleSpreadsheet
+    });
+    ds.fetch({
+      success : function() {
+        ok(this._columns.length === 5);
+        var ds = this;
+        var row = {'_id': this.rowByPosition(0)._id, 'one': 1, 'two': 2, 'three': 9, 'four': 9};
+
+        _.each(row, function(v,k) {
+          equals(ds.rowByPosition(0)[k], v);
+        });
+        start();
+      },
+      error : function() {
+      }
+    });
+    stop();
+  });
+
+  test("more columns than rows in Google Spreadsheet fast parse", function() {
+    var ds = new Miso.Dataset({
+      key : "0AgzGUzeWla8QdDZLZnVieS1pOU5VRGxJNERvZ000SUE",
+      worksheet : "1",
+      fast : true,
       importer: Miso.Importers.GoogleSpreadsheet,
       parser : Miso.Parsers.GoogleSpreadsheet
     });
