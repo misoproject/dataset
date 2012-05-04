@@ -33,6 +33,13 @@
     );
   };
 
+  // Ie is not aware of trim method...
+  if(typeof String.prototype.trim !== 'function') {
+    String.prototype.trim = function() {
+      return this.replace(/^\s+|\s+$/g, ''); 
+    };
+  }
+
   _.extend(Miso.Parsers.Delimited.prototype, Miso.Parsers.prototype, {
 
     parse : function(data) {
