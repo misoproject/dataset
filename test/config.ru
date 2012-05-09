@@ -1,7 +1,5 @@
-require 'rubygems'
-require 'rack'
-require 'rack/contrib'
 require 'sinatra'
+require 'rack/contrib'
 require './server'
 
 use Rack::JSONP
