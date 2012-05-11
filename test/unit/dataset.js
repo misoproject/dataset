@@ -69,4 +69,21 @@
       equals(ds._columns[1].data[0], value, "value updated to "+value);
     });
   });
+
+  test("#105 - updating a row with a function", function() {
+    var ds = Util.baseSample();
+    ds.update(function(row) {
+      return true;
+    }, function(row) {
+      return {
+        one : row.one % 2 === 0 ? 100 : 0,
+        two : row.two % 2 === 0 ? 100 : 0,
+        three : row.three % 2 === 0 ? 100 : 0
+      };
+    });
+
+    ok(_.isEqual(ds.column("one").data, [0,100,0]));
+    ok(_.isEqual(ds.column("two").data, [100,0,100]));
+    ok(_.isEqual(ds.column("three").data, [0,100,0]));
+  });
 }(this));
