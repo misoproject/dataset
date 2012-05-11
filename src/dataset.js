@@ -504,10 +504,19 @@ Version 0.0.1.2
     */    
     update : function(filter, newProperties, options) {
 
-      var newKeys = _.keys(newProperties), deltas = [];
+      var newKeys, deltas = [];
 
       var updateRow = _.bind(function(row, rowIndex) {
-        var c;
+        var c, props;
+
+        if (_.isFunction(newProperties)) {
+          props = newProperties.apply(this, [row]);
+        } else {
+          props = newProperties;
+        }
+
+        newKeys = _.keys(props);
+
         _.each(newKeys, function(columnName) {
           c = this.column(columnName);
 
@@ -515,25 +524,25 @@ Version 0.0.1.2
           var Type = Miso.types[c.type];
           
           if (Type) {
-            if (Miso.typeOf(newProperties[c.name], c) === c.type) {
+            if (Type.test(props[c.name], c)) {
 
               // do we have a before filter on the column? If so, apply it
               if (!_.isUndefined(c.before)) {
-                newProperties[c.name] = c.before(newProperties[c.name]);
+                props[c.name] = c.before(props[c.name]);
               }
 
               // coerce it.
-              newProperties[c.name] = Type.coerce(newProperties[c.name], c);
+              props[c.name] = Type.coerce(props[c.name], c);
             } else {
-              throw("incorrect value '" + newProperties[c.name] + 
-                    "' of type " + Miso.typeOf(newProperties[c.name], c) +
+              throw("incorrect value '" + props[c.name] + 
+                    "' of type " + Miso.typeOf(props[c.name], c) +
                     " passed to column with type " + c.type);  
             }
           }
-          c.data[rowIndex] = newProperties[c.name];
+          c.data[rowIndex] = props[c.name];
         }, this);
 
-        deltas.push( { _id : row._id, old : row, changed : newProperties } );
+        deltas.push( { _id : row._id, old : row, changed : props } );
       }, this);
 
       // do we just have a single id? array it up.

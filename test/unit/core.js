@@ -121,6 +121,55 @@
 
 
   module("Bug Drive Tests");
+  test("#125 - Update in a string column with a string number shouldn't fail", function() {
+    var ds = new Miso.Dataset({
+      data : [
+        { a: "g" , b : 1 },
+        { a: "sd" , b : 10 },
+        { a: "f2" , b : 50 },
+        { a: "2" , b : 50 }
+      ]
+    });
+
+    ds.fetch({
+      success : function() {
+
+        // test add
+        ds.add({
+          a : "1", b : 2
+        });
+        ok(ds.length, 5);
+        
+        // test update
+        ds.update(function(row) {
+          // update all rows
+          return true;
+        }, { a : "1" , b : 5 });
+
+        equals(ds.rows(function(row) {
+          return row.a === "1";
+        }).length, 5);
+
+      }
+    });
+  });
+
+  test("Zero vals convert to null csv delimited", 3, function() {
+    stop();
+    var ds = new Miso.Dataset({
+      url : "data/withzeros.csv",
+      delimiter : ","
+    });
+
+    ds.fetch({ success : function() {
+      ok(_.isEqual(ds.column("a").data, [0,0,4,3]));
+      ok(_.isEqual(ds.column("b").data, [0,2,5,0]));
+      ok(_.isEqual(ds.column("c").data, [1,3,6,1]));
+      start();
+    }});
+
+  });
+
   test("Zero vals convert to null", function() {
     var data = [
       { a : 0, b : 0, c: 1},
@@ -229,33 +278,33 @@
   });
 
   // these tests pass but take FOREVER....!
-  test("Basic fetch + error callback", 1, function() {
-    var ds = new Miso.Dataset({
-      url: 'http://madeupurl2345675432124.com/json.json'
-    });
-    stop();
-    ds.fetch({
-      error: function() {
-        ok(true, "Error called");
-        start();
-      }
-    });
+  // test("Basic fetch + error callback", 1, function() {
+  //   var ds = new Miso.Dataset({
+  //     url: 'http://madeupurl2345675432124.com/json.json'
+  //   });
+  //   stop();
+  //   ds.fetch({
+  //     error: function() {
+  //       ok(true, "Error called");
+  //       start();
+  //     }
+  //   });
     
-  });
+  // });
 
-  test("Basic fetch jsonp + error callback", 1, function() {
-    var ds = new Miso.Dataset({
-      url: 'http://madeupurl2345675432124.com/json.json?callback=',
-      jsonp : true
-    });
-    stop();
-    ds.fetch({
-      error: function() {
-        ok(true, "Error called");
-        start();
-      }
-    });
-  });
+  // test("Basic fetch jsonp + error callback", 1, function() {
+  //   var ds = new Miso.Dataset({
+  //     url: 'http://madeupurl2345675432124.com/json.json?callback=',
+  //     jsonp : true
+  //   });
+  //   stop();
+  //   ds.fetch({
+  //     error: function() {
+  //       ok(true, "Error called");
+  //       start();
+  //     }
+  //   });
+  // });
 
   test("Basic fetch + deferred callback", function() {
     var ds = new Miso.Dataset({
