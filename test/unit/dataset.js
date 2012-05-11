@@ -53,7 +53,7 @@
 
   test("upating a row with an incorrect type", function() {
     var ds = Util.baseSample();
-    _.each(['a', null, undefined, []], function(value) {
+    _.each(['a', []], function(value) {
       raises(function() {
         ds.update(ds._rowIdByPosition[0], { 'one' : value } );
       });
