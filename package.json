@@ -21,7 +21,7 @@
     }
   ],
 
-  "main": "dist/node/miso.ds.deps.0.1.0",
+  "main": "dist/node/miso.ds.deps.0.1.2",
 
   "repository": {
     "type": "git",
