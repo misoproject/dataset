@@ -195,7 +195,7 @@ Version 0.0.1.2
       this.importer.fetch({
         success: _.bind(function( data ) {
 
-          this.apply( data );
+          this._apply( data );
 
           // if a comparator was defined, sort the data
           if (this.comparator) {
@@ -299,7 +299,7 @@ Version 0.0.1.2
     },
 
     //Takes a dataset and some data and applies one to the other
-    apply : function( data ) {
+    _apply : function( data ) {
       
       var parsed = this.parser.parse( data );
 
