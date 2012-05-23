@@ -112,7 +112,7 @@ var request = require("request");
 
 // Include Miso Dataset lib
 /**
-* Miso.Dataset - v0.1.1 - 4/26/2012
+* Miso.Dataset - v0.1.3 - 5/23/2012
 * http://github.com/misoproject/dataset
 * Copyright (c) 2012 Alex Graul, Irene Ros;
 * Dual Licensed: MIT, GPL
@@ -213,7 +213,7 @@ var request = require("request");
       name : "number",
       regexp : /^[\-\.]?[0-9]+([\.][0-9]+)?$/,
       coerce : function(v) {
-        if (_.isNull(v)) {
+        if (_.isNull(v) || v === "") {
           return null;
         }
         return _.isNaN(v) ? null : +v;
@@ -1753,7 +1753,7 @@ Version 0.0.1.2
       this.importer.fetch({
         success: _.bind(function( data ) {
 
-          this.apply( data );
+          this._apply( data );
 
           // if a comparator was defined, sort the data
           if (this.comparator) {
@@ -1857,7 +1857,7 @@ Version 0.0.1.2
     },
 
     //Takes a dataset and some data and applies one to the other
-    apply : function( data ) {
+    _apply : function( data ) {
       
       var parsed = this.parser.parse( data );
 
@@ -2062,10 +2062,19 @@ Version 0.0.1.2
     */    
     update : function(filter, newProperties, options) {
 
-      var newKeys = _.keys(newProperties), deltas = [];
+      var newKeys, deltas = [];
 
       var updateRow = _.bind(function(row, rowIndex) {
-        var c;
+        var c, props;
+
+        if (_.isFunction(newProperties)) {
+          props = newProperties.apply(this, [row]);
+        } else {
+          props = newProperties;
+        }
+
+        newKeys = _.keys(props);
+
         _.each(newKeys, function(columnName) {
           c = this.column(columnName);
 
@@ -2073,25 +2082,25 @@ Version 0.0.1.2
           var Type = Miso.types[c.type];
           
           if (Type) {
-            if (Miso.typeOf(newProperties[c.name], c) === c.type) {
+            if (Type.test(props[c.name], c)) {
 
               // do we have a before filter on the column? If so, apply it
               if (!_.isUndefined(c.before)) {
-                newProperties[c.name] = c.before(newProperties[c.name]);
+                props[c.name] = c.before(props[c.name]);
               }
 
               // coerce it.
-              newProperties[c.name] = Type.coerce(newProperties[c.name], c);
+              props[c.name] = Type.coerce(props[c.name], c);
             } else {
-              throw("incorrect value '" + newProperties[c.name] + 
-                    "' of type " + Miso.typeOf(newProperties[c.name], c) +
+              throw("incorrect value '" + props[c.name] + 
+                    "' of type " + Miso.typeOf(props[c.name], c) +
                     " passed to column with type " + c.type);  
             }
           }
-          c.data[rowIndex] = newProperties[c.name];
+          c.data[rowIndex] = props[c.name];
         }, this);
 
-        deltas.push( { _id : row._id, old : row, changed : newProperties } );
+        deltas.push( { _id : row._id, old : row, changed : props } );
       }, this);
 
       // do we just have a single id? array it up.
@@ -2554,9 +2563,15 @@ Version 0.0.1.2
         options.success( this.extract(data) );
       }, this);
 
+      // do we have a named callback? We need to wrap our
+      // success callback in this name
+      if (this.callback) {
+        window[this.callback] = callback;
+      }
+
       // make ajax call to fetch remote url.
       Miso.Xhr(_.extend(this.params, {
-        success : callback,
+        success : this.callback ? this.callback : callback,
         error   : options.error
       }));
     }
@@ -2844,7 +2859,9 @@ Version 0.0.1.2
   * Parameters
   *   options - Options object. Requires at the very least:
   *     key - the google spreadsheet key
-  *     worksheet - the index of the spreadsheet to be retrieved.
+  *     gid - the index of the spreadsheet to be retrieved (1 default)
+  *       OR
+  *     sheetName - the name of the sheet to fetch ("Sheet1" default)
   *   OR
   *     url - a more complex url (that may include filtering.) In this case
   *           make sure it's returning the feed json data.
@@ -2862,14 +2879,34 @@ Version 0.0.1.2
         throw new Error("Set options 'key' properties to point to your google document.");
       } else {
 
-        options.worksheet = options.worksheet || 1;
-        options.url = "https://spreadsheets.google.com/feeds/cells/" + 
+        // turning on the "fast" option will use the farser parser
+        // that downloads less data but it's flakier (due to google not
+        // correctly escaping various strings when returning json.)
+        if (options.fast) {
+          
+          options.url = "https://spreadsheets.google.com/tq?key=" + options.key;
+                  
+          if (options.sheetName) {
+            options.url += "&sheet=" + options.sheetName;
+          } else {
+            options.url += "&gid=" + (options.worksheet || 1);  
+            delete options.worksheet;
+          }
+
+          this.callback = "misodsgs" + new Date().getTime();
+          options.url += "&tqx=version:0.6;responseHandler:" + this.callback;
+          options.url += ";reqId:0;out:json&tq&_=1335871249558#";
+
+          delete options.sheetName;
+
+        } else {
+          options.url = "https://spreadsheets.google.com/feeds/cells/" + 
           options.key + "/" + 
           options.worksheet + 
           "/public/basic?alt=json-in-script&callback=";
-
+        }
+        
         delete options.key;
-        delete options.worksheet;
       }
     }
     
@@ -2995,63 +3032,91 @@ Version 0.0.1.2
   * http://code.google.com/apis/gdata/samples/spreadsheet_sample.html
   * Used in conjunction with the Google Spreadsheet Importer.
   */
-  Miso.Parsers.GoogleSpreadsheet = function(options) {};
+  Miso.Parsers.GoogleSpreadsheet = function(options) {
+    this.fast = options.fast || false;
+  };
 
   _.extend(Miso.Parsers.GoogleSpreadsheet.prototype, Miso.Parsers.prototype, {
 
     parse : function(data) {
       var columns = [],
-          columnData = [];
+          columnData = [],  
+          keyedData = {},
+          i;
 
-      var positionRegex = /([A-Z]+)(\d+)/; 
-      var columnPositions = {};
+      if (this.fast) {
 
-      _.each(data.feed.entry, function(cell, index) {
+        // init column names
+        columns = _.pluck(data.table.cols, "label");
 
-        var parts = positionRegex.exec(cell.title.$t),
-        column = parts[1],
-        position = parseInt(parts[2], 10);
-
-        if (_.isUndefined(columnPositions[column])) {
-
-          // cache the column position
-          columnPositions[column] = columnData.length;
-
-          // we found a new column, so build a new column type.
-          columns[columnPositions[column]]    = cell.content.$t;
-          columnData[columnPositions[column]] = [];
-
-        } else {
-
-          // find position: 
-          var colpos = columnPositions[column];
-
-          // this is a value for an existing column, so push it.
-          columnData[colpos][position-1] = cell.content.$t; 
-        }
-      }, this);
-
-      // fill whatever empty spaces we might have in the data due to 
-      // empty cells
-      columnData.length = _.max(_.pluck(columnData, "length")) - 1; // for column name
-
-      var keyedData = {};
-
-      _.each(columnData, function(coldata, column) {
-
-        // slice off first space. It was alocated for the column name
-        // and we've moved that off.
-        coldata.splice(0,1);
-
-        for (var i = 0; i < coldata.length; i++) {
-          if (_.isUndefined(coldata[i]) || coldata[i] === "") {
-            coldata[i] = null;
+        // save data
+        _.each(data.table.rows, function(row) {
+          row = row.c;
+          for(i = 0; i < row.length; i++) {
+            columnData[i] = columnData[i] || [];
+            if (row[i].v === "") {
+              columnData[i].push(null);  
+            } else {
+              columnData[i].push(row[i].v);
+            }
           }
-        }
+        });
 
-        keyedData[columns[column]] = coldata;
-      });
+        // convert to keyed data.
+        _.each(columns, function(colName, index) {
+          keyedData[colName] = columnData[index];
+        });
 
+      } else {
+        var positionRegex = /([A-Z]+)(\d+)/,
+            columnPositions = {};
+
+        _.each(data.feed.entry, function(cell, index) {
+
+          var parts = positionRegex.exec(cell.title.$t),
+          column = parts[1],
+          position = parseInt(parts[2], 10);
+
+          if (_.isUndefined(columnPositions[column])) {
+
+            // cache the column position
+            columnPositions[column] = columnData.length;
+
+            // we found a new column, so build a new column type.
+            columns[columnPositions[column]]    = cell.content.$t;
+            columnData[columnPositions[column]] = [];
+
+
+          } else {
+
+            // find position: 
+            var colpos = columnPositions[column];
+
+            // this is a value for an existing column, so push it.
+            columnData[colpos][position-1] = cell.content.$t; 
+
+          }
+        }, this);
+
+        _.each(columnData, function(coldata, column) {
+          // fill whatever empty spaces we might have in the data due to empty cells
+          coldata.length = _.max(_.pluck(columnData, "length"));
+
+          // slice off first space. It was alocated for the column name
+          // and we've moved that off.
+          coldata.splice(0,1);
+
+          for (var i = 0; i < coldata.length; i++) {
+            if (_.isUndefined(coldata[i]) || coldata[i] === "") {
+              coldata[i] = null;
+            }
+          }
+
+          keyedData[columns[column]] = coldata;
+        });
+
+      }
+      
       return {
         columns : columns,
         data : keyedData
@@ -3096,6 +3161,13 @@ Version 0.0.1.2
       "gi"
     );
   };
+
+  // Ie is not aware of trim method...
+  if(typeof String.prototype.trim !== 'function') {
+    String.prototype.trim = function() {
+      return this.replace(/^\s+|\s+$/g, ''); 
+    };
+  }
 
   _.extend(Miso.Parsers.Delimited.prototype, Miso.Parsers.prototype, {
 
