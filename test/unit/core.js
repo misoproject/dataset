@@ -34,7 +34,7 @@
   function verifyDatasetPrototypeMethods(ds) {
     ok(!_.isUndefined(ds.fetch));
     ok(!_.isUndefined(ds._applications));
-    ok(!_.isUndefined(ds.apply));
+    ok(!_.isUndefined(ds._apply));
     ok(!_.isUndefined(ds.addColumns));
     ok(!_.isUndefined(ds.addColumn));
     ok(!_.isUndefined(ds._addIdColumn));
