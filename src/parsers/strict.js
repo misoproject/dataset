@@ -22,8 +22,12 @@
       var columnData = {}, columnNames = [];
 
       _.each(data.columns, function(column) {
-        columnNames.push( column.name );
-        columnData[ column.name ] = column.data;
+        if (columnNames.indexOf(column.name) !== -1) {
+          throw new Error("You have more than one column named \"" + column.name + "\"");
+        } else {
+          columnNames.push( column.name );
+          columnData[ column.name ] = column.data;  
+        }
       });
 
       return {

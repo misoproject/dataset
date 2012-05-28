@@ -5,6 +5,23 @@
 
   module("Bugs");
 
+  test("#133 - strict mode column name duplicates", function() {
+
+    var ds = new Miso.Dataset({
+      data: { columns : [ 
+        { name : "one",   data : [1, 2, 3] },
+        { name : "two",   data : [4, 5, 6] },
+        { name : "one", data : [7, 8, 9] } 
+      ] },
+      strict: true,
+      sync : true
+    });
+
+    raises(function() {
+      ds.fetch();
+    }, Error, "You have more than one column named \"one\"");
+  });
+
   test("#130 - CSV Parser adds together columns with the same name", function() {
     var data = "A,B,C,B\n" +
                "1,2,3,4\n" +
