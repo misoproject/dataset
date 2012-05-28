@@ -195,7 +195,15 @@ Version 0.0.1.2
       this.importer.fetch({
         success: _.bind(function( data ) {
 
-          this._apply( data );
+          try {
+            this._apply( data );
+          } catch (e) {
+            if (options.error) {
+              options.error.call(this, e);
+            } else {
+              throw e;
+            }
+          }
 
           // if a comparator was defined, sort the data
           if (this.comparator) {
@@ -217,7 +225,7 @@ Version 0.0.1.2
 
         error : _.bind(function(e) {
           if (options.error) {
-            options.error.call(this);
+            options.error.call(this, e);
           }
 
           dfd.reject(e);
