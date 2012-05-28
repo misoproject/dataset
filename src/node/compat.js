@@ -1,5 +1,5 @@
 var path = require("path");
-var _ = require("underscore");
+var _ = require("lodash");
 var moment = require("moment");
 _.mixin(require("underscore.deferred"));
 var request = require("request");

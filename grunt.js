@@ -53,7 +53,7 @@ module.exports = function(grunt) {
         src : [
           "<banner>",
           "lib/moment.js",
-          "lib/underscore.js",
+          "lib/lodash.js",
           "lib/underscore.math.js",
           "lib/underscore.deferred.js",
           "dist/miso.ds.<%= pkg.version %>.js"
@@ -71,8 +71,8 @@ module.exports = function(grunt) {
         "lib/moment.js"
       ],
 
-      "dist/development/lib/underscore.js" : [
-        "lib/underscore.js"
+      "dist/development/lib/lodash.js" : [
+        "lib/lodash.js"
       ],
 
       "dist/development/lib/underscore.math.js" : [
