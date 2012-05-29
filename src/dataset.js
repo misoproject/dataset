@@ -149,13 +149,14 @@ Version 0.0.1.2
       // implementation, pass it as an option
       if (options.deferred) {
         this.deferred = options.deferred;
+      } else {
+        this.deferred =  new _.Deferred();
       }
 
       //build any columns present in the constructor
       if ( options.columns ) {
         this.addColumns(options.columns);
       }
-
     },
 
     /**
@@ -186,7 +187,7 @@ Version 0.0.1.2
     fetch : function(options) {
       options = options || {};
       
-      var dfd = this.deferred || new _.Deferred();
+      var dfd = this.deferred;
 
       if ( _.isNull(this.importer) ) {
         throw "No importer defined";

@@ -5,6 +5,27 @@
 
   module("Bugs");
 
+  test("#131 - Deferred object should be accessible before fetch", 1, function() {
+    var key = "0Asnl0xYK7V16dFpFVmZUUy1taXdFbUJGdGtVdFBXbFE",
+        worksheet = "1";
+
+    var ds = new Miso.Dataset({
+      importer: Miso.Importers.GoogleSpreadsheet,
+      parser : Miso.Parsers.GoogleSpreadsheet,
+      key : key,
+      worksheet: worksheet
+    });
+
+    stop();
+
+    _.when(ds.deferred).then(function() {
+      ok(true);
+      start();
+    });
+
+    ds.fetch();
+  });
+
   test("#133 - Google spreadsheet column duplicate name check (Regular)",1,  function() {
     var ds = new Miso.Dataset({
       parser: Miso.Parsers.GoogleSpreadsheet,
