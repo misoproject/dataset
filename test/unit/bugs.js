@@ -5,7 +5,42 @@
 
   module("Bugs");
 
-  test("#133 - strict mode column name duplicates", function() {
+  test("#133 - Google spreadsheet column duplicate name check (Regular)",1,  function() {
+    var ds = new Miso.Dataset({
+      parser: Miso.Parsers.GoogleSpreadsheet,
+      importer : Miso.Importers.GoogleSpreadsheet,
+      key : "0Al5UYaVoRpW3dHYxcEEwVXBvQkNmNjZOQ3dhSm53TGc",
+      worksheet : "1"
+    });
+
+    stop();
+    ds.fetch({
+      error : function(e) {
+        equals(e.message,"You have more than one column named \"A\"");
+        start();
+      }
+    });
+  });
+
+  test("#133 - Google spreadsheet column duplicate name check (Fast)",1,  function() {
+    var ds = new Miso.Dataset({
+      parser: Miso.Parsers.GoogleSpreadsheet,
+      importer : Miso.Importers.GoogleSpreadsheet,
+      key : "0Al5UYaVoRpW3dHYxcEEwVXBvQkNmNjZOQ3dhSm53TGc",
+      sheetName : "Sheet1",
+      fast : true
+    });
+
+    stop();
+    ds.fetch({
+      error : function(e) {
+        equals(e.message,"You have more than one column named \"A\"");
+        start();
+      }
+    });
+  });
+
+  test("#133 - Strict mode column name duplicates",2,  function() {
 
     var ds = new Miso.Dataset({
       data: { columns : [ 
@@ -20,9 +55,27 @@
     raises(function() {
       ds.fetch();
     }, Error, "You have more than one column named \"one\"");
+
+
+    ds = new Miso.Dataset({
+      data: { columns : [ 
+        { name : "one",   data : [1, 2, 3] },
+        { name : "two",   data : [4, 5, 6] },
+        { name : "one", data : [7, 8, 9] } 
+      ] },
+      strict: true,
+      sync : true
+    });
+
+    ds.fetch({
+      error : function(e) {
+        equals(e.message,"You have more than one column named \"one\"");
+      }
+    });
+
   });
 
-  test("#130 - CSV Parser adds together columns with the same name", function() {
+  test("#130 - CSV Parser adds together columns with the same name", 2, function() {
     var data = "A,B,C,B\n" +
                "1,2,3,4\n" +
                "5,6,7,8";
@@ -36,6 +89,16 @@
     }, Error, 
        "Error while parsing delimited data on row 0. Message: You have more than one column named B");
 
+    ds = new Miso.Dataset({
+      data : data,
+      delimiter : ","
+    });
+
+    ds.fetch({
+      error : function(e) {
+        equals(e.message,"Error while parsing delimited data on row 0. Message: You have more than one column named B");
+      }
+    });
   });
 
   test("#125 - Update in a string column with a string number shouldn't fail", function() {

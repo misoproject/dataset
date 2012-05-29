@@ -22,10 +22,31 @@
           keyedData = {},
           i;
 
+      // the fast importer API is not available
+      if (typeof data.status !== "undefined" && data.status === "error") {
+        throw new Error("You can't use the fast importer for this url. Disable the fast flag");
+      }
+
       if (this.fast) {
 
         // init column names
         columns = _.pluck(data.table.cols, "label");
+
+        // check that the column names don't have duplicates
+        if (_.unique(columns).length < columns.length) {
+          var dup = "";
+          
+          _.inject(columns, function(memo, val) { 
+            
+            memo[val] = (memo[val] + 1) || 1; 
+            if (memo[val] > 1) {
+              dup = val;
+            }
+            return memo; 
+          }, {});
+
+          throw new Error("You have more than one column named \"" + dup + "\"");
+        }
 
         // save data
         _.each(data.table.rows, function(row) {
@@ -55,15 +76,20 @@
           column = parts[1],
           position = parseInt(parts[2], 10);
 
-          if (_.isUndefined(columnPositions[column])) {
+          // this is the first row, thus column names.
+          if (position === 1) {
 
-            // cache the column position
-            columnPositions[column] = columnData.length;
+            // if we've already seen this column name, throw an exception
+            if (columns.indexOf(cell.content.$t) !== -1) {
+              throw new Error("You have more than one column named \"" + cell.content.$t + "\"");
+            } else {
+              // cache the column position
+              columnPositions[column] = columnData.length;
 
-            // we found a new column, so build a new column type.
-            columns[columnPositions[column]]    = cell.content.$t;
-            columnData[columnPositions[column]] = [];
-
+              // we found a new column, so build a new column type.
+              columns[columnPositions[column]]    = cell.content.$t;
+              columnData[columnPositions[column]] = []; 
+            }
 
           } else {
 
