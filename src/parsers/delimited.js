@@ -166,6 +166,13 @@
                 columnData[columns[columnIndex]].push(strMatchedValue);  
           
               } else {
+
+                // first check to see if there already is a column by this name
+                // if so, throw an error
+                if (columns.indexOf(strMatchedValue) !== -1) {
+                  throw new Error("You have more than one column named " + strMatchedValue);
+                }
+                
                 // we are building the column names here
                 columns.push(strMatchedValue);
                 columnData[strMatchedValue] = [];

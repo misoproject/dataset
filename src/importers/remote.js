@@ -194,7 +194,7 @@
 
     script.onerror = function(e) {
       if (error) {
-        error.call(null);
+        error.call(null, e);
       }
     };
 

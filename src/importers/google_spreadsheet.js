@@ -34,19 +34,16 @@
           
           options.url = "https://spreadsheets.google.com/tq?key=" + options.key;
                   
-          if (options.sheetName) {
-            options.url += "&sheet=" + options.sheetName;
-          } else {
-            options.url += "&gid=" + (options.worksheet || 1);  
-            delete options.worksheet;
-          }
+          if (typeof options.sheetName === "undefined") {
+            options.sheetName = "Sheet1";
+          } 
 
+          options.url += "&sheet=" + options.sheetName;
           this.callback = "misodsgs" + new Date().getTime();
           options.url += "&tqx=version:0.6;responseHandler:" + this.callback;
           options.url += ";reqId:0;out:json&tq&_=1335871249558#";
 
           delete options.sheetName;
-
         } else {
           options.url = "https://spreadsheets.google.com/feeds/cells/" + 
           options.key + "/" + 
@@ -58,6 +55,7 @@
       }
     }
     
+
     this.params = {
       type : "GET",
       url : options.url,
