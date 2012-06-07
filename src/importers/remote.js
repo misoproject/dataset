@@ -20,7 +20,8 @@
     this.params = {
       type : "GET",
       url : _.isFunction(this._url) ? _.bind(this._url, this) : this._url,
-      dataType : options.dataType ? options.dataType : (options.jsonp ? "jsonp" : "json")
+      dataType : options.dataType ? options.dataType : (options.jsonp ? "jsonp" : "json"),
+      callback : options.callback
     };
   };
 
@@ -75,7 +76,8 @@
           url, 
           options.success,
           options.dataType === "script",
-          options.error
+          options.error,
+          options.callback
         );
 
         return;
@@ -103,7 +105,7 @@
       }
   };
 
-  Miso.Xhr.getJSONP = function(url, success, isScript, error) {
+  Miso.Xhr.getJSONP = function(url, success, isScript, error, callback) {
     // If this is a script request, ensure that we do not
     // call something that has already been loaded
     if (isScript) {
@@ -130,7 +132,7 @@
     paramStr  = url.split("?")[ 1 ],
     isFired   = false,
     params    = [],
-    callback, parts, callparam;
+    parts;
 
     // Extract params
     if (paramStr && !isScript) {
@@ -139,10 +141,17 @@
     if (params.length) {
       parts = params[params.length - 1].split("=");
     }
-    callback = params.length ? (parts[ 1 ] ? parts[ 1 ] : parts[ 0 ]) : "jsonp";
+    if (!callback) {
+      callback = params.length ? (parts[ 1 ] ? parts[ 1 ] : parts[ 0 ]) : "jsonp";
+    }
 
     if (!paramStr && !isScript) {
-      url += "?callback=" + callback;
+      url += "?"
+    }
+
+    if ( !paramStr || !/callback/.test(paramStr) ) {
+      if (paramStr) { url += '&'; }
+      url += "callback=" + callback;
     }
 
     if (callback && !isScript) {
@@ -161,7 +170,9 @@
       };
 
       //  Replace callback param and callback name
-      url = url.replace(parts.join("="), parts[0] + "=" + callback);
+      if (parts) { 
+        url = url.replace(parts.join("="), parts[0] + "=" + callback);
+      }
     }
 
     script.onload = script.onreadystatechange = function() {
