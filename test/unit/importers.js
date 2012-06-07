@@ -168,8 +168,8 @@
   test("Basic jsonp url fetch with Dataset API", 46, function() {
     var url = "data/alphabet_obj.json?callback=";
     var ds = new Miso.Dataset({ 
-      url : url, 
-      jsonp : true, 
+      url : url,
+      jsonp : true,
       extract: function(raw) {
         return raw.data;
       },
@@ -177,6 +177,75 @@
         verifyImport({}, this); 
         start();
       }
+    });
+    ds.fetch();
+    stop();
+  });
+
+  test("Basic jsonp url fetch with Dataset API without setting callback=", 46, function() {
+    var url = "data/alphabet_obj.json";
+    var ds = new Miso.Dataset({
+      url : url,
+      jsonp : true,
+      extract: function(raw) {
+        return raw.data;
+      },
+      ready : function() {
+        verifyImport({}, this); 
+        start();
+      }
+    });
+    ds.fetch();
+    stop();
+  });
+
+  test("Basic jsonp url fetch with Dataset API setting a callback in the url", 46, function() {
+    var url = "data/alphabet_obj.json?callback=testing";
+    var ds = new Miso.Dataset({
+      url : url,
+      jsonp : true,
+      extract: function(raw) {
+        return raw.data;
+      },
+      ready : function() {
+        verifyImport({}, this); 
+        start();
+      }
+    });
+    ds.fetch();
+    stop();
+  });
+
+  test("Basic jsonp url fetch with Dataset API without setting callback param but with other params", 46, function() {
+    var url = "data/alphabet_obj.json?a=b";
+    var ds = new Miso.Dataset({
+      url : url,
+      jsonp : true,
+      extract: function(raw) {
+        return raw.data;
+      },
+      ready : function() {
+        verifyImport({}, this); 
+        start();
+      }
+    });
+    ds.fetch();
+    stop();
+  });
+
+  test("Basic jsonp url fetch with Dataset API &amp; custom callback", 46, function() {
+    var url = "data/alphabet_obj.json?callback=";
+    var ds = new Miso.Dataset({
+      url : url,
+      jsonp : true,
+      extract: function(raw) {
+        return raw.data;
+      },
+      ready : function() {
+        verifyImport({}, this); 
+        start();
+      },
+      callback: 'foobar'
     });
     ds.fetch();
     stop();
