@@ -142,7 +142,8 @@
       parts = params[params.length - 1].split("=");
     }
     if (!callback) {
-      callback = params.length ? (parts[ 1 ] ? parts[ 1 ] : parts[ 0 ]) : "jsonp";
+      var fallback = _.uniqueId('callback');
+      callback = params.length ? (parts[ 1 ] ? parts[ 1 ] : fallback) : fallback;
     }
 
     if (!paramStr && !isScript) {
