@@ -564,6 +564,12 @@
     *   options - Optional
     */    
     sort : function(options) {
+
+      if ( _.isFunction(options) ) {
+        var opts = arguments[1] ? arguments[1] : {};
+        opts.comparator = options;
+        options = opts;
+      }
       options = options || {};
 
       if (options.comparator) {
