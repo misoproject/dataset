@@ -96,7 +96,7 @@
 
   });
 
-  test("#130 - CSV Parser adds together columns with the same name", 2, function() {
+  test("#130 - CSV Parser adds together columns with the same name", 3, function() {
     var data = "A,B,C,B\n" +
     "1,2,3,4\n" +
     "5,6,7,8";
@@ -107,7 +107,30 @@
 
     ds.fetch({ success: function() {
       equals(this._columns.length, 5);
-      ok(/B\d+/.test(_.last(this._columns).name));
+      ok( this._column('B') );
+      ok( this._column('B0') );
+    }});
+
+  });
+
+
+  test("#130 - CSV Parser generating multiple sequences of column names", 7, function() {
+    var data = "A,A,B,B,,\n" +
+    "1,2,3,4,2,2\n" +
+    "5,6,7,8,2,2";
+    var ds = new Miso.Dataset({
+      data : data,
+      delimiter : ","
+    });
+
+    ds.fetch({ success: function() {
+      equals(this._columns.length, 7);
+      ok( this._column('B') );
+      ok( this._column('B0') );
+      ok( this._column('A') );
+      ok( this._column('A0') );
+      ok( this._column('X0') );
+      ok( this._column('X1') );
     }});
 
   });
@@ -123,9 +146,8 @@
 
     ds.fetch({ success: function() {
       equals(this._columns.length, 5);
-      _.each(_.map(this._columns, function(c) { return c.name }), function(n) {
-        if ( /X\d+/.test(n) ) { ok(true) }
-      });
+      ok( this._column('X0') );
+      ok( this._column('X1') );
     }});
 
   });
@@ -141,9 +163,8 @@
 
     ds.fetch({ success: function() {
       equals(this._columns.length, 5);
-      _.each(_.map(this._columns, function(c) { return c.name }), function(n) {
-        if ( /X\d+/.test(n) ) { ok(true) }
-      });    
+      ok( this._column('X0') );
+      ok( this._column('X1') );
     }});
 
   });
