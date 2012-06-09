@@ -43,8 +43,18 @@
   _.extend(Miso.Parsers.Delimited.prototype, Miso.Parsers.prototype, {
 
     parse : function(data) {
-      var columns = [];
-      var columnData = {};
+      var columns = [],
+          columnData = {},
+          uniqueSequence = {};
+          uniqueId = function(str) {
+            if ( !uniqueSequence[str] ) {
+              uniqueSequence[str] = 0;
+            }
+            var id = str + uniqueSequence[str];
+            uniqueSequence[str] += 1;
+            return id;
+          }
+
 
       var parseCSV = function(delimiterPattern, strData, strDelimiter, skipRows, emptyValue) {
 
@@ -168,9 +178,9 @@
               } else {
 
                 function createColumnName(start) {
-                  var newName = _.uniqueId(start);
+                  var newName = uniqueId(start);
                   while ( columns.indexOf(newName) !== -1 ) {
-                    newName = _.uniqueId(start);
+                    newName = uniqueId(start);
                   }
                   return newName;
                 }
