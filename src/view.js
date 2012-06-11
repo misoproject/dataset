@@ -563,14 +563,15 @@
     * Parameters:
     *   options - Optional
     */    
-    sort : function(options) {
-
-      if ( _.isFunction(options) ) {
-        var opts = arguments[1] ? arguments[1] : {};
-        opts.comparator = options;
-        options = opts;
+    sort : function(args) {
+      var options = {};
+    
+      //If the first param is the comparator, set it as such.
+      if ( _.isFunction(args) ) {
+        options.comparator = args;
+      } else {
+        options = args || options;
       }
-      options = options || {};
 
       if (options.comparator) {
         this.comparator = options.comparator;
