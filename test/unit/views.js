@@ -536,6 +536,57 @@ module("Views :: Syncing");
 
   });
 
+   test("Sort with options param", function() {
+    var ds = new Miso.Dataset({
+      data: { columns : [ 
+        { name : "one",   data : [10, 2, 3, 14, 3, 4] },
+        { name : "two",   data : [4,  5, 6, 1,  1, 1] },
+        { name : "three", data : [7,  8, 9, 1,  1, 1] } 
+      ] },
+      strict: true
+    });
+
+
+
+    _.when(ds.fetch()).then(function(){
+      ds.sort({ silent : true, comparator : function(r1, r2) {
+        if (r1.one > r2.one) {return 1;}
+        if (r1.one < r2.one) {return -1;}
+        return 0;
+      }
+      });
+
+      ok(_.isEqual(ds._columns[1].data, [2,3,3,4,10,14]),ds._columns[1].data);
+      ok(_.isEqual(ds._columns[2].data, [5,6,1,1,4,1])  ,ds._columns[2].data);
+      ok(_.isEqual(ds._columns[3].data, [8,9,1,1,7,1])  ,ds._columns[3].data);
+    });
+
+  });
+
+  test("setting sort comparator when sorting", function() {
+    var ds = new Miso.Dataset({
+      data: { columns : [ 
+        { name : "one",   data : [10, 2, 3, 14, 3, 4] },
+        { name : "two",   data : [4,  5, 6, 1,  1, 1] },
+        { name : "three", data : [7,  8, 9, 1,  1, 1] } 
+      ] },
+      strict: true
+    });
+
+    _.when(ds.fetch()).then(function(){
+      ds.sort(function(r1, r2) {
+        if (r1.one > r2.one) {return 1;}
+        if (r1.one < r2.one) {return -1;}
+        return 0;
+      });
+
+      ok(_.isEqual(ds._columns[1].data, [2,3,3,4,10,14]),ds._columns[1].data);
+      ok(_.isEqual(ds._columns[2].data, [5,6,1,1,4,1])  ,ds._columns[2].data);
+      ok(_.isEqual(ds._columns[3].data, [8,9,1,1,7,1])  ,ds._columns[3].data);
+    });
+
+  });
+
   test("Basic Sort reverse", function() {
     var ds = new Miso.Dataset({
       data: { columns : [ 
