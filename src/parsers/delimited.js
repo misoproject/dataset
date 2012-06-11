@@ -187,7 +187,7 @@
 
                 //No column name? Create one starting with X
                 if ( _.isUndefined(strMatchedValue) || strMatchedValue === '' ) {
-                  strMatchedValue = createColumnName('X');
+                  strMatchedValue = 'X';
                 }
 
                 //Duplicate column name? Create a new one starting with the name
