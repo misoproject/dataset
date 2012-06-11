@@ -7,7 +7,7 @@
 
   test("#131 - Deferred object should be accessible before fetch", 1, function() {
     var key = "0Asnl0xYK7V16dFpFVmZUUy1taXdFbUJGdGtVdFBXbFE",
-        worksheet = "1";
+    worksheet = "1";
 
     var ds = new Miso.Dataset({
       importer: Miso.Importers.GoogleSpreadsheet,
@@ -96,31 +96,79 @@
 
   });
 
-  test("#130 - CSV Parser adds together columns with the same name", 2, function() {
+  test("#130 - CSV Parser adds together columns with the same name", 3, function() {
     var data = "A,B,C,B\n" +
-               "1,2,3,4\n" +
-               "5,6,7,8";
+    "1,2,3,4\n" +
+    "5,6,7,8";
     var ds = new Miso.Dataset({
       data : data,
       delimiter : ","
     });
 
-    raises(function() {
-      ds.fetch();
-    }, Error, 
-       "Error while parsing delimited data on row 0. Message: You have more than one column named B");
+    ds.fetch({ success: function() {
+      equals(this._columns.length, 5);
+      ok( this._columns[2].name === 'B' );
+      ok( this._columns[4].name === 'B0' );
+    }});
 
-    ds = new Miso.Dataset({
+  });
+
+
+  test("#130 - CSV Parser generating multiple sequences of column names", 7, function() {
+    var data = "A,A,B,B,,\n" +
+    "1,2,3,4,2,2\n" +
+    "5,6,7,8,2,2";
+    var ds = new Miso.Dataset({
       data : data,
       delimiter : ","
     });
 
-    ds.fetch({
-      error : function(e) {
-        equals(e.message,"Error while parsing delimited data on row 0. Message: You have more than one column named B");
-      }
-    });
+    ds.fetch({ success: function() {
+      equals(this._columns.length, 7);
+      ok( this._columns[1].name === 'A' );
+      ok( this._columns[2].name === 'A0' );
+      ok( this._columns[3].name === 'B' );
+      ok( this._columns[4].name === 'B0' );
+      ok( this._columns[5].name === 'X' );
+      ok( this._columns[6].name === 'X0' );
+    }});
+
   });
+
+  test("#136 - CSV Parser handle empty column names in quotation marks", 3, function() {
+    var data = "A,\"\",\"\",B\n" +
+    "1,2,3,4\n" +
+    "5,6,7,8";
+    var ds = new Miso.Dataset({
+      data : data,
+      delimiter : ","
+    });
+
+    ds.fetch({ success: function() {
+      equals(this._columns.length, 5);
+         ok( this._columns[2].name === 'X' );
+         ok( this._columns[3].name === 'X0' );
+       }});
+
+  });
+
+  test("#136 - CSV Parser handle empty column names", 3, function() {
+    var data = "F,,,G\n" +
+    "1,2,3,4\n" +
+    "5,6,7,8";
+    var ds = new Miso.Dataset({
+      data : data,
+      delimiter : ","
+    });
+
+    ds.fetch({ success: function() {
+      equals(this._columns.length, 5);
+      ok( this._columns[2].name === 'X' );
+      ok( this._columns[3].name === 'X0' );
+    }});
+
+  });
+
 
   test("#125 - Update in a string column with a string number shouldn't fail", function() {
     var ds = new Miso.Dataset({
@@ -140,7 +188,7 @@
           a : "1", b : 2
         });
         ok(ds.length, 5);
-        
+
         // test update
         ds.update(function(row) {
           // update all rows
@@ -229,7 +277,7 @@
       ok(_.isEqual(gb.column("x").data, [3]));
 
       gb.bind("change", function() {
-         equals(gb.length, 2);
+        equals(gb.length, 2);
         ok(_.isEqual(gb.column("q").data, [3,50]));
         ok(_.isEqual(gb.column("e").data, [1,12]));
         ok(_.isEqual(gb.column("x").data, [3,70]));
@@ -245,11 +293,11 @@
   test("Empty row at the end of csv breaks parsing", function() {
 
     var data = "Col1,Col2,Col3\n"+
-               "1,2,3\n" +
-               "1,4,5\n" +
-               "5,3,4\n" + 
-               "";
-    
+    "1,2,3\n" +
+    "1,4,5\n" +
+    "5,3,4\n" + 
+    "";
+
     var ds = new Miso.Dataset({
       data : data,
       delimiter : ","

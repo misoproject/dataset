@@ -43,8 +43,18 @@
   _.extend(Miso.Parsers.Delimited.prototype, Miso.Parsers.prototype, {
 
     parse : function(data) {
-      var columns = [];
-      var columnData = {};
+      var columns = [],
+          columnData = {},
+          uniqueSequence = {};
+          uniqueId = function(str) {
+            if ( !uniqueSequence[str] ) {
+              uniqueSequence[str] = 0;
+            }
+            var id = str + uniqueSequence[str];
+            uniqueSequence[str] += 1;
+            return id;
+          }
+
 
       var parseCSV = function(delimiterPattern, strData, strDelimiter, skipRows, emptyValue) {
 
@@ -167,10 +177,22 @@
           
               } else {
 
-                // first check to see if there already is a column by this name
-                // if so, throw an error
+                function createColumnName(start) {
+                  var newName = uniqueId(start);
+                  while ( columns.indexOf(newName) !== -1 ) {
+                    newName = uniqueId(start);
+                  }
+                  return newName;
+                }
+
+                //No column name? Create one starting with X
+                if ( _.isUndefined(strMatchedValue) || strMatchedValue === '' ) {
+                  strMatchedValue = 'X';
+                }
+
+                //Duplicate column name? Create a new one starting with the name
                 if (columns.indexOf(strMatchedValue) !== -1) {
-                  throw new Error("You have more than one column named " + strMatchedValue);
+                  strMatchedValue = createColumnName(strMatchedValue);
                 }
                 
                 // we are building the column names here
