@@ -107,8 +107,8 @@
 
     ds.fetch({ success: function() {
       equals(this._columns.length, 5);
-      ok( this._column('B') );
-      ok( this._column('B0') );
+      ok( this._columns[2].name === 'B' );
+      ok( this._columns[4].name === 'B0' );
     }});
 
   });
@@ -125,12 +125,12 @@
 
     ds.fetch({ success: function() {
       equals(this._columns.length, 7);
-      ok( this._column('B') );
-      ok( this._column('B0') );
-      ok( this._column('A') );
-      ok( this._column('A0') );
-      ok( this._column('X0') );
-      ok( this._column('X1') );
+      ok( this._columns[1].name === 'A' );
+      ok( this._columns[2].name === 'A0' );
+      ok( this._columns[3].name === 'B' );
+      ok( this._columns[4].name === 'B0' );
+      ok( this._columns[5].name === 'X' );
+      ok( this._columns[6].name === 'X0' );
     }});
 
   });
@@ -146,9 +146,9 @@
 
     ds.fetch({ success: function() {
       equals(this._columns.length, 5);
-      ok( this._column('X0') );
-      ok( this._column('X1') );
-    }});
+         ok( this._columns[2].name === 'X' );
+         ok( this._columns[3].name === 'X0' );
+       }});
 
   });
 
@@ -163,8 +163,8 @@
 
     ds.fetch({ success: function() {
       equals(this._columns.length, 5);
-      ok( this._column('X0') );
-      ok( this._column('X1') );
+      ok( this._columns[2].name === 'X' );
+      ok( this._columns[3].name === 'X0' );
     }});
 
   });
