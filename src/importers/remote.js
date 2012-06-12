@@ -147,7 +147,7 @@
     }
 
     if (!paramStr && !isScript) {
-      url += "?"
+      url += "?";
     }
 
     if ( !paramStr || !/callback/.test(paramStr) ) {
