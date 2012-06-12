@@ -200,6 +200,43 @@
 
 module("Views :: Rows Selection");
 
+  test("each", function() {
+    var ds = Util.baseSample();
+    var expectedRow = {
+      _id : ds._columns[0].data[0],
+      one : 1,
+      two : 4,
+      three : 7
+    };
+
+    ds.each(function(row, index) {
+      if (index === 0) {
+        ok(_.isEqual(row, expectedRow), "Row by position is equal");
+      }
+    });
+
+  });
+
+
+  test("reversed each", 1, function() {
+    var ds = Util.baseSample();
+    var expectedRow = {
+      _id : ds._columns[0].data[2],
+      one : 3,
+      two : 6,
+      three : 9
+    };
+    var count = 0;
+
+    ds.reverseEach(function(row, index) {
+      console.log(row, index);
+      if (count === 0) {
+        ok(_.isEqual(row, expectedRow), "Row by position is equal");
+      }
+      count += 1;
+    });
+  });
+
   test("Get row by position", function() {
     var ds = Util.baseSample();
     var row = ds.rowByPosition(0);

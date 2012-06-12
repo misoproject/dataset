@@ -391,9 +391,22 @@
     *   iterator - function that is passed each row
     *              iterator(rowObject, index, dataset)
     *   context - options object. Optional.
-    */    
+    */
     each : function(iterator, context) {
       for(var i = 0; i < this.length; i++) {
+        iterator.apply(context || this, [this.rowByPosition(i), i]);
+      }
+    },
+
+    /**
+    * Iterates over all rows in the dataset in reverse order
+    * Parameters:
+    *   iterator - function that is passed each row
+    *              iterator(rowObject, index, dataset)
+    *   context - options object. Optional.
+    */
+    reverseEach : function(iterator, context) {
+      for(var i = this.length-1; i >= 0; i--) {
         iterator.apply(context || this, [this.rowByPosition(i), i]);
       }
     },
