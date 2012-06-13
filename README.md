@@ -25,7 +25,7 @@ The following builds do not have any of the dependencies built in. It is your ow
 
 Dataset has the following dependencies:
 
-* [Underscore.js 1.3.1](http://underscorejs.org/)
+* [Lodash.js 0.3.1](http://lodash.com/)
 * [Underscore.math.js (version unknown)](https://github.com/syntagmatic/underscore.math) 
 * [Underscore.deferred.js 0.1.2](https://github.com/wookiehangover/underscore.Deferred)
 * [moment.js 1.4.0](http://momentjs.com/) (for date and time parsing)
