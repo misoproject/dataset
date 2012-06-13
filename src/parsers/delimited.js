@@ -46,14 +46,15 @@
       var columns = [],
           columnData = {},
           uniqueSequence = {};
-          uniqueId = function(str) {
-            if ( !uniqueSequence[str] ) {
-              uniqueSequence[str] = 0;
-            }
-            var id = str + uniqueSequence[str];
-            uniqueSequence[str] += 1;
-            return id;
-          }
+      
+      var uniqueId = function(str) {
+        if ( !uniqueSequence[str] ) {
+          uniqueSequence[str] = 0;
+        }
+        var id = str + uniqueSequence[str];
+        uniqueSequence[str] += 1;
+        return id;
+      };
 
 
       var parseCSV = function(delimiterPattern, strData, strDelimiter, skipRows, emptyValue) {
@@ -177,13 +178,13 @@
           
               } else {
 
-                function createColumnName(start) {
+                var createColumnName = function(start) {
                   var newName = uniqueId(start);
                   while ( columns.indexOf(newName) !== -1 ) {
                     newName = uniqueId(start);
                   }
                   return newName;
-                }
+                };
 
                 //No column name? Create one starting with X
                 if ( _.isUndefined(strMatchedValue) || strMatchedValue === '' ) {
