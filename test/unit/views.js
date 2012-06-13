@@ -229,7 +229,6 @@ module("Views :: Rows Selection");
     var count = 0;
 
     ds.reverseEach(function(row, index) {
-      console.log(row, index);
       if (count === 0) {
         ok(_.isEqual(row, expectedRow), "Row by position is equal");
       }
