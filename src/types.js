@@ -36,7 +36,7 @@
         return 0;
       },
       numeric : function(v) {
-        return _.isNaN( Number(v) ) ? 0 : Number(v);
+        return _.isNaN( Number(v) ) ? null : Number(v);
       }
     },
 
@@ -57,7 +57,13 @@
       },
 
       numeric : function(value) {
-        return _.isNaN(+value) ? 0 : +value;
+        if (_.isNaN(+value) || value === null) {
+          return null;
+        } else if (_.isNumber(+value)) {
+          return +value;
+        } else {
+          return null;
+        }
       }
     },
 
@@ -83,7 +89,11 @@
         return (n1 < n2 ? -1 : 1);
       },
       numeric : function(value) {
-        return (value) ? 1 : 0;
+        if (_.isNaN(value)) {
+          return null;
+        } else {
+          return (value) ? 1 : 0;  
+        }
       }
     },
 

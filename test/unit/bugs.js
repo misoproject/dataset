@@ -5,6 +5,34 @@
 
   module("Bugs");
 
+  test("#120 - NaN values in Dataset should not fail min/max", function() {
+    
+    // min(b) should be 4, not 0
+    var data = [
+      { a : -1,   b : 10,   c : "2002", d : true  },
+      { a : -10,  b : null, c : "2001", d : false },
+      { a : -100, b : 4,    c : "2006", d : null  },
+      { a : null, b : 5,    c : null,   d : true  }
+    ];
+
+    var ds = new Miso.Dataset({
+      data : data,
+      columns : [
+        { name : "c", type : "time", format: "YYYY" }
+      ]
+    });
+
+    ds.fetch({
+      success: function() {
+        ok(ds.min("b") === 4,  "Min is: " + ds.min("b"));
+        ok(ds.max("a") === -1, "Max is: " + ds.max("a"));
+        ok(ds.max("c").valueOf() === moment("2006", "YYYY").valueOf());
+        ok(ds.min("c").valueOf() === moment("2001", "YYYY").valueOf());
+        ok(ds.min("d") === false, ds.min("d"));
+        ok(ds.max("d") === true,  ds.max("d"));
+      }
+    });
+  });
   test("#131 - Deferred object should be accessible before fetch", 1, function() {
     var key = "0Asnl0xYK7V16dFpFVmZUUy1taXdFbUJGdGtVdFBXbFE",
     worksheet = "1";
