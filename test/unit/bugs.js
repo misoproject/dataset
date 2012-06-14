@@ -152,6 +152,43 @@
 
   });
 
+    test("#136 - CSV Parser handle empty column name at start with tab delimiter", 2, function() {
+    var data = 
+    "	1995	2000	2005	2010\n" +
+    "Germany	29	25	28	29\n" +
+    "France	29	28	28	30\n" +
+    "Greece	35	33	33	33\n";
+    var ds = new Miso.Dataset({
+      data : data,
+      delimiter : '\t'
+    });
+
+    ds.fetch({ success: function() {
+      equals(this._columns.length, 6);
+      ok( this._columns[1].name === 'X' );
+    }});
+
+  });
+
+  test("#136 - CSV Parser handle empty column name at end with tab delimiter", 2, function() {
+    var data = 
+    "country	1995	2000	2005	2010	\n" +
+    "Germany	29	25	28	29	99\n" +
+    "France	29	28	28	30	32\n" +
+    "Greece	35	33	33	33	2\n";
+    var ds = new Miso.Dataset({
+      data : data,
+      delimiter : '\t'
+    });
+
+    ds.fetch({ success: function() {
+      equals(this._columns.length, 7);
+      ok( this._columns[6].name === 'X' );
+    }});
+
+  });
+
+
   test("#136 - CSV Parser handle empty column names", 3, function() {
     var data = "F,,,G\n" +
     "1,2,3,4\n" +
