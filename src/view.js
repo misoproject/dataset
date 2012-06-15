@@ -237,9 +237,14 @@
     */
     where : function(filter, options) {
       options = options || {};
+      options.filter = options.filter || {};
+      if ( _.isFunction(filter) ) {
+        options.filter.rows = filter;
+      } else {
+        options.filter = filter;
+      }
       
       options.parent = this;
-      options.filter = filter || {};
 
       return new Miso.DataView(options);
     },
