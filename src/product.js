@@ -79,31 +79,36 @@
       var _self = this;
       options.type = options.type || columnObjects[0].type;
       options.typeOptions = options.typeOptions || columnObjects[0].typeOptions;
+
+      //define wrapper function to handle coercion
       var producer = function() {
         var val = func.call(_self, columnObjects, options);
         return Miso.types[options.type].coerce(val, options.typeOptions);
       };
 
-      var prod = new Miso.Product({
-        columns : columnObjects,
-        func : function(options) {
-          options = options || {};
-          var delta = this._buildDelta(this.value, producer.call(_self));
-          this.value = delta.changed;
-          if (_self.syncable) {
-            var event = this._buildEvent(delta);
-            if (!_.isUndefined(delta.old) && !options.silent && delta.old !== delta.changed) {
-              this.trigger("change", event);
-            }  
-          }
-        }
-      });
       if (this.syncable) {
+        //create product object to pass back for syncable datasets/views
+        var prod = new Miso.Product({
+          columns : columnObjects,
+          func : function(options) {
+            options = options || {};
+            var delta = this._buildDelta(this.value, producer.call(_self));
+            this.value = delta.changed;
+            if (_self.syncable) {
+              var event = this._buildEvent(delta);
+              if (!_.isUndefined(delta.old) && !options.silent && delta.old !== delta.changed) {
+                this.trigger("change", event);
+              }
+            }
+          }
+        });
         this.bind("change", prod._sync, prod); 
         return prod; 
+
       } else {
-        return prod.val();
+        return producer.call(_self);
       }
+
     };
   };
 
