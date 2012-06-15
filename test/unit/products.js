@@ -182,6 +182,7 @@
     });
 
     _.when(ds.fetch()).then(function() {
+      window.ds = ds;
       equals(ds.column("t").type, "time");
       equals(ds.min("t").val().valueOf(), ds.column("t").data[0].valueOf());
       equals(ds.min("t").type(), ds.column("t").type);
@@ -384,7 +385,7 @@
   test("Defining a custom product", function() {
 
     var ds = Util.baseSyncingSample();
-    var min = ds._calculated(ds.column('one'), function() {
+    var min = Miso.Product.define(function() {
       var min = Infinity;
       _.each(this._column('one').data, function(value) {
         if (value < min) {
@@ -392,7 +393,7 @@
         }
       });
       return min;
-    });
+    }).apply(ds);
 
     equals(min.val(), 1, "custum product calcualted the minimum");
 
@@ -405,17 +406,15 @@
   test("Defining a new product on the Miso prototype", function() {
 
     var ds = Util.baseSyncingSample();
-    Miso.Dataset.prototype.custom = function() {
-      return this._calculated(ds.column('one'), function() {
-        var min = Infinity;
-        _.each(this._column('one').data, function(value) {
-          if (value < min) {
-            min = value;
-          }
-        });
-        return min;
+    Miso.Dataset.prototype.custom = Miso.Product.define(function() {
+      var min = Infinity;
+      _.each(this._column('one').data, function(value) {
+        if (value < min) {
+          min = value;
+        }
       });
-    };
+      return min;
+    });
 
     var custom = ds.custom();
 
@@ -430,17 +429,15 @@
   test("Defining a new product a dataset", function() {
 
     var ds = Util.baseSyncingSample();
-    ds.custom = function() {
-      return this._calculated(ds.column('one'), function() {
-        var min = Infinity;
-        _.each(this._column('one').data, function(value) {
-          if (value < min) {
-            min = value;
-          }
-        });
-        return min;
+    ds.custom =  Miso.Product.define(function() {
+      var min = Infinity;
+      _.each(this._column('one').data, function(value) {
+        if (value < min) {
+          min = value;
+        }
       });
-    };
+      return min;
+    });
 
     var custom = ds.custom();
 
