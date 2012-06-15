@@ -233,7 +233,7 @@
     stop();
   });
 
-  test("Basic jsonp url fetch with Dataset API &amp; custom callback", 46, function() {
+  test("Basic jsonp url fetch with Dataset API &amp; custom callback", 47, function() {
     var url = "data/alphabet_obj.json?callback=";
     var ds = new Miso.Dataset({
       url : url,
@@ -243,6 +243,7 @@
       },
       ready : function() {
         verifyImport({}, this); 
+        ok(typeof window.foobar !== "undefined");
         start();
       },
       callback: 'foobar'
