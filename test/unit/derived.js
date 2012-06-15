@@ -169,12 +169,12 @@
         { 
           name : "state",
           type : "string",
-          data : ["AZ", "AZ", "AZ", "MA", "MA", "MA"]
+          data : ["AZ", "AZ", "AZ", "MA", "MA", "MA", "AZ", "MA", "MA"]
         },
         {
           name : "count",
           type : "number",
-          data : [1,2,3,4,5,6]
+          data : [1,2,3,4,5,6,NaN,null, undefined]
         },
         {
           name : "anothercount",
@@ -317,6 +317,13 @@
       var groupedData = ds.groupBy("state", 
         ["count", "anothercount"], {
           method : function(array) {
+            array = _.reject(array, function(d) {
+              if ( d === null ) { return true; }
+              if ( _.isUndefined(d) ) { return true; }
+              if ( _.isNaN(d) ) { return true; }
+              return false;
+            });
+
             return _.reduce(array, function(memo, num){ 
               return memo * num; 
             }, 1);

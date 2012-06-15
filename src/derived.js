@@ -207,7 +207,15 @@
         parent : this,
         
         // default method is addition
-        method : options.method || _.sum,
+        method : options.method || function(data) {
+          data = _.reject(data, function(d) {
+            if ( d === null ) { return true; }
+            if ( _.isUndefined(d) ) { return true; }
+            if ( _.isNaN(d) ) { return true; }
+            return false;
+          });
+          return _.sum(data)
+        },
 
         // save current arguments
         args : arguments
@@ -304,7 +312,8 @@
               oidcol.data[binPos] = _.flatten(oidcol.data[binPos]);
 
               // compute the final value.
-              column.data[binPos] = this.method(_.map(bin, function(row) { return row[colName]; }));
+              var data = _.map(bin, function(row) { return row[colName]; });
+              column.data[binPos] = this.method(data);
               this.length++;
             }
           }, this);
