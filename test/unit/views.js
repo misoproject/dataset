@@ -118,6 +118,17 @@
     });
   });
 
+ test("One Row Filter View creation with short syntax", function() {
+    var ds = Util.baseSample();
+    var view = ds.where(function(row) {
+      return row._id === ds._columns[0].data[0];
+    });
+
+    _.each(ds._columns, function(column, i) {
+      ok(_.isEqual(ds._columns[i].data.slice(0, 1), view._columns[i].data), "data has been copied");  
+    });
+  });
+
   test("Two Row Filter View creation", function() {
     var ds = Util.baseSample();
     var view = ds.where({
