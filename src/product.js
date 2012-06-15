@@ -72,6 +72,14 @@
     }
   });
 
+  /**
+    * Returns a function for creating a product
+    * Parameters:
+    *   func - the function which will be wrapped to create a product.
+    *          function signature is function(columns, options)
+    *          columns - an array of column objects
+    *          options - object with options
+    */
   Miso.Product.define = function(func) {
     return function(columns, options) {
       options = options || {};
