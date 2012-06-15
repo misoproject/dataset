@@ -82,7 +82,9 @@
         try {
 
           // trim any empty lines at the end
-          strData = strData.trim();
+          strData = strData//.trim();
+            .replace(/\s+$/,"")
+            .replace(/^[\r|\n|\s]+[\r|\n]/,"\n");
 
           // do we have any rows to skip? if so, remove them from the string
           if (skipRows > 0) {
@@ -102,8 +104,7 @@
 
           // Keep looping over the regular expression matches
           // until we can no longer find a match.
-          while (arrMatches = delimiterPattern.exec(strData)) {
-
+          function matchHandler(arrMatches) {
             // Get the delimiter that was found.
             var strMatchedDelimiter = arrMatches[ 1 ];
 
@@ -112,99 +113,108 @@
             // field delimiter. If id does not, then we know
             // that this delimiter is a row delimiter.
             if ( strMatchedDelimiter.length &&
-               ( strMatchedDelimiter !== strDelimiter )){
-                
-                // we have reached a new row.
-                rowIndex++;
+              ( strMatchedDelimiter !== strDelimiter )){
 
-                // if we caught less items than we expected, throw an error
-                if (columnIndex < columnCount-1) {
-                  rowIndex--;
-                  throw new Error("Not enough items in row");
-                }
+            // we have reached a new row.
+            rowIndex++;
 
-                // We are clearly done computing columns.
-                columnCountComputed = true;
+            // if we caught less items than we expected, throw an error
+            if (columnIndex < columnCount-1) {
+              rowIndex--;
+              throw new Error("Not enough items in row");
+            }
 
-                // when we're done with a row, reset the row index to 0
-                columnIndex = 0;
-              
-              } else {
+            // We are clearly done computing columns.
+            columnCountComputed = true;
 
-                // Find the number of columns we're fetching and
-                // create placeholders for them.
-                if (!columnCountComputed) {
-                  columnCount++;
-                }
+            // when we're done with a row, reset the row index to 0
+            columnIndex = 0;
 
-                columnIndex++;
+          } else {
+
+            // Find the number of columns we're fetching and
+            // create placeholders for them.
+            if (!columnCountComputed) {
+              columnCount++;
+            }
+
+            columnIndex++;
+          }
+
+
+          // Now that we have our delimiter out of the way,
+          // let's check to see which kind of value we
+          // captured (quoted or unquoted).
+          var strMatchedValue = null;
+          if (arrMatches[ 2 ]){
+
+            // We found a quoted value. When we capture
+            // this value, unescape any double quotes.
+            strMatchedValue = arrMatches[ 2 ].replace(
+              new RegExp( "\"\"", "g" ),
+              "\""
+            );
+
+          } else {
+
+            // We found a non-quoted value.
+            strMatchedValue = arrMatches[ 3 ];
+          }
+
+
+          // Now that we have our value string, let's add
+          // it to the data array.
+
+          if (columnCountComputed) {
+
+            if (strMatchedValue === '') {
+              strMatchedValue = emptyValue;
+            }
+
+            if (typeof columnData[columns[columnIndex]] === "undefined") {
+              throw new Error("Too many items in row"); 
+            }
+
+            columnData[columns[columnIndex]].push(strMatchedValue);  
+
+          } else {
+
+            var createColumnName = function(start) {
+              var newName = uniqueId(start);
+              while ( columns.indexOf(newName) !== -1 ) {
+                newName = uniqueId(start);
               }
+              return newName;
+            };
 
+            //No column name? Create one starting with X
+            if ( _.isUndefined(strMatchedValue) || strMatchedValue === '' ) {
+              strMatchedValue = 'X';
+            }
 
-              // Now that we have our delimiter out of the way,
-              // let's check to see which kind of value we
-              // captured (quoted or unquoted).
-              var strMatchedValue = null;
-              if (arrMatches[ 2 ]){
+            //Duplicate column name? Create a new one starting with the name
+            if (columns.indexOf(strMatchedValue) !== -1) {
+              strMatchedValue = createColumnName(strMatchedValue);
+            }
 
-                // We found a quoted value. When we capture
-                // this value, unescape any double quotes.
-                strMatchedValue = arrMatches[ 2 ].replace(
-                  new RegExp( "\"\"", "g" ),
-                  "\""
-                );
+            // we are building the column names here
+            columns.push(strMatchedValue);
+            columnData[strMatchedValue] = [];
+          }
+          }        
 
-              } else {
-
-                // We found a non-quoted value.
-                strMatchedValue = arrMatches[ 3 ];
-              }
-
-
-              // Now that we have our value string, let's add
-              // it to the data array.
-              
-              if (columnCountComputed) {
-
-                if (strMatchedValue === '') {
-                  strMatchedValue = emptyValue;
-                }
-
-                if (typeof columnData[columns[columnIndex]] === "undefined") {
-                  throw new Error("Too many items in row"); 
-                }
-                
-                columnData[columns[columnIndex]].push(strMatchedValue);  
-          
-              } else {
-
-                var createColumnName = function(start) {
-                  var newName = uniqueId(start);
-                  while ( columns.indexOf(newName) !== -1 ) {
-                    newName = uniqueId(start);
-                  }
-                  return newName;
-                };
-
-                //No column name? Create one starting with X
-                if ( _.isUndefined(strMatchedValue) || strMatchedValue === '' ) {
-                  strMatchedValue = 'X';
-                }
-
-                //Duplicate column name? Create a new one starting with the name
-                if (columns.indexOf(strMatchedValue) !== -1) {
-                  strMatchedValue = createColumnName(strMatchedValue);
-                }
-                
-                // we are building the column names here
-                columns.push(strMatchedValue);
-                columnData[strMatchedValue] = [];
-              }
-            
-          } // end while
+        //missing column header at start
+        if ( new RegExp('^' + strDelimiter).test(strData) ) {
+          matchHandler(['','',undefined,'']);
+        }
+        while (arrMatches = delimiterPattern.exec(strData)) {
+          matchHandler(arrMatches);
+        } // end while
         } catch (e) {
           throw new Error("Error while parsing delimited data on row " + rowIndex + ". Message: " + e.message);
         }
+
+      
 
         // Return the parsed data.
         return {

@@ -5,6 +5,34 @@
 
   module("Bugs");
 
+  test("#120 - NaN values in Dataset should not fail min/max", function() {
+    
+    // min(b) should be 4, not 0
+    var data = [
+      { a : -1,   b : 10,   c : "2002", d : true  },
+      { a : -10,  b : null, c : "2001", d : false },
+      { a : -100, b : 4,    c : "2006", d : null  },
+      { a : null, b : 5,    c : null,   d : true  }
+    ];
+
+    var ds = new Miso.Dataset({
+      data : data,
+      columns : [
+        { name : "c", type : "time", format: "YYYY" }
+      ]
+    });
+
+    ds.fetch({
+      success: function() {
+        ok(ds.min("b") === 4,  "Min is: " + ds.min("b"));
+        ok(ds.max("a") === -1, "Max is: " + ds.max("a"));
+        ok(ds.max("c").valueOf() === moment("2006", "YYYY").valueOf());
+        ok(ds.min("c").valueOf() === moment("2001", "YYYY").valueOf());
+        ok(ds.min("d") === false, ds.min("d"));
+        ok(ds.max("d") === true,  ds.max("d"));
+      }
+    });
+  });
   test("#131 - Deferred object should be accessible before fetch", 1, function() {
     var key = "0Asnl0xYK7V16dFpFVmZUUy1taXdFbUJGdGtVdFBXbFE",
     worksheet = "1";
@@ -151,6 +179,43 @@
        }});
 
   });
+
+    test("#136 - CSV Parser handle empty column name at start with tab delimiter", 2, function() {
+    var data = 
+    "	1995	2000	2005	2010\n" +
+    "Germany	29	25	28	29\n" +
+    "France	29	28	28	30\n" +
+    "Greece	35	33	33	33\n";
+    var ds = new Miso.Dataset({
+      data : data,
+      delimiter : '\t'
+    });
+
+    ds.fetch({ success: function() {
+      equals(this._columns.length, 6);
+      ok( this._columns[1].name === 'X' );
+    }});
+
+  });
+
+  test("#136 - CSV Parser handle empty column name at end with tab delimiter", 2, function() {
+    var data = 
+    "country	1995	2000	2005	2010	\n" +
+    "Germany	29	25	28	29	99\n" +
+    "France	29	28	28	30	32\n" +
+    "Greece	35	33	33	33	2\n";
+    var ds = new Miso.Dataset({
+      data : data,
+      delimiter : '\t'
+    });
+
+    ds.fetch({ success: function() {
+      equals(this._columns.length, 7);
+      ok( this._columns[6].name === 'X' );
+    }});
+
+  });
+
 
   test("#136 - CSV Parser handle empty column names", 3, function() {
     var data = "F,,,G\n" +

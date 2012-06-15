@@ -77,8 +77,10 @@
     _max : function() {
       var max = -Infinity;
       for (var j = 0; j < this.data.length; j++) {
-        if (Miso.types[this.type].compare(this.data[j], max) > 0) {
-          max = this.numericAt(j);
+        if (this.data[j] !== null) {
+          if (Miso.types[this.type].compare(this.data[j], max) > 0) {
+            max = this.numericAt(j);
+          }  
         }
       }
 
@@ -88,8 +90,10 @@
     _min : function() {
       var min = Infinity;
       for (var j = 0; j < this.data.length; j++) {
-        if (Miso.types[this.type].compare(this.data[j], min) < 0) {
-          min = this.numericAt(j);
+        if (this.data[j] !== null) {
+          if (Miso.types[this.type].compare(this.data[j], min) < 0) {
+            min = this.numericAt(j);
+          }  
         }
       }
       return Miso.types[this.type].coerce(min, this);
