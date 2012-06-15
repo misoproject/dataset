@@ -82,7 +82,7 @@
       var producer = function() {
         var val = func.call(_self, columnObjects, options);
         return Miso.types[options.type].coerce(val, options.typeOptions);
-      }
+      };
 
       var prod = new Miso.Product({
         columns : columnObjects,
@@ -104,8 +104,8 @@
       } else {
         return prod.val();
       }
-    }
-  }
+    };
+  };
 
 
   _.extend(Miso.DataView.prototype, {
@@ -193,7 +193,7 @@
       // convert the values to their appropriate numeric value
       vals = _.map(vals, function(v) { return Miso.types[type].numeric(v); });
       return _.mean(vals);   
-    }),
+    })
 
   });
 
