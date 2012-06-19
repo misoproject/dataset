@@ -20,6 +20,16 @@
     return chosenType;
   };
   
+  Miso._handleNonNumeric = function(v, f) {
+    if (_.isNull(v)) {
+      return null;
+    } else if (_.isNaN(+v)) {
+      return null;
+    } else {
+      return f(v);
+    }
+  };
+
   Miso.types = {
     
     mixed : {
@@ -39,7 +49,7 @@
         return 0;
       },
       numeric : function(v) {
-        return v === null || _.isNaN(Number(v)) ? null : Number(v);
+        return Miso._handleNonNumeric(v, function(v) { return +v; }); 
       }
     },
 
@@ -62,14 +72,12 @@
         return 0;
       },
 
-      numeric : function(value) {
-        if (_.isNaN(+value) || value === null) {
-          return null;
-        } else if (_.isNumber(+value)) {
-          return +value;
-        } else {
-          return null;
-        }
+      numeric : function(v) {
+        return Miso._handleNonNumeric(v, function(v) { 
+          if (_.isNumber(+v)) {
+            return +v;
+          }
+        }); 
       }
     },
 
@@ -97,12 +105,10 @@
         if (n1 === n2) { return 0; }
         return (n1 < n2 ? -1 : 1);
       },
-      numeric : function(value) {
-        if (_.isNaN(value) || value === null || typeof value === "undefined") {
-          return null;
-        } else {
-          return (value) ? 1 : 0;  
-        }
+      numeric : function(v) {
+        return Miso._handleNonNumeric(v, function(v) { 
+          return (v) ? 1 : 0;  
+        });
       }
     },
 
@@ -129,11 +135,10 @@
         if (n1 === n2) { return 0; }
         return (n1 < n2 ? -1 : 1);
       },
-      numeric : function(value) {
-        if (_.isNaN(value) || _.isNull(value) || typeof value === "undefined") {
-          return null;
-        }
-        return value;
+      numeric : function(v) {
+        return Miso._handleNonNumeric(v, function(v) { 
+          return v;  
+        });
       }
     },
 
@@ -216,11 +221,10 @@
         if (d1 > d2) {return 1;}
         return 0;
       },
-      numeric : function( value ) {
-        if (_.isNaN(value) || _.isNull(value) || _.isUndefined(value)) {
-          return null;
-        }
-        return value.valueOf();
+      numeric : function(v) {
+        return Miso._handleNonNumeric(v, function(v) { 
+          return v.valueOf();
+        });
       }
     }
   };
