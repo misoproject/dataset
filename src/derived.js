@@ -214,7 +214,7 @@
             if ( _.isNaN(d) ) { return true; }
             return false;
           });
-          return _.sum(data)
+          return _.sum(data);
         },
 
         // save current arguments
