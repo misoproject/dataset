@@ -93,7 +93,7 @@
                 strLen = strData.length;
 
             while (rowsSeen < skipRows && charIndex < strLen) {
-              if (/\n|\r|\r\n/.test(strData[charIndex])) {
+              if (/\n|\r|\r\n/.test(strData.charAt(charIndex))) {
                 rowsSeen++;
               } 
               charIndex++;
