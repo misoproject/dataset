@@ -174,7 +174,7 @@
         {
           name : "count",
           type : "number",
-          data : [1,2,3,4,5,6,NaN,null, undefined]
+          data : [1,2,3,4,5,6,NaN,null,undefined]
         },
         {
           name : "anothercount",
@@ -217,6 +217,37 @@
     _.when(ds.fetch()).then(function(){
       var groupedData = ds.groupBy("state", ["count", "anothercount"]);
 
+      ok(_.isEqual(groupedData._columns[2].data, ["AZ", "MA"]), "states correct");
+      ok(_.isEqual(groupedData._columns[3].data, [6,15]), "counts correct");
+      ok(_.isEqual(groupedData._columns[4].data, [60,150]), "anothercounts correct");
+    });
+  });
+
+   test("base group by with rejectNA off", function() {
+    
+    var foundNull = 0;
+
+    var ds = new Miso.Dataset({
+      data : getData(),
+      strict : true,
+    });
+
+    _.when(ds.fetch()).then(function(){
+      var groupedData = ds.groupBy("state", ["count", "anothercount"],  { 
+        rejectNA : false, 
+        method : function(data) {
+          _.reject(data, function(d) {
+            if ( _.isNull(d) ) { 
+              foundNull += 1;
+              return true; 
+            }
+            return false;
+          });
+          return _.sum(data)
+        } 
+      });
+
+      equals(foundNull, 3);
       ok(_.isEqual(groupedData._columns[2].data, ["AZ", "MA"]), "states correct");
       ok(_.isEqual(groupedData._columns[3].data, [6,15]), "counts correct");
       ok(_.isEqual(groupedData._columns[4].data, [60,150]), "anothercounts correct");
@@ -317,13 +348,6 @@
       var groupedData = ds.groupBy("state", 
         ["count", "anothercount"], {
           method : function(array) {
-            array = _.reject(array, function(d) {
-              if ( d === null ) { return true; }
-              if ( _.isUndefined(d) ) { return true; }
-              if ( _.isNaN(d) ) { return true; }
-              return false;
-            });
-
             return _.reduce(array, function(memo, num){ 
               return memo * num; 
             }, 1);
