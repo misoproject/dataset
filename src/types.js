@@ -25,6 +25,9 @@
     mixed : {
       name : 'mixed',
       coerce : function(v) {
+        if (_.isNaN(v) || _.isNull(v) || _.isUndefined(v)) {
+          return null;
+        }
         return v;
       },
       test : function(v) {
@@ -36,14 +39,17 @@
         return 0;
       },
       numeric : function(v) {
-        return _.isNaN( Number(v) ) ? null : Number(v);
+        return v === null || _.isNaN(Number(v)) ? null : Number(v);
       }
     },
 
     string : {
       name : "string",
       coerce : function(v) {
-        return v == null ? null : v.toString();
+        if (_.isNaN(v) || _.isNull(v) || _.isUndefined(v)) {
+          return null;
+        }
+        return v.toString();
       },
       test : function(v) {
         return (v === null || typeof v === "undefined" || typeof v === 'string');
@@ -71,6 +77,9 @@
       name : "boolean",
       regexp : /^(true|false)$/,
       coerce : function(v) {
+        if (_.isNaN(v) || _.isNull(v) || _.isUndefined(v)) {
+          return null;
+        }
         if (v === 'false') { return false; }
         return Boolean(v);
       },
@@ -89,7 +98,7 @@
         return (n1 < n2 ? -1 : 1);
       },
       numeric : function(value) {
-        if (_.isNaN(value)) {
+        if (_.isNaN(value) || value === null || typeof value === "undefined") {
           return null;
         } else {
           return (value) ? 1 : 0;  
@@ -101,7 +110,7 @@
       name : "number",
       regexp : /^[\-\.]?[0-9]+([\.][0-9]+)?$/,
       coerce : function(v) {
-        if (_.isNull(v)) {
+        if (_.isNaN(v) || _.isNull(v) || _.isUndefined(v)) {
           return null;
         }
         return _.isNaN(v) ? null : +v;
@@ -121,6 +130,9 @@
         return (n1 < n2 ? -1 : 1);
       },
       numeric : function(value) {
+        if (_.isNaN(value) || _.isNull(value) || typeof value === "undefined") {
+          return null;
+        }
         return value;
       }
     },
@@ -169,6 +181,9 @@
       },
 
       coerce : function(v, options) {
+        if (_.isNaN(v) || _.isNull(v) || _.isUndefined(v)) {
+          return null;
+        }
         options = options || {};
         // if string, then parse as a time
         if (_.isString(v)) {
@@ -202,6 +217,9 @@
         return 0;
       },
       numeric : function( value ) {
+        if (_.isNaN(value) || _.isNull(value) || _.isUndefined(value)) {
+          return null;
+        }
         return value.valueOf();
       }
     }

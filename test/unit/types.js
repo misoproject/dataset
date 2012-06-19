@@ -4,7 +4,29 @@
   var Miso    = global.Miso || {};  
 
   var numbers = ['123', '0.34', '.23'];
-  
+  var not_numbers = [null, NaN,undefined];
+
+  module("Types");
+  test("Check all non numeric values return null on numeric", function() {
+    expect(_.keys(Miso.types).length * not_numbers.length);
+
+    _.each(Miso.types, function(type) {
+      _.each(not_numbers, function(not_a_number) {
+        ok(type.numeric(not_a_number) === null, "["+type.name+"] " + not_a_number + " is represented as " + type.numeric(not_a_number));
+      });
+    });
+  });
+
+  test("Check all non numeric values return null on coerce", function() {
+    expect(_.keys(Miso.types).length * not_numbers.length);
+
+    _.each(Miso.types, function(type) {
+      _.each(not_numbers, function(not_a_number) {
+        ok(type.coerce(not_a_number) === null, "["+type.name+"] " + not_a_number + " is represented as " + type.coerce(not_a_number));
+      });
+    });
+  });
+
   module("Miso Numeric Type");
   test("Check number type", function() {
     var notNumbers = ['a', {}, 'll22'];
