@@ -30,15 +30,24 @@
     }
   };
 
+  Miso._handleNonNumericForCoersion = function(v, f) {
+    if (_.isNull(v)) {
+      return null;
+    } else if (_.isUndefined(v)) {
+      return null;
+    } else if (_.isNaN(v)) {
+      return null;
+    } else {
+      return f(v);
+    }
+  };
+
   Miso.types = {
     
     mixed : {
       name : 'mixed',
       coerce : function(v) {
-        if (_.isNaN(v) || _.isNull(v) || _.isUndefined(v)) {
-          return null;
-        }
-        return v;
+        return Miso._handleNonNumericForCoersion(v, function(v) { return v; }); 
       },
       test : function(v) {
         return true;
@@ -56,10 +65,7 @@
     string : {
       name : "string",
       coerce : function(v) {
-        if (_.isNaN(v) || _.isNull(v) || _.isUndefined(v)) {
-          return null;
-        }
-        return v.toString();
+        return Miso._handleNonNumericForCoersion(v, function(v) { return v.toString(); }); 
       },
       test : function(v) {
         return (v === null || typeof v === "undefined" || typeof v === 'string');
@@ -74,9 +80,7 @@
 
       numeric : function(v) {
         return Miso._handleNonNumeric(v, function(v) { 
-          if (_.isNumber(+v)) {
-            return +v;
-          }
+          return +v;
         }); 
       }
     },
@@ -85,11 +89,10 @@
       name : "boolean",
       regexp : /^(true|false)$/,
       coerce : function(v) {
-        if (_.isNaN(v) || _.isNull(v) || _.isUndefined(v)) {
-          return null;
-        }
-        if (v === 'false') { return false; }
-        return Boolean(v);
+        return Miso._handleNonNumericForCoersion(v, function(v) { 
+          if (v === 'false') { return false; }
+          return Boolean(v);
+        }); 
       },
       test : function(v) {
         if (v === null || typeof v === "undefined" || typeof v === 'boolean' || this.regexp.test( v ) ) {
@@ -116,10 +119,9 @@
       name : "number",
       regexp : /^[\-\.]?[0-9]+([\.][0-9]+)?$/,
       coerce : function(v) {
-        if (_.isNaN(v) || _.isNull(v) || _.isUndefined(v)) {
-          return null;
-        }
-        return _.isNaN(v) ? null : +v;
+        return Miso._handleNonNumericForCoersion(v, function(v) { 
+          return +v;
+        });
       },
       test : function(v) {
         if (v === null || typeof v === "undefined" || typeof v === 'number' || this.regexp.test( v ) ) {
@@ -186,20 +188,18 @@
       },
 
       coerce : function(v, options) {
-        if (_.isNaN(v) || _.isNull(v) || _.isUndefined(v)) {
-          return null;
-        }
         options = options || {};
-        // if string, then parse as a time
-        if (_.isString(v)) {
-          var format = options.format || this.format;
-          return moment(v, options.format);   
-        } else if (_.isNumber(v)) {
-          return moment(v);
-        } else {
-          return v;
-        }
-
+        return Miso._handleNonNumericForCoersion(v, function(v) { 
+          // if string, then parse as a time
+          if (_.isString(v)) {
+            var format = options.format || this.format;
+            return moment(v, options.format);   
+          } else if (_.isNumber(v)) {
+            return moment(v);
+          } else {
+            return v;
+          }
+        });
       },
 
       test : function(v, options) {
