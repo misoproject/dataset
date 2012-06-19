@@ -72,6 +72,47 @@
     }
   });
 
+  Miso.Product.define = function(func) {
+    return function(columns, options) {
+      options = options || {};
+      var columnObjects = this._findColumns(columns);
+      var _self = this;
+      options.type = options.type || columnObjects[0].type;
+      options.typeOptions = options.typeOptions || columnObjects[0].typeOptions;
+
+      //define wrapper function to handle coercion
+      var producer = function() {
+        var val = func.call(_self, columnObjects, options);
+        return Miso.types[options.type].coerce(val, options.typeOptions);
+      };
+
+      if (this.syncable) {
+        //create product object to pass back for syncable datasets/views
+        var prod = new Miso.Product({
+          columns : columnObjects,
+          func : function(options) {
+            options = options || {};
+            var delta = this._buildDelta(this.value, producer.call(_self));
+            this.value = delta.changed;
+            if (_self.syncable) {
+              var event = this._buildEvent(delta);
+              if (!_.isUndefined(delta.old) && !options.silent && delta.old !== delta.changed) {
+                this.trigger("change", event);
+              }
+            }
+          }
+        });
+        this.bind("change", prod._sync, prod); 
+        return prod; 
+
+      } else {
+        return producer.call(_self);
+      }
+
+    };
+  };
+
+
   _.extend(Miso.DataView.prototype, {
 
     // finds the column objects that match the single/multiple
@@ -103,81 +144,39 @@
     *   options
     *     silent - set to tue to prevent event propagation
     */
-    sum : function(columns, options) {
-      options = options || {};
-      var columnObjects = this._findColumns(columns);
+    sum : Miso.Product.define( function(columns, options) {
+      _.each(columns, function(col) {
+        if (col.type === Miso.types.time.name) {
+          throw new Error("Can't sum up time");
+        }
+      });
+      return _.sum(_.map(columns, function(c) { return c._sum(); }));
+    }),
 
-      var sumFunc = (function(columns){
-        return function() {
-          // check column types, can't sum up time.
-          _.each(columns, function(col) {
-            if (col.type === Miso.types.time.name) {
-              throw new Error("Can't sum up time");
-            }
-          });
-          return _.sum(_.map(columns, function(c) { return c._sum(); }));
-        };
-      }(columnObjects));
-
-      return this._calculated(columnObjects, sumFunc);
-    },
-
-    /**
+     /**
     * return a Product with the value of the maximum 
     * value of the column
     * Parameters:
     *   column - string or array of column names on which the value is calculated 
     */    
-    max : function(columns, options) {
-      options = options || {};
-      var columnObjects = this._findColumns(columns);
+    max : Miso.Product.define( function(columns, options) {
+      return _.max(_.map(columns, function(c) { 
+        return c._max(); 
+      }));
+    }),
 
-      var maxFunc = (function(columns) {
-        return function() {
-
-          var max = _.max(_.map(columns, function(c) { 
-            return c._max(); 
-          }));
-          
-          // save types and type options to later coerce
-          var type = columns[0].type;
-          var typeOptions = columns[0].typeOptions;
-
-          // return the coerced value for column type.
-          return Miso.types[type].coerce(max, typeOptions);
-        };
-      }(columnObjects));
-
-      return this._calculated(columnObjects, maxFunc);  
-      
-    },
-
+  
     /**
     * return a Product with the value of the minimum 
     * value of the column
     * Paramaters:
     *   columns - string or array of column names on which the value is calculated 
     */    
-    min : function(columns, options) {
-      options = options || {};
-      var columnObjects = this._findColumns(columns);
-      
-      var minFunc = (function(columns) {
-        return function() {
-
-          var min = _.min(_.map(columns, function(c) { return c._min(); }));
-
-           // save types and type options to later coerce
-          var type = columns[0].type;
-          var typeOptions = columns[0].typeOptions;
-
-          // return the coerced value for column type.
-          return Miso.types[type].coerce(min, typeOptions);
-        };
-      }(columnObjects));
-
-      return this._calculated(columnObjects, minFunc); 
-    },
+    min : Miso.Product.define( function(columns, options) {
+      return _.min(_.map(columns, function(c) { 
+        return c._min(); 
+      }));
+    }),
 
     /**
     * return a Product with the value of the average
@@ -185,78 +184,21 @@
     * Parameters:
     *   column - string or array of column names on which the value is calculated 
     */    
-    mean : function(columns, options) {
-      options = options || {};
-      var columnObjects = this._findColumns(columns);
-
-      var meanFunc = (function(columns){
-        return function() {
-          var vals = [];
-          _.each(columns, function(col) {
-            vals.push(col.data);
-          });
-          
-          vals = _.flatten(vals);
-          
-          // save types and type options to later coerce
-          var type = columns[0].type;
-          var typeOptions = columns[0].typeOptions;
-
-          // convert the values to their appropriate numeric value
-          vals = _.map(vals, function(v) { return Miso.types[type].numeric(v); });
-
-          // return the coerced value for column type.
-          return Miso.types[type].coerce(_.mean(vals), typeOptions);   
-        };
-      }(columnObjects));
-
-      return this._calculated(columnObjects, meanFunc);
-    },
-
-    
-    // return a Product derived by running the passed function
-    // Parameters:
-    //   column - column on which the value is calculated 
-    //   producer - function which derives the product after
-    //              being passed each row
-    _calculated : function(columns, producer) {
-      var _self = this;
-
-      var prod = new Miso.Product({
-        columns : columns,
-        func : function(options) {
-          options = options || {};
-          
-          // build a diff delta. We're using the column name
-          // so that any subscribers know whether they need to 
-          // update if they are sharing a column.
-          var delta = this._buildDelta(this.value, producer.apply(_self));
-
-          // because below we are triggering any change subscribers to this product
-          // before actually returning the changed value
-          // let's just set it here.
-          this.value = delta.changed;
-
-          if (_self.syncable) {
-            var event = this._buildEvent(delta);
-
-            // trigger any subscribers this might have if the values are diff
-            if (!_.isUndefined(delta.old) && !options.silent && delta.old !== delta.changed) {
-              this.trigger("change", event);
-            }  
-          }
-        }
+    mean : Miso.Product.define( function(columns, options) {
+      var vals = [];
+      _.each(columns, function(col) {
+        vals.push(col.data);
       });
 
-      // auto bind to parent dataset if its syncable
-      if (this.syncable) {
-        this.bind("change", prod._sync, prod); 
-        return prod; 
-      } else {
-        return producer();
-      }
-      
-    }
+      vals = _.flatten(vals);
+
+      // save types and type options to later coerce
+      var type = columns[0].type;
+
+      // convert the values to their appropriate numeric value
+      vals = _.map(vals, function(v) { return Miso.types[type].numeric(v); });
+      return _.mean(vals);   
+    })
 
   });
 
