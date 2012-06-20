@@ -49,6 +49,13 @@
     });
   });
 
+  test("Coerce to null", function() {
+    var coerced = ['foo', undefined, NaN, {}, [], window, true];
+    _.each(coerced, function(num, i) {
+      equals(Miso.types.number.coerce(coerced[i]), null, "Should return null for invalid input");
+    });
+  });
+
   test("Compare number type", function() {
     equals(Miso.types.number.compare(10,20), -1);
     equals(Miso.types.number.compare(20,10),  1);
@@ -73,6 +80,13 @@
     _.each(notBooleans, function(nb) {
       ok(Miso.typeOf(nb) !== "boolean", nb+" Value should not be number");
       ok(!Miso.types.boolean.test(nb), nb+" Should not return true for a boolean");
+    });
+  });
+
+  test("Coerce to null", function() {
+    var coerced = ['foo', 99, undefined, NaN, {}, [], window];
+    _.each(coerced, function(num, i) {
+      equals(Miso.types.number.coerce(coerced[i]), null, "Should return null for invalid input");
     });
   });
 
@@ -176,6 +190,13 @@
     ok(!Miso.types.time.test("20"), "date incorrect format");
   });
 
+  test("Coerce to null", function() {
+    var coerced = ['foo', undefined, NaN, {}, [], window];
+    _.each(coerced, function(num, i) {
+      equals(Miso.types.number.coerce(coerced[i]), null, "Should return null for invalid input");
+    });
+  });
+
   test("Compare date type", function() {
     var m = moment("2011/05/01",  "YYYY/MM/DD"),
         m2 = moment("2011/05/05", "YYYY/MM/DD"),
@@ -195,6 +216,13 @@
     equals(Miso.types.string.compare("bbb", "bbbb"),  -1);
     equals(Miso.types.string.compare("bbbb", "bbb"),  1);
     equals(Miso.types.string.compare("bbb", "bbb"),  0);
+  });
+
+  test("Coerce to null", function() {
+    var coerced = [undefined, NaN, {}, [], window];
+    _.each(coerced, function(num, i) {
+      equals(Miso.types.number.coerce(coerced[i]), null, "Should return null for invalid input");
+    });
   });
 
   test("String type returns 0 or coerced form", function() {
