@@ -201,21 +201,40 @@
       
       options = options || {};
 
-      var d = new Miso.Derived({
+      //default to rejecting NaNs, nulls & undefined
+      console.log('opt', options);
+      if ( _.isUndefined(options.rejectNA) ) {
+        options.rejectNA = true;
+      }
 
-        // save a reference to parent dataset
-        parent : this,
-        
-        // default method is addition
-        method : options.method || function(data) {
+      // default method is addition
+      var method = options.method || _.sum;
+      
+      //wrap method to reject values unless specifed
+      //not to.
+      if ( options.rejectNA ) {
+        options.method = function(data) {
           data = _.reject(data, function(d) {
             if ( d === null ) { return true; }
             if ( _.isUndefined(d) ) { return true; }
             if ( _.isNaN(d) ) { return true; }
             return false;
           });
-          return _.sum(data);
-        },
+          return method(data);
+        };
+      } else {
+        options.method = method;
+      }
+
+
+      var d = new Miso.Derived({
+
+        // save a reference to parent dataset
+        parent : this,
+
+        rejectNA : options.rejectNA,
+        
+        method : options.method,
 
         // save current arguments
         args : arguments
@@ -263,9 +282,9 @@
           } else {
             category = originalByColumn.data[i];  
           }
-           
+
           if (_.isUndefined(categoryPositions[category])) {
-              
+
             // this is a new value, we haven't seen yet so cache
             // its position for lookup of row vals
             categoryPositions[category] = categoryCount;
@@ -304,6 +323,7 @@
           var column = this.column(colName);
 
           _.each(column.data, function(bin, binPos) {
+            console.log('b', bin);
             if (_.isArray(bin)) {
               
               // save the original ids that created this group by?
