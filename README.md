@@ -9,17 +9,17 @@ Read more about Dataset [here](http://misoproject.com/dataset)
 
 ### Including Dependencies
 
-[miso.ds.dev.zip](https://github.com/downloads/misoproject/dataset/miso.ds.dev.0.2.zip) - Download Development With Dependencies - 0.2
+[miso.ds.dev.zip](https://github.com/downloads/misoproject/dataset/miso.ds.dev.0.2.0.zip) - Download Development With Dependencies - 0.2.0
 
-[miso.ds.deps.min.js](https://github.com/downloads/misoproject/dataset/miso.ds.deps.min.0.2.js) - Download Production With Dependencies - 0.2
+[miso.ds.deps.min.js](https://github.com/downloads/misoproject/dataset/miso.ds.deps.min.0.2.0.js) - Download Production With Dependencies - 0.2.0
 
 ### Without Dependencies
 
 The following builds do not have any of the dependencies built in. It is your own responsibility to include them as appropriate script elements in your page.
 
-[miso.ds.js](https://github.com/downloads/misoproject/dataset/miso.ds.min.0.2.js) - Download Production No Dependencies - 0.2
+[miso.ds.js](https://github.com/downloads/misoproject/dataset/miso.ds.min.0.2.0.js) - Download Production No Dependencies - 0.2.0
 
-[miso.ds.min.js](https://github.com/misoproject/dataset/tree/master/dist/) - Download Development No Dependencies - 0.2
+[miso.ds.min.js](https://github.com/misoproject/dataset/tree/master/dist/) - Download Development No Dependencies - 0.2.0
 
 ### Dependencies
 
