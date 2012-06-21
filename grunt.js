@@ -60,6 +60,19 @@ module.exports = function(grunt) {
         ]
       },
 
+      fulldeps_ie: {
+        dest : "dist/miso.ds.deps.ie.<%= pkg.version %>.js",
+        src : [
+          "<banner>",
+          "lib/moment.js",
+          "lib/lodash.js",
+          "lib/json2.js",
+          "lib/underscore.math.js",
+          "lib/underscore.deferred.js",
+          "dist/miso.ds.<%= pkg.version %>.js"
+        ]
+      },
+
       devnodeps : {
         dest : "dist/development/miso.ds.<%= pkg.version %>.js",
         src : [
@@ -73,6 +86,10 @@ module.exports = function(grunt) {
 
       "dist/development/lib/lodash.js" : [
         "lib/lodash.js"
+      ],
+
+      "dist/development/lib/json2.js" : [
+        "lib/json2.js"
       ],
 
       "dist/development/lib/underscore.math.js" : [
@@ -105,6 +122,14 @@ module.exports = function(grunt) {
         src : [
           "<banner>",
           "dist/miso.ds.deps.<%= pkg.version %>.js" 
+        ]
+      },
+
+      mindeps_ie : {
+        dest : "dist/miso.ds.deps.ie.min.<%= pkg.version %>.js",
+        src : [
+          "<banner>",
+          "dist/miso.ds.deps.ie.<%= pkg.version %>.js" 
         ]
       }
     },

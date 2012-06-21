@@ -9,17 +9,17 @@ Read more about Dataset [here](http://misoproject.com/dataset)
 
 ### Including Dependencies
 
-[miso.ds.dev.zip](https://github.com/misoproject/dataset/tree/master/dist/miso.ds.dev.zip) - Download Development With Dependencies - 0.0.1
+[miso.ds.dev.zip](https://github.com/downloads/misoproject/dataset/miso.ds.dev.0.2.zip) - Download Development With Dependencies - 0.2
 
-[miso.ds.deps.min.js](https://github.com/misoproject/dataset/tree/master/dist/) - Download Production With Dependencies - 0.0.1
+[miso.ds.deps.min.js](https://github.com/downloads/misoproject/dataset/miso.ds.deps.min.0.2.js) - Download Production With Dependencies - 0.2
 
 ### Without Dependencies
 
 The following builds do not have any of the dependencies built in. It is your own responsibility to include them as appropriate script elements in your page.
 
-[miso.ds.js](https://github.com/misoproject/dataset/tree/master/dist/miso.ds.js) - Download Production No Dependencies - 0.0.1
+[miso.ds.js](https://github.com/downloads/misoproject/dataset/miso.ds.min.0.2.js) - Download Production No Dependencies - 0.2
 
-[miso.ds.min.js](https://github.com/misoproject/dataset/tree/master/dist/) - Download Development No Dependencies - 0.0.1
+[miso.ds.min.js](https://github.com/misoproject/dataset/tree/master/dist/) - Download Development No Dependencies - 0.2
 
 ### Dependencies
 
@@ -29,6 +29,10 @@ Dataset has the following dependencies:
 * [Underscore.math.js (version unknown)](https://github.com/syntagmatic/underscore.math) 
 * [Underscore.deferred.js 0.1.2](https://github.com/wookiehangover/underscore.Deferred)
 * [moment.js 1.4.0](http://momentjs.com/) (for date and time parsing)
+
+If you are planning on supporting IE, include the following json2.js library as well:
+* [json2.js 2011-10-19](https://github.com/douglascrockford/JSON-js) 
+
 
 ## Documentation
 

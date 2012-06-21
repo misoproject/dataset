@@ -2,7 +2,7 @@
   "name"        : "miso.dataset",
   "title"       : "Miso.Dataset",
   "description" : "Dataset is a javascript library makes managing the data behind client-side visualisations easy, including realtime data. It takes care of loading, parsing, sorting, filtering and querying of datasets as well as the creation of derivative datasets. Dataset is part of the Miso Toolkit",
-  "version"     : "0.1.3",
+  "version"     : "0.2.0",
   "homepage"    : "http://github.com/misoproject/dataset",
   "authors"     : "Alex Graul, Irene Ros",
   
@@ -21,7 +21,7 @@
     }
   ],
 
-  "main": "dist/node/miso.ds.deps.0.1.3",
+  "main": "dist/node/miso.ds.deps.0.2.0",
 
   "repository": {
     "type": "git",

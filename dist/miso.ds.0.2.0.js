@@ -1,118 +1,5 @@
-var path = require("path");
-var _ = require("underscore");
-var moment = require("moment");
-_.mixin(require("underscore.deferred"));
-var request = require("request");
-
-// Include underscore math
-//   Math.js
-
-(function() {
-
-  var math = this.math = {};
-
-  // Arithmetic mean
-  // math.mean([1,2,3])
-  //   => 2
-  math.mean = math.ave = math.average = function(obj, key) {
-    return math.sum(obj, key) / _(obj).size();
-  };
-
-  // math.median([1,2,3,4])
-  //   => 2.5
-  //   TODO {}, [{}]
-  math.median = function(arr) {
-    var middle = (arr.length + 1) /2;
-    var sorted = math.sort(arr);
-    return (sorted.length % 2) ? sorted[middle - 1] : (sorted[middle - 1.5] + sorted[middle - 0.5]) / 2;
-  };
-
-  // Power, exponent
-  // math.pow(2,3)
-  //   => 8
-  math.pow = function(x, n) {
-     if (_.isNumber(x))
-        return Math.pow(x, n);
-     if (_.isArray(x))
-        return _.map(x, function(i) { return _.pow(i,n); });
-  };
-
-  // Scale to max value
-  // math.scale(1,[2,5,10])
-  //   => [ 0.2, 0.5, 1]
-  math.scale = function(arr, max) {
-    var max = max || 1;
-    var max0 = _.max(arr);
-    return _.map(arr, function(i) { return i * (max/max0); });
-  };
-
-  // Slope between two points
-  // math.slope([0,0],[1,2])
-  //   => 2
-  math.slope = function(x, y) {
-    return (y[1] - x[1]) / (y[0]-x[0]);
-  };
-
-  // Numeric sort
-  // math.sort([3,1,2])
-  //   => [1,2,3]
-  math.sort = function(arr) {
-    return arr.sort(function(a, b){
-      return a - b;
-    });
-  };
-
-   // math.stdDeviation([1,2,3])
-  //   => 0.816496580927726
-  math.stdDeviation = math.sigma = function(arr) {
-    return Math.sqrt(_(arr).variance());
-  };
-
-  // Sum of array
-  // math.sum([1,2,3])
-  //   => 6
-  // math.sum([{b: 4},{b: 5},{b: 6}], 'b')
-  //   => 15
-  math.sum = function(obj, key) {
-    if (_.isArray(obj) && typeof obj[0] === 'number') {
-      var arr = obj;
-    } else {
-      var key = key || 'value';
-      var arr = _(obj).pluck(key);
-    }
-    var val = 0;
-    for (var i=0, len = arr.length; i<len; i++)
-      val += arr[i];
-    return val;
-  };
-
-  // math.transpose(([1,2,3], [4,5,6], [7,8,9]])
-  //   => [[1,4,7], [2,5,8], [3,6,9]]
-  math.transpose = function(arr) {
-    var trans = [];
-    _(arr).each(function(row, y){
-      _(row).each(function(col, x){
-        if (!trans[x]) trans[x] = [];
-        trans[x][y] = col;
-      });
-    });
-    return trans;
-  };
- 
-  // math.variance([1,2,3])
-  //   => 2/3
-  math.variance = function(arr) {
-    var mean = _(arr).mean();
-    return _(arr).chain().map(function(x) { return _(x-mean).pow(2); }).mean().value();
-  };
-  
-  _.mixin(math);
-
-})();
-
-// Include Miso Dataset lib
 /**
-* Miso.Dataset - v0.1.3 - 5/23/2012
+* Miso.Dataset - v0.2.0 - 6/21/2012
 * http://github.com/misoproject/dataset
 * Copyright (c) 2012 Alex Graul, Irene Ros;
 * Dual Licensed: MIT, GPL
@@ -158,7 +45,7 @@ var request = require("request");
         return 0;
       },
       numeric : function(v) {
-        return _.isNaN( Number(v) ) ? 0 : Number(v);
+        return _.isNaN( Number(v) ) ? null : Number(v);
       }
     },
 
@@ -179,7 +66,13 @@ var request = require("request");
       },
 
       numeric : function(value) {
-        return _.isNaN(+value) ? 0 : +value;
+        if (_.isNaN(+value) || value === null) {
+          return null;
+        } else if (_.isNumber(+value)) {
+          return +value;
+        } else {
+          return null;
+        }
       }
     },
 
@@ -205,7 +98,11 @@ var request = require("request");
         return (n1 < n2 ? -1 : 1);
       },
       numeric : function(value) {
-        return (value) ? 1 : 0;
+        if (_.isNaN(value)) {
+          return null;
+        } else {
+          return (value) ? 1 : 0;  
+        }
       }
     },
 
@@ -213,7 +110,7 @@ var request = require("request");
       name : "number",
       regexp : /^[\-\.]?[0-9]+([\.][0-9]+)?$/,
       coerce : function(v) {
-        if (_.isNull(v) || v === "") {
+        if (_.isNull(v)) {
           return null;
         }
         return _.isNaN(v) ? null : +v;
@@ -688,8 +585,10 @@ var request = require("request");
     _max : function() {
       var max = -Infinity;
       for (var j = 0; j < this.data.length; j++) {
-        if (Miso.types[this.type].compare(this.data[j], max) > 0) {
-          max = this.numericAt(j);
+        if (this.data[j] !== null) {
+          if (Miso.types[this.type].compare(this.data[j], max) > 0) {
+            max = this.numericAt(j);
+          }  
         }
       }
 
@@ -699,8 +598,10 @@ var request = require("request");
     _min : function() {
       var min = Infinity;
       for (var j = 0; j < this.data.length; j++) {
-        if (Miso.types[this.type].compare(this.data[j], min) < 0) {
-          min = this.numericAt(j);
+        if (this.data[j] !== null) {
+          if (Miso.types[this.type].compare(this.data[j], min) < 0) {
+            min = this.numericAt(j);
+          }  
         }
       }
       return Miso.types[this.type].coerce(min, this);
@@ -844,9 +745,14 @@ var request = require("request");
     */
     where : function(filter, options) {
       options = options || {};
+      options.filter = options.filter || {};
+      if ( _.isFunction(filter) ) {
+        options.filter.rows = filter;
+      } else {
+        options.filter = filter;
+      }
       
       options.parent = this;
-      options.filter = filter || {};
 
       return new Miso.DataView(options);
     },
@@ -1002,9 +908,22 @@ var request = require("request");
     *   iterator - function that is passed each row
     *              iterator(rowObject, index, dataset)
     *   context - options object. Optional.
-    */    
+    */
     each : function(iterator, context) {
       for(var i = 0; i < this.length; i++) {
+        iterator.apply(context || this, [this.rowByPosition(i), i]);
+      }
+    },
+
+    /**
+    * Iterates over all rows in the dataset in reverse order
+    * Parameters:
+    *   iterator - function that is passed each row
+    *              iterator(rowObject, index, dataset)
+    *   context - options object. Optional.
+    */
+    reverseEach : function(iterator, context) {
+      for(var i = this.length-1; i >= 0; i--) {
         iterator.apply(context || this, [this.rowByPosition(i), i]);
       }
     },
@@ -1174,8 +1093,15 @@ var request = require("request");
     * Parameters:
     *   options - Optional
     */    
-    sort : function(options) {
-      options = options || {};
+    sort : function(args) {
+      var options = {};
+    
+      //If the first param is the comparator, set it as such.
+      if ( _.isFunction(args) ) {
+        options.comparator = args;
+      } else {
+        options = args || options;
+      }
 
       if (options.comparator) {
         this.comparator = options.comparator;
@@ -1365,6 +1291,47 @@ var request = require("request");
     }
   });
 
+  Miso.Product.define = function(func) {
+    return function(columns, options) {
+      options = options || {};
+      var columnObjects = this._findColumns(columns);
+      var _self = this;
+      options.type = options.type || columnObjects[0].type;
+      options.typeOptions = options.typeOptions || columnObjects[0].typeOptions;
+
+      //define wrapper function to handle coercion
+      var producer = function() {
+        var val = func.call(_self, columnObjects, options);
+        return Miso.types[options.type].coerce(val, options.typeOptions);
+      };
+
+      if (this.syncable) {
+        //create product object to pass back for syncable datasets/views
+        var prod = new Miso.Product({
+          columns : columnObjects,
+          func : function(options) {
+            options = options || {};
+            var delta = this._buildDelta(this.value, producer.call(_self));
+            this.value = delta.changed;
+            if (_self.syncable) {
+              var event = this._buildEvent(delta);
+              if (!_.isUndefined(delta.old) && !options.silent && delta.old !== delta.changed) {
+                this.trigger("change", event);
+              }
+            }
+          }
+        });
+        this.bind("change", prod._sync, prod); 
+        return prod; 
+
+      } else {
+        return producer.call(_self);
+      }
+
+    };
+  };
+
+
   _.extend(Miso.DataView.prototype, {
 
     // finds the column objects that match the single/multiple
@@ -1396,81 +1363,39 @@ var request = require("request");
     *   options
     *     silent - set to tue to prevent event propagation
     */
-    sum : function(columns, options) {
-      options = options || {};
-      var columnObjects = this._findColumns(columns);
+    sum : Miso.Product.define( function(columns, options) {
+      _.each(columns, function(col) {
+        if (col.type === Miso.types.time.name) {
+          throw new Error("Can't sum up time");
+        }
+      });
+      return _.sum(_.map(columns, function(c) { return c._sum(); }));
+    }),
 
-      var sumFunc = (function(columns){
-        return function() {
-          // check column types, can't sum up time.
-          _.each(columns, function(col) {
-            if (col.type === Miso.types.time.name) {
-              throw new Error("Can't sum up time");
-            }
-          });
-          return _.sum(_.map(columns, function(c) { return c._sum(); }));
-        };
-      }(columnObjects));
-
-      return this._calculated(columnObjects, sumFunc);
-    },
-
-    /**
+     /**
     * return a Product with the value of the maximum 
     * value of the column
     * Parameters:
     *   column - string or array of column names on which the value is calculated 
     */    
-    max : function(columns, options) {
-      options = options || {};
-      var columnObjects = this._findColumns(columns);
+    max : Miso.Product.define( function(columns, options) {
+      return _.max(_.map(columns, function(c) { 
+        return c._max(); 
+      }));
+    }),
 
-      var maxFunc = (function(columns) {
-        return function() {
-
-          var max = _.max(_.map(columns, function(c) { 
-            return c._max(); 
-          }));
-          
-          // save types and type options to later coerce
-          var type = columns[0].type;
-          var typeOptions = columns[0].typeOptions;
-
-          // return the coerced value for column type.
-          return Miso.types[type].coerce(max, typeOptions);
-        };
-      }(columnObjects));
-
-      return this._calculated(columnObjects, maxFunc);  
-      
-    },
-
+  
     /**
     * return a Product with the value of the minimum 
     * value of the column
     * Paramaters:
     *   columns - string or array of column names on which the value is calculated 
     */    
-    min : function(columns, options) {
-      options = options || {};
-      var columnObjects = this._findColumns(columns);
-      
-      var minFunc = (function(columns) {
-        return function() {
-
-          var min = _.min(_.map(columns, function(c) { return c._min(); }));
-
-           // save types and type options to later coerce
-          var type = columns[0].type;
-          var typeOptions = columns[0].typeOptions;
-
-          // return the coerced value for column type.
-          return Miso.types[type].coerce(min, typeOptions);
-        };
-      }(columnObjects));
-
-      return this._calculated(columnObjects, minFunc); 
-    },
+    min : Miso.Product.define( function(columns, options) {
+      return _.min(_.map(columns, function(c) { 
+        return c._min(); 
+      }));
+    }),
 
     /**
     * return a Product with the value of the average
@@ -1478,78 +1403,21 @@ var request = require("request");
     * Parameters:
     *   column - string or array of column names on which the value is calculated 
     */    
-    mean : function(columns, options) {
-      options = options || {};
-      var columnObjects = this._findColumns(columns);
-
-      var meanFunc = (function(columns){
-        return function() {
-          var vals = [];
-          _.each(columns, function(col) {
-            vals.push(col.data);
-          });
-          
-          vals = _.flatten(vals);
-          
-          // save types and type options to later coerce
-          var type = columns[0].type;
-          var typeOptions = columns[0].typeOptions;
-
-          // convert the values to their appropriate numeric value
-          vals = _.map(vals, function(v) { return Miso.types[type].numeric(v); });
-
-          // return the coerced value for column type.
-          return Miso.types[type].coerce(_.mean(vals), typeOptions);   
-        };
-      }(columnObjects));
-
-      return this._calculated(columnObjects, meanFunc);
-    },
-
-    
-    // return a Product derived by running the passed function
-    // Parameters:
-    //   column - column on which the value is calculated 
-    //   producer - function which derives the product after
-    //              being passed each row
-    _calculated : function(columns, producer) {
-      var _self = this;
-
-      var prod = new Miso.Product({
-        columns : columns,
-        func : function(options) {
-          options = options || {};
-          
-          // build a diff delta. We're using the column name
-          // so that any subscribers know whether they need to 
-          // update if they are sharing a column.
-          var delta = this._buildDelta(this.value, producer.apply(_self));
-
-          // because below we are triggering any change subscribers to this product
-          // before actually returning the changed value
-          // let's just set it here.
-          this.value = delta.changed;
-
-          if (_self.syncable) {
-            var event = this._buildEvent(delta);
-
-            // trigger any subscribers this might have if the values are diff
-            if (!_.isUndefined(delta.old) && !options.silent && delta.old !== delta.changed) {
-              this.trigger("change", event);
-            }  
-          }
-        }
+    mean : Miso.Product.define( function(columns, options) {
+      var vals = [];
+      _.each(columns, function(col) {
+        vals.push(col.data);
       });
 
-      // auto bind to parent dataset if its syncable
-      if (this.syncable) {
-        this.bind("change", prod._sync, prod); 
-        return prod; 
-      } else {
-        return producer();
-      }
-      
-    }
+      vals = _.flatten(vals);
+
+      // save types and type options to later coerce
+      var type = columns[0].type;
+
+      // convert the values to their appropriate numeric value
+      vals = _.map(vals, function(v) { return Miso.types[type].numeric(v); });
+      return _.mean(vals);   
+    })
 
   });
 
@@ -1707,13 +1575,14 @@ Version 0.0.1.2
       // implementation, pass it as an option
       if (options.deferred) {
         this.deferred = options.deferred;
+      } else {
+        this.deferred =  new _.Deferred();
       }
 
       //build any columns present in the constructor
       if ( options.columns ) {
         this.addColumns(options.columns);
       }
-
     },
 
     /**
@@ -1744,7 +1613,7 @@ Version 0.0.1.2
     fetch : function(options) {
       options = options || {};
       
-      var dfd = this.deferred || new _.Deferred();
+      var dfd = this.deferred;
 
       if ( _.isNull(this.importer) ) {
         throw "No importer defined";
@@ -1753,7 +1622,15 @@ Version 0.0.1.2
       this.importer.fetch({
         success: _.bind(function( data ) {
 
-          this._apply( data );
+          try {
+            this._apply( data );
+          } catch (e) {
+            if (options.error) {
+              options.error.call(this, e);
+            } else {
+              throw e;
+            }
+          }
 
           // if a comparator was defined, sort the data
           if (this.comparator) {
@@ -1775,7 +1652,7 @@ Version 0.0.1.2
 
         error : _.bind(function(e) {
           if (options.error) {
-            options.error.call(this);
+            options.error.call(this, e);
           }
 
           dfd.reject(e);
@@ -2549,7 +2426,8 @@ Version 0.0.1.2
     this.params = {
       type : "GET",
       url : _.isFunction(this._url) ? _.bind(this._url, this) : this._url,
-      dataType : options.dataType ? options.dataType : (options.jsonp ? "jsonp" : "json")
+      dataType : options.dataType ? options.dataType : (options.jsonp ? "jsonp" : "json"),
+      callback : options.callback
     };
   };
 
@@ -2604,7 +2482,8 @@ Version 0.0.1.2
           url, 
           options.success,
           options.dataType === "script",
-          options.error
+          options.error,
+          options.callback
         );
 
         return;
@@ -2632,7 +2511,7 @@ Version 0.0.1.2
       }
   };
 
-  Miso.Xhr.getJSONP = function(url, success, isScript, error) {
+  Miso.Xhr.getJSONP = function(url, success, isScript, error, callback) {
     // If this is a script request, ensure that we do not
     // call something that has already been loaded
     if (isScript) {
@@ -2659,7 +2538,7 @@ Version 0.0.1.2
     paramStr  = url.split("?")[ 1 ],
     isFired   = false,
     params    = [],
-    callback, parts, callparam;
+    parts;
 
     // Extract params
     if (paramStr && !isScript) {
@@ -2668,10 +2547,18 @@ Version 0.0.1.2
     if (params.length) {
       parts = params[params.length - 1].split("=");
     }
-    callback = params.length ? (parts[ 1 ] ? parts[ 1 ] : parts[ 0 ]) : "jsonp";
+    if (!callback) {
+      var fallback = _.uniqueId('callback');
+      callback = params.length ? (parts[ 1 ] ? parts[ 1 ] : fallback) : fallback;
+    }
 
     if (!paramStr && !isScript) {
-      url += "?callback=" + callback;
+      url += "?";
+    }
+
+    if ( !paramStr || !/callback/.test(paramStr) ) {
+      if (paramStr) { url += '&'; }
+      url += "callback=" + callback;
     }
 
     if (callback && !isScript) {
@@ -2690,7 +2577,9 @@ Version 0.0.1.2
       };
 
       //  Replace callback param and callback name
-      url = url.replace(parts.join("="), parts[0] + "=" + callback);
+      if (parts) { 
+        url = url.replace(parts.join("="), parts[0] + "=" + callback);
+      }
     }
 
     script.onload = script.onreadystatechange = function() {
@@ -2723,7 +2612,7 @@ Version 0.0.1.2
 
     script.onerror = function(e) {
       if (error) {
-        error.call(null);
+        error.call(null, e);
       }
     };
 
@@ -2886,19 +2775,16 @@ Version 0.0.1.2
           
           options.url = "https://spreadsheets.google.com/tq?key=" + options.key;
                   
-          if (options.sheetName) {
-            options.url += "&sheet=" + options.sheetName;
-          } else {
-            options.url += "&gid=" + (options.worksheet || 1);  
-            delete options.worksheet;
-          }
+          if (typeof options.sheetName === "undefined") {
+            options.sheetName = "Sheet1";
+          } 
 
+          options.url += "&sheet=" + options.sheetName;
           this.callback = "misodsgs" + new Date().getTime();
           options.url += "&tqx=version:0.6;responseHandler:" + this.callback;
           options.url += ";reqId:0;out:json&tq&_=1335871249558#";
 
           delete options.sheetName;
-
         } else {
           options.url = "https://spreadsheets.google.com/feeds/cells/" + 
           options.key + "/" + 
@@ -2910,6 +2796,7 @@ Version 0.0.1.2
       }
     }
     
+
     this.params = {
       type : "GET",
       url : options.url,
@@ -2967,8 +2854,12 @@ Version 0.0.1.2
       var columnData = {}, columnNames = [];
 
       _.each(data.columns, function(column) {
-        columnNames.push( column.name );
-        columnData[ column.name ] = column.data;
+        if (columnNames.indexOf(column.name) !== -1) {
+          throw new Error("You have more than one column named \"" + column.name + "\"");
+        } else {
+          columnNames.push( column.name );
+          columnData[ column.name ] = column.data;  
+        }
       });
 
       return {
@@ -3044,10 +2935,31 @@ Version 0.0.1.2
           keyedData = {},
           i;
 
+      // the fast importer API is not available
+      if (typeof data.status !== "undefined" && data.status === "error") {
+        throw new Error("You can't use the fast importer for this url. Disable the fast flag");
+      }
+
       if (this.fast) {
 
         // init column names
         columns = _.pluck(data.table.cols, "label");
+
+        // check that the column names don't have duplicates
+        if (_.unique(columns).length < columns.length) {
+          var dup = "";
+          
+          _.inject(columns, function(memo, val) { 
+            
+            memo[val] = (memo[val] + 1) || 1; 
+            if (memo[val] > 1) {
+              dup = val;
+            }
+            return memo; 
+          }, {});
+
+          throw new Error("You have more than one column named \"" + dup + "\"");
+        }
 
         // save data
         _.each(data.table.rows, function(row) {
@@ -3077,15 +2989,20 @@ Version 0.0.1.2
           column = parts[1],
           position = parseInt(parts[2], 10);
 
-          if (_.isUndefined(columnPositions[column])) {
+          // this is the first row, thus column names.
+          if (position === 1) {
 
-            // cache the column position
-            columnPositions[column] = columnData.length;
+            // if we've already seen this column name, throw an exception
+            if (columns.indexOf(cell.content.$t) !== -1) {
+              throw new Error("You have more than one column named \"" + cell.content.$t + "\"");
+            } else {
+              // cache the column position
+              columnPositions[column] = columnData.length;
 
-            // we found a new column, so build a new column type.
-            columns[columnPositions[column]]    = cell.content.$t;
-            columnData[columnPositions[column]] = [];
-
+              // we found a new column, so build a new column type.
+              columns[columnPositions[column]]    = cell.content.$t;
+              columnData[columnPositions[column]] = []; 
+            }
 
           } else {
 
@@ -3172,8 +3089,19 @@ Version 0.0.1.2
   _.extend(Miso.Parsers.Delimited.prototype, Miso.Parsers.prototype, {
 
     parse : function(data) {
-      var columns = [];
-      var columnData = {};
+      var columns = [],
+          columnData = {},
+          uniqueSequence = {};
+      
+      var uniqueId = function(str) {
+        if ( !uniqueSequence[str] ) {
+          uniqueSequence[str] = 0;
+        }
+        var id = str + uniqueSequence[str];
+        uniqueSequence[str] += 1;
+        return id;
+      };
+
 
       var parseCSV = function(delimiterPattern, strData, strDelimiter, skipRows, emptyValue) {
 
@@ -3200,7 +3128,9 @@ Version 0.0.1.2
         try {
 
           // trim any empty lines at the end
-          strData = strData.trim();
+          strData = strData//.trim();
+            .replace(/\s+$/,"")
+            .replace(/^[\r|\n|\s]+[\r|\n]/,"\n");
 
           // do we have any rows to skip? if so, remove them from the string
           if (skipRows > 0) {
@@ -3209,7 +3139,7 @@ Version 0.0.1.2
                 strLen = strData.length;
 
             while (rowsSeen < skipRows && charIndex < strLen) {
-              if (/\n|\r|\r\n/.test(strData[charIndex])) {
+              if (/\n|\r|\r\n/.test(strData.charAt(charIndex))) {
                 rowsSeen++;
               } 
               charIndex++;
@@ -3220,8 +3150,7 @@ Version 0.0.1.2
 
           // Keep looping over the regular expression matches
           // until we can no longer find a match.
-          while (arrMatches = delimiterPattern.exec(strData)) {
-
+          function matchHandler(arrMatches) {
             // Get the delimiter that was found.
             var strMatchedDelimiter = arrMatches[ 1 ];
 
@@ -3230,80 +3159,108 @@ Version 0.0.1.2
             // field delimiter. If id does not, then we know
             // that this delimiter is a row delimiter.
             if ( strMatchedDelimiter.length &&
-               ( strMatchedDelimiter !== strDelimiter )){
-                
-                // we have reached a new row.
-                rowIndex++;
+              ( strMatchedDelimiter !== strDelimiter )){
 
-                // if we caught less items than we expected, throw an error
-                if (columnIndex < columnCount-1) {
-                  rowIndex--;
-                  throw new Error("Not enough items in row");
-                }
+            // we have reached a new row.
+            rowIndex++;
 
-                // We are clearly done computing columns.
-                columnCountComputed = true;
+            // if we caught less items than we expected, throw an error
+            if (columnIndex < columnCount-1) {
+              rowIndex--;
+              throw new Error("Not enough items in row");
+            }
 
-                // when we're done with a row, reset the row index to 0
-                columnIndex = 0;
-              
-              } else {
+            // We are clearly done computing columns.
+            columnCountComputed = true;
 
-                // Find the number of columns we're fetching and
-                // create placeholders for them.
-                if (!columnCountComputed) {
-                  columnCount++;
-                }
+            // when we're done with a row, reset the row index to 0
+            columnIndex = 0;
 
-                columnIndex++;
+          } else {
+
+            // Find the number of columns we're fetching and
+            // create placeholders for them.
+            if (!columnCountComputed) {
+              columnCount++;
+            }
+
+            columnIndex++;
+          }
+
+
+          // Now that we have our delimiter out of the way,
+          // let's check to see which kind of value we
+          // captured (quoted or unquoted).
+          var strMatchedValue = null;
+          if (arrMatches[ 2 ]){
+
+            // We found a quoted value. When we capture
+            // this value, unescape any double quotes.
+            strMatchedValue = arrMatches[ 2 ].replace(
+              new RegExp( "\"\"", "g" ),
+              "\""
+            );
+
+          } else {
+
+            // We found a non-quoted value.
+            strMatchedValue = arrMatches[ 3 ];
+          }
+
+
+          // Now that we have our value string, let's add
+          // it to the data array.
+
+          if (columnCountComputed) {
+
+            if (strMatchedValue === '') {
+              strMatchedValue = emptyValue;
+            }
+
+            if (typeof columnData[columns[columnIndex]] === "undefined") {
+              throw new Error("Too many items in row"); 
+            }
+
+            columnData[columns[columnIndex]].push(strMatchedValue);  
+
+          } else {
+
+            var createColumnName = function(start) {
+              var newName = uniqueId(start);
+              while ( columns.indexOf(newName) !== -1 ) {
+                newName = uniqueId(start);
               }
+              return newName;
+            };
 
+            //No column name? Create one starting with X
+            if ( _.isUndefined(strMatchedValue) || strMatchedValue === '' ) {
+              strMatchedValue = 'X';
+            }
 
-              // Now that we have our delimiter out of the way,
-              // let's check to see which kind of value we
-              // captured (quoted or unquoted).
-              var strMatchedValue = null;
-              if (arrMatches[ 2 ]){
+            //Duplicate column name? Create a new one starting with the name
+            if (columns.indexOf(strMatchedValue) !== -1) {
+              strMatchedValue = createColumnName(strMatchedValue);
+            }
 
-                // We found a quoted value. When we capture
-                // this value, unescape any double quotes.
-                strMatchedValue = arrMatches[ 2 ].replace(
-                  new RegExp( "\"\"", "g" ),
-                  "\""
-                );
+            // we are building the column names here
+            columns.push(strMatchedValue);
+            columnData[strMatchedValue] = [];
+          }
+          }        
 
-              } else {
-
-                // We found a non-quoted value.
-                strMatchedValue = arrMatches[ 3 ];
-              }
-
-
-              // Now that we have our value string, let's add
-              // it to the data array.
-              
-              if (columnCountComputed) {
-
-                if (strMatchedValue === '') {
-                  strMatchedValue = emptyValue;
-                }
-
-                if (typeof columnData[columns[columnIndex]] === "undefined") {
-                  throw new Error("Too many items in row"); 
-                }
-                
-                columnData[columns[columnIndex]].push(strMatchedValue);  
-          
-              } else {
-                // we are building the column names here
-                columns.push(strMatchedValue);
-                columnData[strMatchedValue] = [];
-              }
-            
-          } // end while
+        //missing column header at start
+        if ( new RegExp('^' + strDelimiter).test(strData) ) {
+          matchHandler(['','',undefined,'']);
+        }
+        while (arrMatches = delimiterPattern.exec(strData)) {
+          matchHandler(arrMatches);
+        } // end while
         } catch (e) {
           throw new Error("Error while parsing delimited data on row " + rowIndex + ". Message: " + e.message);
         }
+
+      
 
         // Return the parsed data.
         return {
@@ -3324,39 +3281,3 @@ Version 0.0.1.2
 
 
 }(this, _));
-
-
-// Load function that makes Miso plugin loading more formal.
-this.Miso.load = function(moduleName) {
-  try {
-    // Attempt to load from node_modules
-    require(moduleName);
-  } catch (ex) {
-    // If path is not already full qualified prefix with cwd
-    if (!path.existsSync(moduleName)) {
-      moduleName = path.resolve(process.cwd(), moduleName);
-    }
-
-    // Load the correct module
-    require(moduleName);
-  }
-};
-
-// Ensure compatibility with Remote Importer
-this.Miso.Xhr = function(options) {
-  // Make the request using the request module
-  request({
-    url: options.url,
-    method: options.type,
-    json: options.dataType.slice(0, 4) === "json"
-  }, function(error, resp, body) {
-    if (error) {
-      return options.error(error);
-    }
-
-    return options.success(body);
-  });
-};
-
-// Expose the module
-module.exports = this.Miso;

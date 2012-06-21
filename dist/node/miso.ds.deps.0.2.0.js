@@ -1,1663 +1,10 @@
-/**
-* Miso.Dataset - v0.1.3 - 5/23/2012
-* http://github.com/misoproject/dataset
-* Copyright (c) 2012 Alex Graul, Irene Ros;
-* Dual Licensed: MIT, GPL
-* https://github.com/misoproject/dataset/blob/master/LICENSE-MIT 
-* https://github.com/misoproject/dataset/blob/master/LICENSE-GPL 
-*/
-
-// Moment.js
-//
-// (c) 2011 Tim Wood
-// Moment.js is freely distributable under the terms of the MIT license.
-//
-// Version 1.4.0
-
-/*global define:false */
-
-(function (Date, undefined) {
-
-    var moment,
-        round = Math.round,
-        languages = {},
-        hasModule = (typeof module !== 'undefined'),
-        paramsToParse = 'months|monthsShort|monthsParse|weekdays|weekdaysShort|longDateFormat|calendar|relativeTime|ordinal|meridiem'.split('|'),
-        i,
-        jsonRegex = /^\/?Date\((\d+)/i,
-        charactersToReplace = /(\[[^\[]*\])|(\\)?(Mo|MM?M?M?|Do|DDDo|DD?D?D?|dddd?|do?|w[o|w]?|YYYY|YY|a|A|hh?|HH?|mm?|ss?|zz?|ZZ?|LT|LL?L?L?)/g,
-        nonuppercaseLetters = /[^A-Z]/g,
-        timezoneRegex = /\([A-Za-z ]+\)|:[0-9]{2} [A-Z]{3} /g,
-        tokenCharacters = /(\\)?(MM?M?M?|dd?d?d|DD?D?D?|YYYY|YY|a|A|hh?|HH?|mm?|ss?|ZZ?|T)/g,
-        inputCharacters = /(\\)?([0-9]+|([a-zA-Z\u00A0-\uD7FF\uF900-\uFDCF\uFDF0-\uFFEF])+|([\+\-]\d\d:?\d\d))/gi,
-        timezoneParseRegex = /([\+\-]|\d\d)/gi,
-        VERSION = "1.4.0",
-        shortcuts = 'Month|Date|Hours|Minutes|Seconds|Milliseconds'.split('|');
-
-    // Moment prototype object
-    function Moment(date) {
-        this._d = date;
-    }
-
-    // left zero fill a number
-    // see http://jsperf.com/left-zero-filling for performance comparison
-    function leftZeroFill(number, targetLength) {
-        var output = number + '';
-        while (output.length < targetLength) {
-            output = '0' + output;
-        }
-        return output;
-    }
-
-    // helper function for _.addTime and _.subtractTime
-    function dateAddRemove(date, _input, adding, val) {
-        var isString = (typeof _input === 'string'),
-            input = isString ? {} : _input,
-            ms, d, M, currentDate;
-        if (isString && val) {
-            input[_input] = +val;
-        }
-        ms = (input.ms || input.milliseconds || 0) +
-            (input.s || input.seconds || 0) * 1e3 + // 1000
-            (input.m || input.minutes || 0) * 6e4 + // 1000 * 60
-            (input.h || input.hours || 0) * 36e5; // 1000 * 60 * 60
-        d = (input.d || input.days || 0) +
-            (input.w || input.weeks || 0) * 7;
-        M = (input.M || input.months || 0) +
-            (input.y || input.years || 0) * 12;
-        if (ms) {
-            date.setTime(+date + ms * adding);
-        }
-        if (d) {
-            date.setDate(date.getDate() + d * adding);
-        }
-        if (M) {
-            currentDate = date.getDate();
-            date.setDate(1);
-            date.setMonth(date.getMonth() + M * adding);
-            date.setDate(Math.min(new Date(date.getFullYear(), date.getMonth() + 1, 0).getDate(), currentDate));
-        }
-        return date;
-    }
-
-    // check if is an array
-    function isArray(input) {
-        return Object.prototype.toString.call(input) === '[object Array]';
-    }
-
-    // convert an array to a date.
-    // the array should mirror the parameters below
-    // note: all values past the year are optional and will default to the lowest possible value.
-    // [year, month, day , hour, minute, second, millisecond]
-    function dateFromArray(input) {
-        return new Date(input[0], input[1] || 0, input[2] || 1, input[3] || 0, input[4] || 0, input[5] || 0, input[6] || 0);
-    }
-
-    // format date using native date object
-    function formatDate(date, inputString) {
-        var m = new Moment(date),
-            currentMonth = m.month(),
-            currentDate = m.date(),
-            currentYear = m.year(),
-            currentDay = m.day(),
-            currentHours = m.hours(),
-            currentMinutes = m.minutes(),
-            currentSeconds = m.seconds(),
-            currentZone = -m.zone(),
-            ordinal = moment.ordinal,
-            meridiem = moment.meridiem;
-        // check if the character is a format
-        // return formatted string or non string.
-        //
-        // uses switch/case instead of an object of named functions (like http://phpjs.org/functions/date:380)
-        // for minification and performance
-        // see http://jsperf.com/object-of-functions-vs-switch for performance comparison
-        function replaceFunction(input) {
-            // create a couple variables to be used later inside one of the cases.
-            var a, b;
-            switch (input) {
-                // MONTH
-            case 'M' :
-                return currentMonth + 1;
-            case 'Mo' :
-                return (currentMonth + 1) + ordinal(currentMonth + 1);
-            case 'MM' :
-                return leftZeroFill(currentMonth + 1, 2);
-            case 'MMM' :
-                return moment.monthsShort[currentMonth];
-            case 'MMMM' :
-                return moment.months[currentMonth];
-            // DAY OF MONTH
-            case 'D' :
-                return currentDate;
-            case 'Do' :
-                return currentDate + ordinal(currentDate);
-            case 'DD' :
-                return leftZeroFill(currentDate, 2);
-            // DAY OF YEAR
-            case 'DDD' :
-                a = new Date(currentYear, currentMonth, currentDate);
-                b = new Date(currentYear, 0, 1);
-                return ~~ (((a - b) / 864e5) + 1.5);
-            case 'DDDo' :
-                a = replaceFunction('DDD');
-                return a + ordinal(a);
-            case 'DDDD' :
-                return leftZeroFill(replaceFunction('DDD'), 3);
-            // WEEKDAY
-            case 'd' :
-                return currentDay;
-            case 'do' :
-                return currentDay + ordinal(currentDay);
-            case 'ddd' :
-                return moment.weekdaysShort[currentDay];
-            case 'dddd' :
-                return moment.weekdays[currentDay];
-            // WEEK OF YEAR
-            case 'w' :
-                a = new Date(currentYear, currentMonth, currentDate - currentDay + 5);
-                b = new Date(a.getFullYear(), 0, 4);
-                return ~~ ((a - b) / 864e5 / 7 + 1.5);
-            case 'wo' :
-                a = replaceFunction('w');
-                return a + ordinal(a);
-            case 'ww' :
-                return leftZeroFill(replaceFunction('w'), 2);
-            // YEAR
-            case 'YY' :
-                return leftZeroFill(currentYear % 100, 2);
-            case 'YYYY' :
-                return currentYear;
-            // AM / PM
-            case 'a' :
-                return currentHours > 11 ? meridiem.pm : meridiem.am;
-            case 'A' :
-                return currentHours > 11 ? meridiem.PM : meridiem.AM;
-            // 24 HOUR
-            case 'H' :
-                return currentHours;
-            case 'HH' :
-                return leftZeroFill(currentHours, 2);
-            // 12 HOUR
-            case 'h' :
-                return currentHours % 12 || 12;
-            case 'hh' :
-                return leftZeroFill(currentHours % 12 || 12, 2);
-            // MINUTE
-            case 'm' :
-                return currentMinutes;
-            case 'mm' :
-                return leftZeroFill(currentMinutes, 2);
-            // SECOND
-            case 's' :
-                return currentSeconds;
-            case 'ss' :
-                return leftZeroFill(currentSeconds, 2);
-            // TIMEZONE
-            case 'zz' :
-                // depreciating 'zz' fall through to 'z'
-            case 'z' :
-                return (date.toString().match(timezoneRegex) || [''])[0].replace(nonuppercaseLetters, '');
-            case 'Z' :
-                return (currentZone > 0 ? '+' : '-') + leftZeroFill(~~(Math.abs(currentZone) / 60), 2) + ':' + leftZeroFill(~~(Math.abs(currentZone) % 60), 2);
-            case 'ZZ' :
-                return (currentZone > 0 ? '+' : '-') + leftZeroFill(~~(10 * Math.abs(currentZone) / 6), 4);
-            // LONG DATES
-            case 'L' :
-            case 'LL' :
-            case 'LLL' :
-            case 'LLLL' :
-            case 'LT' :
-                return formatDate(date, moment.longDateFormat[input]);
-            // DEFAULT
-            default :
-                return input.replace(/(^\[)|(\\)|\]$/g, "");
-            }
-        }
-        return inputString.replace(charactersToReplace, replaceFunction);
-    }
-
-    // date from string and format string
-    function makeDateFromStringAndFormat(string, format) {
-        var inArray = [0, 0, 1, 0, 0, 0, 0],
-            timezoneHours = 0,
-            timezoneMinutes = 0,
-            isUsingUTC = false,
-            inputParts = string.match(inputCharacters),
-            formatParts = format.match(tokenCharacters),
-            i,
-            isPm;
-
-        // function to convert string input to date
-        function addTime(format, input) {
-            var a;
-            switch (format) {
-            // MONTH
-            case 'M' :
-                // fall through to MM
-            case 'MM' :
-                inArray[1] = ~~input - 1;
-                break;
-            case 'MMM' :
-                // fall through to MMMM
-            case 'MMMM' :
-                for (a = 0; a < 12; a++) {
-                    if (moment.monthsParse[a].test(input)) {
-                        inArray[1] = a;
-                        break;
-                    }
-                }
-                break;
-            // DAY OF MONTH
-            case 'D' :
-                // fall through to DDDD
-            case 'DD' :
-                // fall through to DDDD
-            case 'DDD' :
-                // fall through to DDDD
-            case 'DDDD' :
-                inArray[2] = ~~input;
-                break;
-            // YEAR
-            case 'YY' :
-                input = ~~input;
-                inArray[0] = input + (input > 70 ? 1900 : 2000);
-                break;
-            case 'YYYY' :
-                inArray[0] = ~~Math.abs(input);
-                break;
-            // AM / PM
-            case 'a' :
-                // fall through to A
-            case 'A' :
-                isPm = (input.toLowerCase() === 'pm');
-                break;
-            // 24 HOUR
-            case 'H' :
-                // fall through to hh
-            case 'HH' :
-                // fall through to hh
-            case 'h' :
-                // fall through to hh
-            case 'hh' :
-                inArray[3] = ~~input;
-                break;
-            // MINUTE
-            case 'm' :
-                // fall through to mm
-            case 'mm' :
-                inArray[4] = ~~input;
-                break;
-            // SECOND
-            case 's' :
-                // fall through to ss
-            case 'ss' :
-                inArray[5] = ~~input;
-                break;
-            // TIMEZONE
-            case 'Z' :
-                // fall through to ZZ
-            case 'ZZ' :
-                isUsingUTC = true;
-                a = (input || '').match(timezoneParseRegex);
-                if (a && a[1]) {
-                    timezoneHours = ~~a[1];
-                }
-                if (a && a[2]) {
-                    timezoneMinutes = ~~a[2];
-                }
-                // reverse offsets
-                if (a && a[0] === '+') {
-                    timezoneHours = -timezoneHours;
-                    timezoneMinutes = -timezoneMinutes;
-                }
-                break;
-            }
-        }
-        for (i = 0; i < formatParts.length; i++) {
-            addTime(formatParts[i], inputParts[i]);
-        }
-        // handle am pm
-        if (isPm && inArray[3] < 12) {
-            inArray[3] += 12;
-        }
-        // if is 12 am, change hours to 0
-        if (isPm === false && inArray[3] === 12) {
-            inArray[3] = 0;
-        }
-        // handle timezone
-        inArray[3] += timezoneHours;
-        inArray[4] += timezoneMinutes;
-        // return
-        return isUsingUTC ? new Date(Date.UTC.apply({}, inArray)) : dateFromArray(inArray);
-    }
-
-    // compare two arrays, return the number of differences
-    function compareArrays(array1, array2) {
-        var len = Math.min(array1.length, array2.length),
-            lengthDiff = Math.abs(array1.length - array2.length),
-            diffs = 0,
-            i;
-        for (i = 0; i < len; i++) {
-            if (~~array1[i] !== ~~array2[i]) {
-                diffs++;
-            }
-        }
-        return diffs + lengthDiff;
-    }
-
-    // date from string and array of format strings
-    function makeDateFromStringAndArray(string, formats) {
-        var output,
-            inputParts = string.match(inputCharacters),
-            scores = [],
-            scoreToBeat = 99,
-            i,
-            curDate,
-            curScore;
-        for (i = 0; i < formats.length; i++) {
-            curDate = makeDateFromStringAndFormat(string, formats[i]);
-            curScore = compareArrays(inputParts, formatDate(curDate, formats[i]).match(inputCharacters));
-            if (curScore < scoreToBeat) {
-                scoreToBeat = curScore;
-                output = curDate;
-            }
-        }
-        return output;
-    }
-
-    moment = function (input, format) {
-        if (input === null) {
-            return null;
-        }
-        var date,
-            matched;
-        // parse Moment object
-        if (input && input._d instanceof Date) {
-            date = new Date(+input._d);
-        // parse string and format
-        } else if (format) {
-            if (isArray(format)) {
-                date = makeDateFromStringAndArray(input, format);
-            } else {
-                date = makeDateFromStringAndFormat(input, format);
-            }
-        // evaluate it as a JSON-encoded date
-        } else {
-            matched = jsonRegex.exec(input);
-            date = input === undefined ? new Date() :
-                matched ? new Date(+matched[1]) :
-                input instanceof Date ? input :
-                isArray(input) ? dateFromArray(input) :
-                new Date(input);
-        }
-        return new Moment(date);
-    };
-
-    // version number
-    moment.version = VERSION;
-
-    // language switching and caching
-    moment.lang = function (key, values) {
-        var i,
-            param,
-            req,
-            parse = [];
-        if (values) {
-            for (i = 0; i < 12; i++) {
-                parse[i] = new RegExp('^' + values.months[i] + '|^' + values.monthsShort[i].replace('.', ''), 'i');
-            }
-            values.monthsParse = values.monthsParse || parse;
-            languages[key] = values;
-        }
-        if (languages[key]) {
-            for (i = 0; i < paramsToParse.length; i++) {
-                param = paramsToParse[i];
-                moment[param] = languages[key][param] || moment[param];
-            }
-        } else {
-            if (hasModule) {
-                req = require('./lang/' + key);
-                moment.lang(key, req);
-            }
-        }
-    };
-
-    // set default language
-    moment.lang('en', {
-        months : "January_February_March_April_May_June_July_August_September_October_November_December".split("_"),
-        monthsShort : "Jan_Feb_Mar_Apr_May_Jun_Jul_Aug_Sep_Oct_Nov_Dec".split("_"),
-        weekdays : "Sunday_Monday_Tuesday_Wednesday_Thursday_Friday_Saturday".split("_"),
-        weekdaysShort : "Sun_Mon_Tue_Wed_Thu_Fri_Sat".split("_"),
-        longDateFormat : {
-            LT : "h:mm A",
-            L : "MM/DD/YYYY",
-            LL : "MMMM D YYYY",
-            LLL : "MMMM D YYYY LT",
-            LLLL : "dddd, MMMM D YYYY LT"
-        },
-        meridiem : {
-            AM : 'AM',
-            am : 'am',
-            PM : 'PM',
-            pm : 'pm'
-        },
-        calendar : {
-            sameDay : '[Today at] LT',
-            nextDay : '[Tomorrow at] LT',
-            nextWeek : 'dddd [at] LT',
-            lastDay : '[Yesterday at] LT',
-            lastWeek : '[last] dddd [at] LT',
-            sameElse : 'L'
-        },
-        relativeTime : {
-            future : "in %s",
-            past : "%s ago",
-            s : "a few seconds",
-            m : "a minute",
-            mm : "%d minutes",
-            h : "an hour",
-            hh : "%d hours",
-            d : "a day",
-            dd : "%d days",
-            M : "a month",
-            MM : "%d months",
-            y : "a year",
-            yy : "%d years"
-        },
-        ordinal : function (number) {
-            var b = number % 10;
-            return (~~ (number % 100 / 10) === 1) ? 'th' :
-                (b === 1) ? 'st' :
-                (b === 2) ? 'nd' :
-                (b === 3) ? 'rd' : 'th';
-        }
-    });
-
-    // helper function for _date.from() and _date.fromNow()
-    function substituteTimeAgo(string, number, withoutSuffix) {
-        var rt = moment.relativeTime[string];
-        return (typeof rt === 'function') ?
-            rt(number || 1, !!withoutSuffix, string) :
-            rt.replace(/%d/i, number || 1);
-    }
-
-    function relativeTime(milliseconds, withoutSuffix) {
-        var seconds = round(Math.abs(milliseconds) / 1000),
-            minutes = round(seconds / 60),
-            hours = round(minutes / 60),
-            days = round(hours / 24),
-            years = round(days / 365),
-            args = seconds < 45 && ['s', seconds] ||
-                minutes === 1 && ['m'] ||
-                minutes < 45 && ['mm', minutes] ||
-                hours === 1 && ['h'] ||
-                hours < 22 && ['hh', hours] ||
-                days === 1 && ['d'] ||
-                days <= 25 && ['dd', days] ||
-                days <= 45 && ['M'] ||
-                days < 345 && ['MM', round(days / 30)] ||
-                years === 1 && ['y'] || ['yy', years];
-        args[2] = withoutSuffix;
-        return substituteTimeAgo.apply({}, args);
-    }
-
-    // shortcut for prototype
-    moment.fn = Moment.prototype = {
-
-        clone : function () {
-            return moment(this);
-        },
-
-        valueOf : function () {
-            return +this._d;
-        },
-
-        'native' : function () {
-            return this._d;
-        },
-
-        toString : function () {
-            return this._d.toString();
-        },
-
-        toDate : function () {
-            return this._d;
-        },
-
-        format : function (inputString) {
-            return formatDate(this._d, inputString);
-        },
-
-        add : function (input, val) {
-            this._d = dateAddRemove(this._d, input, 1, val);
-            return this;
-        },
-
-        subtract : function (input, val) {
-            this._d = dateAddRemove(this._d, input, -1, val);
-            return this;
-        },
-
-        diff : function (input, val, asFloat) {
-            var inputMoment = moment(input),
-                zoneDiff = (this.zone() - inputMoment.zone()) * 6e4,
-                diff = this._d - inputMoment._d - zoneDiff,
-                year = this.year() - inputMoment.year(),
-                month = this.month() - inputMoment.month(),
-                date = this.date() - inputMoment.date(),
-                output;
-            if (val === 'months') {
-                output = year * 12 + month + date / 30;
-            } else if (val === 'years') {
-                output = year + month / 12;
-            } else {
-                output = val === 'seconds' ? diff / 1e3 : // 1000
-                    val === 'minutes' ? diff / 6e4 : // 1000 * 60
-                    val === 'hours' ? diff / 36e5 : // 1000 * 60 * 60
-                    val === 'days' ? diff / 864e5 : // 1000 * 60 * 60 * 24
-                    val === 'weeks' ? diff / 6048e5 : // 1000 * 60 * 60 * 24 * 7
-                    diff;
-            }
-            return asFloat ? output : round(output);
-        },
-
-        from : function (time, withoutSuffix) {
-            var difference = this.diff(time),
-                rel = moment.relativeTime,
-                output = relativeTime(difference, withoutSuffix);
-            return withoutSuffix ? output : (difference <= 0 ? rel.past : rel.future).replace(/%s/i, output);
-        },
-
-        fromNow : function (withoutSuffix) {
-            return this.from(moment(), withoutSuffix);
-        },
-
-        calendar : function () {
-            var diff = this.diff(moment().sod(), 'days', true),
-                calendar = moment.calendar,
-                allElse = calendar.sameElse,
-                format = diff < -6 ? allElse :
-                diff < -1 ? calendar.lastWeek :
-                diff < 0 ? calendar.lastDay :
-                diff < 1 ? calendar.sameDay :
-                diff < 2 ? calendar.nextDay :
-                diff < 7 ? calendar.nextWeek : allElse;
-            return this.format(typeof format === 'function' ? format.apply(this) : format);
-        },
-
-        isLeapYear : function () {
-            var year = this.year();
-            return (year % 4 === 0 && year % 100 !== 0) || year % 400 === 0;
-        },
-
-        isDST : function () {
-            return (this.zone() < moment([this.year()]).zone() || 
-                this.zone() < moment([this.year(), 5]).zone());
-        },
-
-        day : function (input) {
-            var day = this._d.getDay();
-            return input == null ? day :
-                this.add({ d : input - day });
-        },
-
-        sod: function () {
-            return this.clone()
-                .hours(0)
-                .minutes(0)
-                .seconds(0)
-                .milliseconds(0);
-        },
-
-        eod: function () {
-            // end of day = start of day plus 1 day, minus 1 millisecond
-            return this.sod().add({
-                d : 1,
-                ms : -1
-            });
-        }
-    };
-
-    // helper for adding shortcuts
-    function makeShortcut(name, key) {
-        moment.fn[name] = function (input) {
-            if (input != null) {
-                this._d['set' + key](input);
-                return this;
-            } else {
-                return this._d['get' + key]();
-            }
-        };
-    }
-
-    // loop through and add shortcuts (Month, Date, Hours, Minutes, Seconds, Milliseconds)
-    for (i = 0; i < shortcuts.length; i ++) {
-        makeShortcut(shortcuts[i].toLowerCase(), shortcuts[i]);
-    }
-
-    // add shortcut for year (uses different syntax than the getter/setter 'year' == 'FullYear')
-    makeShortcut('year', 'FullYear');
-
-    // add shortcut for timezone offset (no setter)
-    moment.fn.zone = function () {
-        return this._d.getTimezoneOffset();
-    };
-
-    // CommonJS module is defined
-    if (hasModule) {
-        module.exports = moment;
-    }
-    if (typeof window !== 'undefined') {
-        window.moment = moment;
-    }
-    if (typeof define === "function" && define.amd) {
-        define("moment", [], function () {
-            return moment;
-        });
-    }
-})(Date);
-
-//     Underscore.js 1.3.1
-//     (c) 2009-2012 Jeremy Ashkenas, DocumentCloud Inc.
-//     Underscore is freely distributable under the MIT license.
-//     Portions of Underscore are inspired or borrowed from Prototype,
-//     Oliver Steele's Functional, and John Resig's Micro-Templating.
-//     For all details and documentation:
-//     http://documentcloud.github.com/underscore
-
-(function() {
-
-  // Baseline setup
-  // --------------
-
-  // Establish the root object, `window` in the browser, or `global` on the server.
-  var root = this;
-
-  // Save the previous value of the `_` variable.
-  var previousUnderscore = root._;
-
-  // Establish the object that gets returned to break out of a loop iteration.
-  var breaker = {};
-
-  // Save bytes in the minified (but not gzipped) version:
-  var ArrayProto = Array.prototype, ObjProto = Object.prototype, FuncProto = Function.prototype;
-
-  // Create quick reference variables for speed access to core prototypes.
-  var slice            = ArrayProto.slice,
-      unshift          = ArrayProto.unshift,
-      toString         = ObjProto.toString,
-      hasOwnProperty   = ObjProto.hasOwnProperty;
-
-  // All **ECMAScript 5** native function implementations that we hope to use
-  // are declared here.
-  var
-    nativeForEach      = ArrayProto.forEach,
-    nativeMap          = ArrayProto.map,
-    nativeReduce       = ArrayProto.reduce,
-    nativeReduceRight  = ArrayProto.reduceRight,
-    nativeFilter       = ArrayProto.filter,
-    nativeEvery        = ArrayProto.every,
-    nativeSome         = ArrayProto.some,
-    nativeIndexOf      = ArrayProto.indexOf,
-    nativeLastIndexOf  = ArrayProto.lastIndexOf,
-    nativeIsArray      = Array.isArray,
-    nativeKeys         = Object.keys,
-    nativeBind         = FuncProto.bind;
-
-  // Create a safe reference to the Underscore object for use below.
-  var _ = function(obj) { return new wrapper(obj); };
-
-  // Export the Underscore object for **Node.js**, with
-  // backwards-compatibility for the old `require()` API. If we're in
-  // the browser, add `_` as a global object via a string identifier,
-  // for Closure Compiler "advanced" mode.
-  if (typeof exports !== 'undefined') {
-    if (typeof module !== 'undefined' && module.exports) {
-      exports = module.exports = _;
-    }
-    exports._ = _;
-  } else {
-    root['_'] = _;
-  }
-
-  // Current version.
-  _.VERSION = '1.3.1';
-
-  // Collection Functions
-  // --------------------
-
-  // The cornerstone, an `each` implementation, aka `forEach`.
-  // Handles objects with the built-in `forEach`, arrays, and raw objects.
-  // Delegates to **ECMAScript 5**'s native `forEach` if available.
-  var each = _.each = _.forEach = function(obj, iterator, context) {
-    if (obj == null) return;
-    if (nativeForEach && obj.forEach === nativeForEach) {
-      obj.forEach(iterator, context);
-    } else if (obj.length === +obj.length) {
-      for (var i = 0, l = obj.length; i < l; i++) {
-        if (i in obj && iterator.call(context, obj[i], i, obj) === breaker) return;
-      }
-    } else {
-      for (var key in obj) {
-        if (_.has(obj, key)) {
-          if (iterator.call(context, obj[key], key, obj) === breaker) return;
-        }
-      }
-    }
-  };
-
-  // Return the results of applying the iterator to each element.
-  // Delegates to **ECMAScript 5**'s native `map` if available.
-  _.map = _.collect = function(obj, iterator, context) {
-    var results = [];
-    if (obj == null) return results;
-    if (nativeMap && obj.map === nativeMap) return obj.map(iterator, context);
-    each(obj, function(value, index, list) {
-      results[results.length] = iterator.call(context, value, index, list);
-    });
-    if (obj.length === +obj.length) results.length = obj.length;
-    return results;
-  };
-
-  // **Reduce** builds up a single result from a list of values, aka `inject`,
-  // or `foldl`. Delegates to **ECMAScript 5**'s native `reduce` if available.
-  _.reduce = _.foldl = _.inject = function(obj, iterator, memo, context) {
-    var initial = arguments.length > 2;
-    if (obj == null) obj = [];
-    if (nativeReduce && obj.reduce === nativeReduce) {
-      if (context) iterator = _.bind(iterator, context);
-      return initial ? obj.reduce(iterator, memo) : obj.reduce(iterator);
-    }
-    each(obj, function(value, index, list) {
-      if (!initial) {
-        memo = value;
-        initial = true;
-      } else {
-        memo = iterator.call(context, memo, value, index, list);
-      }
-    });
-    if (!initial) throw new TypeError('Reduce of empty array with no initial value');
-    return memo;
-  };
-
-  // The right-associative version of reduce, also known as `foldr`.
-  // Delegates to **ECMAScript 5**'s native `reduceRight` if available.
-  _.reduceRight = _.foldr = function(obj, iterator, memo, context) {
-    var initial = arguments.length > 2;
-    if (obj == null) obj = [];
-    if (nativeReduceRight && obj.reduceRight === nativeReduceRight) {
-      if (context) iterator = _.bind(iterator, context);
-      return initial ? obj.reduceRight(iterator, memo) : obj.reduceRight(iterator);
-    }
-    var reversed = _.toArray(obj).reverse();
-    if (context && !initial) iterator = _.bind(iterator, context);
-    return initial ? _.reduce(reversed, iterator, memo, context) : _.reduce(reversed, iterator);
-  };
-
-  // Return the first value which passes a truth test. Aliased as `detect`.
-  _.find = _.detect = function(obj, iterator, context) {
-    var result;
-    any(obj, function(value, index, list) {
-      if (iterator.call(context, value, index, list)) {
-        result = value;
-        return true;
-      }
-    });
-    return result;
-  };
-
-  // Return all the elements that pass a truth test.
-  // Delegates to **ECMAScript 5**'s native `filter` if available.
-  // Aliased as `select`.
-  _.filter = _.select = function(obj, iterator, context) {
-    var results = [];
-    if (obj == null) return results;
-    if (nativeFilter && obj.filter === nativeFilter) return obj.filter(iterator, context);
-    each(obj, function(value, index, list) {
-      if (iterator.call(context, value, index, list)) results[results.length] = value;
-    });
-    return results;
-  };
-
-  // Return all the elements for which a truth test fails.
-  _.reject = function(obj, iterator, context) {
-    var results = [];
-    if (obj == null) return results;
-    each(obj, function(value, index, list) {
-      if (!iterator.call(context, value, index, list)) results[results.length] = value;
-    });
-    return results;
-  };
-
-  // Determine whether all of the elements match a truth test.
-  // Delegates to **ECMAScript 5**'s native `every` if available.
-  // Aliased as `all`.
-  _.every = _.all = function(obj, iterator, context) {
-    var result = true;
-    if (obj == null) return result;
-    if (nativeEvery && obj.every === nativeEvery) return obj.every(iterator, context);
-    each(obj, function(value, index, list) {
-      if (!(result = result && iterator.call(context, value, index, list))) return breaker;
-    });
-    return result;
-  };
-
-  // Determine if at least one element in the object matches a truth test.
-  // Delegates to **ECMAScript 5**'s native `some` if available.
-  // Aliased as `any`.
-  var any = _.some = _.any = function(obj, iterator, context) {
-    iterator || (iterator = _.identity);
-    var result = false;
-    if (obj == null) return result;
-    if (nativeSome && obj.some === nativeSome) return obj.some(iterator, context);
-    each(obj, function(value, index, list) {
-      if (result || (result = iterator.call(context, value, index, list))) return breaker;
-    });
-    return !!result;
-  };
-
-  // Determine if a given value is included in the array or object using `===`.
-  // Aliased as `contains`.
-  _.include = _.contains = function(obj, target) {
-    var found = false;
-    if (obj == null) return found;
-    if (nativeIndexOf && obj.indexOf === nativeIndexOf) return obj.indexOf(target) != -1;
-    found = any(obj, function(value) {
-      return value === target;
-    });
-    return found;
-  };
-
-  // Invoke a method (with arguments) on every item in a collection.
-  _.invoke = function(obj, method) {
-    var args = slice.call(arguments, 2);
-    return _.map(obj, function(value) {
-      return (_.isFunction(method) ? method || value : value[method]).apply(value, args);
-    });
-  };
-
-  // Convenience version of a common use case of `map`: fetching a property.
-  _.pluck = function(obj, key) {
-    return _.map(obj, function(value){ return value[key]; });
-  };
-
-  // Return the maximum element or (element-based computation).
-  _.max = function(obj, iterator, context) {
-    if (!iterator && _.isArray(obj)) return Math.max.apply(Math, obj);
-    if (!iterator && _.isEmpty(obj)) return -Infinity;
-    var result = {computed : -Infinity};
-    each(obj, function(value, index, list) {
-      var computed = iterator ? iterator.call(context, value, index, list) : value;
-      computed >= result.computed && (result = {value : value, computed : computed});
-    });
-    return result.value;
-  };
-
-  // Return the minimum element (or element-based computation).
-  _.min = function(obj, iterator, context) {
-    if (!iterator && _.isArray(obj)) return Math.min.apply(Math, obj);
-    if (!iterator && _.isEmpty(obj)) return Infinity;
-    var result = {computed : Infinity};
-    each(obj, function(value, index, list) {
-      var computed = iterator ? iterator.call(context, value, index, list) : value;
-      computed < result.computed && (result = {value : value, computed : computed});
-    });
-    return result.value;
-  };
-
-  // Shuffle an array.
-  _.shuffle = function(obj) {
-    var shuffled = [], rand;
-    each(obj, function(value, index, list) {
-      if (index == 0) {
-        shuffled[0] = value;
-      } else {
-        rand = Math.floor(Math.random() * (index + 1));
-        shuffled[index] = shuffled[rand];
-        shuffled[rand] = value;
-      }
-    });
-    return shuffled;
-  };
-
-  // Sort the object's values by a criterion produced by an iterator.
-  _.sortBy = function(obj, iterator, context) {
-    return _.pluck(_.map(obj, function(value, index, list) {
-      return {
-        value : value,
-        criteria : iterator.call(context, value, index, list)
-      };
-    }).sort(function(left, right) {
-      var a = left.criteria, b = right.criteria;
-      return a < b ? -1 : a > b ? 1 : 0;
-    }), 'value');
-  };
-
-  // Groups the object's values by a criterion. Pass either a string attribute
-  // to group by, or a function that returns the criterion.
-  _.groupBy = function(obj, val) {
-    var result = {};
-    var iterator = _.isFunction(val) ? val : function(obj) { return obj[val]; };
-    each(obj, function(value, index) {
-      var key = iterator(value, index);
-      (result[key] || (result[key] = [])).push(value);
-    });
-    return result;
-  };
-
-  // Use a comparator function to figure out at what index an object should
-  // be inserted so as to maintain order. Uses binary search.
-  _.sortedIndex = function(array, obj, iterator) {
-    iterator || (iterator = _.identity);
-    var low = 0, high = array.length;
-    while (low < high) {
-      var mid = (low + high) >> 1;
-      iterator(array[mid]) < iterator(obj) ? low = mid + 1 : high = mid;
-    }
-    return low;
-  };
-
-  // Safely convert anything iterable into a real, live array.
-  _.toArray = function(iterable) {
-    if (!iterable)                return [];
-    if (iterable.toArray)         return iterable.toArray();
-    if (_.isArray(iterable))      return slice.call(iterable);
-    if (_.isArguments(iterable))  return slice.call(iterable);
-    return _.values(iterable);
-  };
-
-  // Return the number of elements in an object.
-  _.size = function(obj) {
-    return _.toArray(obj).length;
-  };
-
-  // Array Functions
-  // ---------------
-
-  // Get the first element of an array. Passing **n** will return the first N
-  // values in the array. Aliased as `head`. The **guard** check allows it to work
-  // with `_.map`.
-  _.first = _.head = function(array, n, guard) {
-    return (n != null) && !guard ? slice.call(array, 0, n) : array[0];
-  };
-
-  // Returns everything but the last entry of the array. Especcialy useful on
-  // the arguments object. Passing **n** will return all the values in
-  // the array, excluding the last N. The **guard** check allows it to work with
-  // `_.map`.
-  _.initial = function(array, n, guard) {
-    return slice.call(array, 0, array.length - ((n == null) || guard ? 1 : n));
-  };
-
-  // Get the last element of an array. Passing **n** will return the last N
-  // values in the array. The **guard** check allows it to work with `_.map`.
-  _.last = function(array, n, guard) {
-    if ((n != null) && !guard) {
-      return slice.call(array, Math.max(array.length - n, 0));
-    } else {
-      return array[array.length - 1];
-    }
-  };
-
-  // Returns everything but the first entry of the array. Aliased as `tail`.
-  // Especially useful on the arguments object. Passing an **index** will return
-  // the rest of the values in the array from that index onward. The **guard**
-  // check allows it to work with `_.map`.
-  _.rest = _.tail = function(array, index, guard) {
-    return slice.call(array, (index == null) || guard ? 1 : index);
-  };
-
-  // Trim out all falsy values from an array.
-  _.compact = function(array) {
-    return _.filter(array, function(value){ return !!value; });
-  };
-
-  // Return a completely flattened version of an array.
-  _.flatten = function(array, shallow) {
-    return _.reduce(array, function(memo, value) {
-      if (_.isArray(value)) return memo.concat(shallow ? value : _.flatten(value));
-      memo[memo.length] = value;
-      return memo;
-    }, []);
-  };
-
-  // Return a version of the array that does not contain the specified value(s).
-  _.without = function(array) {
-    return _.difference(array, slice.call(arguments, 1));
-  };
-
-  // Produce a duplicate-free version of the array. If the array has already
-  // been sorted, you have the option of using a faster algorithm.
-  // Aliased as `unique`.
-  _.uniq = _.unique = function(array, isSorted, iterator) {
-    var initial = iterator ? _.map(array, iterator) : array;
-    var result = [];
-    _.reduce(initial, function(memo, el, i) {
-      if (0 == i || (isSorted === true ? _.last(memo) != el : !_.include(memo, el))) {
-        memo[memo.length] = el;
-        result[result.length] = array[i];
-      }
-      return memo;
-    }, []);
-    return result;
-  };
-
-  // Produce an array that contains the union: each distinct element from all of
-  // the passed-in arrays.
-  _.union = function() {
-    return _.uniq(_.flatten(arguments, true));
-  };
-
-  // Produce an array that contains every item shared between all the
-  // passed-in arrays. (Aliased as "intersect" for back-compat.)
-  _.intersection = _.intersect = function(array) {
-    var rest = slice.call(arguments, 1);
-    return _.filter(_.uniq(array), function(item) {
-      return _.every(rest, function(other) {
-        return _.indexOf(other, item) >= 0;
-      });
-    });
-  };
-
-  // Take the difference between one array and a number of other arrays.
-  // Only the elements present in just the first array will remain.
-  _.difference = function(array) {
-    var rest = _.flatten(slice.call(arguments, 1));
-    return _.filter(array, function(value){ return !_.include(rest, value); });
-  };
-
-  // Zip together multiple lists into a single array -- elements that share
-  // an index go together.
-  _.zip = function() {
-    var args = slice.call(arguments);
-    var length = _.max(_.pluck(args, 'length'));
-    var results = new Array(length);
-    for (var i = 0; i < length; i++) results[i] = _.pluck(args, "" + i);
-    return results;
-  };
-
-  // If the browser doesn't supply us with indexOf (I'm looking at you, **MSIE**),
-  // we need this function. Return the position of the first occurrence of an
-  // item in an array, or -1 if the item is not included in the array.
-  // Delegates to **ECMAScript 5**'s native `indexOf` if available.
-  // If the array is large and already in sort order, pass `true`
-  // for **isSorted** to use binary search.
-  _.indexOf = function(array, item, isSorted) {
-    if (array == null) return -1;
-    var i, l;
-    if (isSorted) {
-      i = _.sortedIndex(array, item);
-      return array[i] === item ? i : -1;
-    }
-    if (nativeIndexOf && array.indexOf === nativeIndexOf) return array.indexOf(item);
-    for (i = 0, l = array.length; i < l; i++) if (i in array && array[i] === item) return i;
-    return -1;
-  };
-
-  // Delegates to **ECMAScript 5**'s native `lastIndexOf` if available.
-  _.lastIndexOf = function(array, item) {
-    if (array == null) return -1;
-    if (nativeLastIndexOf && array.lastIndexOf === nativeLastIndexOf) return array.lastIndexOf(item);
-    var i = array.length;
-    while (i--) if (i in array && array[i] === item) return i;
-    return -1;
-  };
-
-  // Generate an integer Array containing an arithmetic progression. A port of
-  // the native Python `range()` function. See
-  // [the Python documentation](http://docs.python.org/library/functions.html#range).
-  _.range = function(start, stop, step) {
-    if (arguments.length <= 1) {
-      stop = start || 0;
-      start = 0;
-    }
-    step = arguments[2] || 1;
-
-    var len = Math.max(Math.ceil((stop - start) / step), 0);
-    var idx = 0;
-    var range = new Array(len);
-
-    while(idx < len) {
-      range[idx++] = start;
-      start += step;
-    }
-
-    return range;
-  };
-
-  // Function (ahem) Functions
-  // ------------------
-
-  // Reusable constructor function for prototype setting.
-  var ctor = function(){};
-
-  // Create a function bound to a given object (assigning `this`, and arguments,
-  // optionally). Binding with arguments is also known as `curry`.
-  // Delegates to **ECMAScript 5**'s native `Function.bind` if available.
-  // We check for `func.bind` first, to fail fast when `func` is undefined.
-  _.bind = function bind(func, context) {
-    var bound, args;
-    if (func.bind === nativeBind && nativeBind) return nativeBind.apply(func, slice.call(arguments, 1));
-    if (!_.isFunction(func)) throw new TypeError;
-    args = slice.call(arguments, 2);
-    return bound = function() {
-      if (!(this instanceof bound)) return func.apply(context, args.concat(slice.call(arguments)));
-      ctor.prototype = func.prototype;
-      var self = new ctor;
-      var result = func.apply(self, args.concat(slice.call(arguments)));
-      if (Object(result) === result) return result;
-      return self;
-    };
-  };
-
-  // Bind all of an object's methods to that object. Useful for ensuring that
-  // all callbacks defined on an object belong to it.
-  _.bindAll = function(obj) {
-    var funcs = slice.call(arguments, 1);
-    if (funcs.length == 0) funcs = _.functions(obj);
-    each(funcs, function(f) { obj[f] = _.bind(obj[f], obj); });
-    return obj;
-  };
-
-  // Memoize an expensive function by storing its results.
-  _.memoize = function(func, hasher) {
-    var memo = {};
-    hasher || (hasher = _.identity);
-    return function() {
-      var key = hasher.apply(this, arguments);
-      return _.has(memo, key) ? memo[key] : (memo[key] = func.apply(this, arguments));
-    };
-  };
-
-  // Delays a function for the given number of milliseconds, and then calls
-  // it with the arguments supplied.
-  _.delay = function(func, wait) {
-    var args = slice.call(arguments, 2);
-    return setTimeout(function(){ return func.apply(func, args); }, wait);
-  };
-
-  // Defers a function, scheduling it to run after the current call stack has
-  // cleared.
-  _.defer = function(func) {
-    return _.delay.apply(_, [func, 1].concat(slice.call(arguments, 1)));
-  };
-
-  // Returns a function, that, when invoked, will only be triggered at most once
-  // during a given window of time.
-  _.throttle = function(func, wait) {
-    var context, args, timeout, throttling, more;
-    var whenDone = _.debounce(function(){ more = throttling = false; }, wait);
-    return function() {
-      context = this; args = arguments;
-      var later = function() {
-        timeout = null;
-        if (more) func.apply(context, args);
-        whenDone();
-      };
-      if (!timeout) timeout = setTimeout(later, wait);
-      if (throttling) {
-        more = true;
-      } else {
-        func.apply(context, args);
-      }
-      whenDone();
-      throttling = true;
-    };
-  };
-
-  // Returns a function, that, as long as it continues to be invoked, will not
-  // be triggered. The function will be called after it stops being called for
-  // N milliseconds.
-  _.debounce = function(func, wait) {
-    var timeout;
-    return function() {
-      var context = this, args = arguments;
-      var later = function() {
-        timeout = null;
-        func.apply(context, args);
-      };
-      clearTimeout(timeout);
-      timeout = setTimeout(later, wait);
-    };
-  };
-
-  // Returns a function that will be executed at most one time, no matter how
-  // often you call it. Useful for lazy initialization.
-  _.once = function(func) {
-    var ran = false, memo;
-    return function() {
-      if (ran) return memo;
-      ran = true;
-      return memo = func.apply(this, arguments);
-    };
-  };
-
-  // Returns the first function passed as an argument to the second,
-  // allowing you to adjust arguments, run code before and after, and
-  // conditionally execute the original function.
-  _.wrap = function(func, wrapper) {
-    return function() {
-      var args = [func].concat(slice.call(arguments, 0));
-      return wrapper.apply(this, args);
-    };
-  };
-
-  // Returns a function that is the composition of a list of functions, each
-  // consuming the return value of the function that follows.
-  _.compose = function() {
-    var funcs = arguments;
-    return function() {
-      var args = arguments;
-      for (var i = funcs.length - 1; i >= 0; i--) {
-        args = [funcs[i].apply(this, args)];
-      }
-      return args[0];
-    };
-  };
-
-  // Returns a function that will only be executed after being called N times.
-  _.after = function(times, func) {
-    if (times <= 0) return func();
-    return function() {
-      if (--times < 1) { return func.apply(this, arguments); }
-    };
-  };
-
-  // Object Functions
-  // ----------------
-
-  // Retrieve the names of an object's properties.
-  // Delegates to **ECMAScript 5**'s native `Object.keys`
-  _.keys = nativeKeys || function(obj) {
-    if (obj !== Object(obj)) throw new TypeError('Invalid object');
-    var keys = [];
-    for (var key in obj) if (_.has(obj, key)) keys[keys.length] = key;
-    return keys;
-  };
-
-  // Retrieve the values of an object's properties.
-  _.values = function(obj) {
-    return _.map(obj, _.identity);
-  };
-
-  // Return a sorted list of the function names available on the object.
-  // Aliased as `methods`
-  _.functions = _.methods = function(obj) {
-    var names = [];
-    for (var key in obj) {
-      if (_.isFunction(obj[key])) names.push(key);
-    }
-    return names.sort();
-  };
-
-  // Extend a given object with all the properties in passed-in object(s).
-  _.extend = function(obj) {
-    each(slice.call(arguments, 1), function(source) {
-      for (var prop in source) {
-        obj[prop] = source[prop];
-      }
-    });
-    return obj;
-  };
-
-  // Fill in a given object with default properties.
-  _.defaults = function(obj) {
-    each(slice.call(arguments, 1), function(source) {
-      for (var prop in source) {
-        if (obj[prop] == null) obj[prop] = source[prop];
-      }
-    });
-    return obj;
-  };
-
-  // Create a (shallow-cloned) duplicate of an object.
-  _.clone = function(obj) {
-    if (!_.isObject(obj)) return obj;
-    return _.isArray(obj) ? obj.slice() : _.extend({}, obj);
-  };
-
-  // Invokes interceptor with the obj, and then returns obj.
-  // The primary purpose of this method is to "tap into" a method chain, in
-  // order to perform operations on intermediate results within the chain.
-  _.tap = function(obj, interceptor) {
-    interceptor(obj);
-    return obj;
-  };
-
-  // Internal recursive comparison function.
-  function eq(a, b, stack) {
-    // Identical objects are equal. `0 === -0`, but they aren't identical.
-    // See the Harmony `egal` proposal: http://wiki.ecmascript.org/doku.php?id=harmony:egal.
-    if (a === b) return a !== 0 || 1 / a == 1 / b;
-    // A strict comparison is necessary because `null == undefined`.
-    if (a == null || b == null) return a === b;
-    // Unwrap any wrapped objects.
-    if (a._chain) a = a._wrapped;
-    if (b._chain) b = b._wrapped;
-    // Invoke a custom `isEqual` method if one is provided.
-    if (a.isEqual && _.isFunction(a.isEqual)) return a.isEqual(b);
-    if (b.isEqual && _.isFunction(b.isEqual)) return b.isEqual(a);
-    // Compare `[[Class]]` names.
-    var className = toString.call(a);
-    if (className != toString.call(b)) return false;
-    switch (className) {
-      // Strings, numbers, dates, and booleans are compared by value.
-      case '[object String]':
-        // Primitives and their corresponding object wrappers are equivalent; thus, `"5"` is
-        // equivalent to `new String("5")`.
-        return a == String(b);
-      case '[object Number]':
-        // `NaN`s are equivalent, but non-reflexive. An `egal` comparison is performed for
-        // other numeric values.
-        return a != +a ? b != +b : (a == 0 ? 1 / a == 1 / b : a == +b);
-      case '[object Date]':
-      case '[object Boolean]':
-        // Coerce dates and booleans to numeric primitive values. Dates are compared by their
-        // millisecond representations. Note that invalid dates with millisecond representations
-        // of `NaN` are not equivalent.
-        return +a == +b;
-      // RegExps are compared by their source patterns and flags.
-      case '[object RegExp]':
-        return a.source == b.source &&
-               a.global == b.global &&
-               a.multiline == b.multiline &&
-               a.ignoreCase == b.ignoreCase;
-    }
-    if (typeof a != 'object' || typeof b != 'object') return false;
-    // Assume equality for cyclic structures. The algorithm for detecting cyclic
-    // structures is adapted from ES 5.1 section 15.12.3, abstract operation `JO`.
-    var length = stack.length;
-    while (length--) {
-      // Linear search. Performance is inversely proportional to the number of
-      // unique nested structures.
-      if (stack[length] == a) return true;
-    }
-    // Add the first object to the stack of traversed objects.
-    stack.push(a);
-    var size = 0, result = true;
-    // Recursively compare objects and arrays.
-    if (className == '[object Array]') {
-      // Compare array lengths to determine if a deep comparison is necessary.
-      size = a.length;
-      result = size == b.length;
-      if (result) {
-        // Deep compare the contents, ignoring non-numeric properties.
-        while (size--) {
-          // Ensure commutative equality for sparse arrays.
-          if (!(result = size in a == size in b && eq(a[size], b[size], stack))) break;
-        }
-      }
-    } else {
-      // Objects with different constructors are not equivalent.
-      if ('constructor' in a != 'constructor' in b || a.constructor != b.constructor) return false;
-      // Deep compare objects.
-      for (var key in a) {
-        if (_.has(a, key)) {
-          // Count the expected number of properties.
-          size++;
-          // Deep compare each member.
-          if (!(result = _.has(b, key) && eq(a[key], b[key], stack))) break;
-        }
-      }
-      // Ensure that both objects contain the same number of properties.
-      if (result) {
-        for (key in b) {
-          if (_.has(b, key) && !(size--)) break;
-        }
-        result = !size;
-      }
-    }
-    // Remove the first object from the stack of traversed objects.
-    stack.pop();
-    return result;
-  }
-
-  // Perform a deep comparison to check if two objects are equal.
-  _.isEqual = function(a, b) {
-    return eq(a, b, []);
-  };
-
-  // Is a given array, string, or object empty?
-  // An "empty" object has no enumerable own-properties.
-  _.isEmpty = function(obj) {
-    if (_.isArray(obj) || _.isString(obj)) return obj.length === 0;
-    for (var key in obj) if (_.has(obj, key)) return false;
-    return true;
-  };
-
-  // Is a given value a DOM element?
-  _.isElement = function(obj) {
-    return !!(obj && obj.nodeType == 1);
-  };
-
-  // Is a given value an array?
-  // Delegates to ECMA5's native Array.isArray
-  _.isArray = nativeIsArray || function(obj) {
-    return toString.call(obj) == '[object Array]';
-  };
-
-  // Is a given variable an object?
-  _.isObject = function(obj) {
-    return obj === Object(obj);
-  };
-
-  // Is a given variable an arguments object?
-  _.isArguments = function(obj) {
-    return toString.call(obj) == '[object Arguments]';
-  };
-  if (!_.isArguments(arguments)) {
-    _.isArguments = function(obj) {
-      return !!(obj && _.has(obj, 'callee'));
-    };
-  }
-
-  // Is a given value a function?
-  _.isFunction = function(obj) {
-    return toString.call(obj) == '[object Function]';
-  };
-
-  // Is a given value a string?
-  _.isString = function(obj) {
-    return toString.call(obj) == '[object String]';
-  };
-
-  // Is a given value a number?
-  _.isNumber = function(obj) {
-    return toString.call(obj) == '[object Number]';
-  };
-
-  // Is the given value `NaN`?
-  _.isNaN = function(obj) {
-    // `NaN` is the only value for which `===` is not reflexive.
-    return obj !== obj;
-  };
-
-  // Is a given value a boolean?
-  _.isBoolean = function(obj) {
-    return obj === true || obj === false || toString.call(obj) == '[object Boolean]';
-  };
-
-  // Is a given value a date?
-  _.isDate = function(obj) {
-    return toString.call(obj) == '[object Date]';
-  };
-
-  // Is the given value a regular expression?
-  _.isRegExp = function(obj) {
-    return toString.call(obj) == '[object RegExp]';
-  };
-
-  // Is a given value equal to null?
-  _.isNull = function(obj) {
-    return obj === null;
-  };
-
-  // Is a given variable undefined?
-  _.isUndefined = function(obj) {
-    return obj === void 0;
-  };
-
-  // Has own property?
-  _.has = function(obj, key) {
-    return hasOwnProperty.call(obj, key);
-  };
-
-  // Utility Functions
-  // -----------------
-
-  // Run Underscore.js in *noConflict* mode, returning the `_` variable to its
-  // previous owner. Returns a reference to the Underscore object.
-  _.noConflict = function() {
-    root._ = previousUnderscore;
-    return this;
-  };
-
-  // Keep the identity function around for default iterators.
-  _.identity = function(value) {
-    return value;
-  };
-
-  // Run a function **n** times.
-  _.times = function (n, iterator, context) {
-    for (var i = 0; i < n; i++) iterator.call(context, i);
-  };
-
-  // Escape a string for HTML interpolation.
-  _.escape = function(string) {
-    return (''+string).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#x27;').replace(/\//g,'&#x2F;');
-  };
-
-  // Add your own custom functions to the Underscore object, ensuring that
-  // they're correctly added to the OOP wrapper as well.
-  _.mixin = function(obj) {
-    each(_.functions(obj), function(name){
-      addToWrapper(name, _[name] = obj[name]);
-    });
-  };
-
-  // Generate a unique integer id (unique within the entire client session).
-  // Useful for temporary DOM ids.
-  var idCounter = 0;
-  _.uniqueId = function(prefix) {
-    var id = idCounter++;
-    return prefix ? prefix + id : id;
-  };
-
-  // By default, Underscore uses ERB-style template delimiters, change the
-  // following template settings to use alternative delimiters.
-  _.templateSettings = {
-    evaluate    : /<%([\s\S]+?)%>/g,
-    interpolate : /<%=([\s\S]+?)%>/g,
-    escape      : /<%-([\s\S]+?)%>/g
-  };
-
-  // When customizing `templateSettings`, if you don't want to define an
-  // interpolation, evaluation or escaping regex, we need one that is
-  // guaranteed not to match.
-  var noMatch = /.^/;
-
-  // Within an interpolation, evaluation, or escaping, remove HTML escaping
-  // that had been previously added.
-  var unescape = function(code) {
-    return code.replace(/\\\\/g, '\\').replace(/\\'/g, "'");
-  };
-
-  // JavaScript micro-templating, similar to John Resig's implementation.
-  // Underscore templating handles arbitrary delimiters, preserves whitespace,
-  // and correctly escapes quotes within interpolated code.
-  _.template = function(str, data) {
-    var c  = _.templateSettings;
-    var tmpl = 'var __p=[],print=function(){__p.push.apply(__p,arguments);};' +
-      'with(obj||{}){__p.push(\'' +
-      str.replace(/\\/g, '\\\\')
-         .replace(/'/g, "\\'")
-         .replace(c.escape || noMatch, function(match, code) {
-           return "',_.escape(" + unescape(code) + "),'";
-         })
-         .replace(c.interpolate || noMatch, function(match, code) {
-           return "'," + unescape(code) + ",'";
-         })
-         .replace(c.evaluate || noMatch, function(match, code) {
-           return "');" + unescape(code).replace(/[\r\n\t]/g, ' ') + ";__p.push('";
-         })
-         .replace(/\r/g, '\\r')
-         .replace(/\n/g, '\\n')
-         .replace(/\t/g, '\\t')
-         + "');}return __p.join('');";
-    var func = new Function('obj', '_', tmpl);
-    if (data) return func(data, _);
-    return function(data) {
-      return func.call(this, data, _);
-    };
-  };
-
-  // Add a "chain" function, which will delegate to the wrapper.
-  _.chain = function(obj) {
-    return _(obj).chain();
-  };
-
-  // The OOP Wrapper
-  // ---------------
-
-  // If Underscore is called as a function, it returns a wrapped object that
-  // can be used OO-style. This wrapper holds altered versions of all the
-  // underscore functions. Wrapped objects may be chained.
-  var wrapper = function(obj) { this._wrapped = obj; };
-
-  // Expose `wrapper.prototype` as `_.prototype`
-  _.prototype = wrapper.prototype;
-
-  // Helper function to continue chaining intermediate results.
-  var result = function(obj, chain) {
-    return chain ? _(obj).chain() : obj;
-  };
-
-  // A method to easily add functions to the OOP wrapper.
-  var addToWrapper = function(name, func) {
-    wrapper.prototype[name] = function() {
-      var args = slice.call(arguments);
-      unshift.call(args, this._wrapped);
-      return result(func.apply(_, args), this._chain);
-    };
-  };
-
-  // Add all of the Underscore functions to the wrapper object.
-  _.mixin(_);
-
-  // Add all mutator Array functions to the wrapper.
-  each(['pop', 'push', 'reverse', 'shift', 'sort', 'splice', 'unshift'], function(name) {
-    var method = ArrayProto[name];
-    wrapper.prototype[name] = function() {
-      var wrapped = this._wrapped;
-      method.apply(wrapped, arguments);
-      var length = wrapped.length;
-      if ((name == 'shift' || name == 'splice') && length === 0) delete wrapped[0];
-      return result(wrapped, this._chain);
-    };
-  });
-
-  // Add all accessor Array functions to the wrapper.
-  each(['concat', 'join', 'slice'], function(name) {
-    var method = ArrayProto[name];
-    wrapper.prototype[name] = function() {
-      return result(method.apply(this._wrapped, arguments), this._chain);
-    };
-  });
-
-  // Start chaining a wrapped Underscore object.
-  wrapper.prototype.chain = function() {
-    this._chain = true;
-    return this;
-  };
-
-  // Extracts the result from a wrapped and chained object.
-  wrapper.prototype.value = function() {
-    return this._wrapped;
-  };
-
-}).call(this);
-
+var path = require("path");
+var _ = require("lodash");
+var moment = require("moment");
+_.mixin(require("underscore.deferred"));
+var request = require("request");
+
+// Include underscore math
 //   Math.js
 
 (function() {
@@ -1762,435 +109,10 @@
   _.mixin(math);
 
 })();
-(function(root){
 
-  // Let's borrow a couple of things from Underscore that we'll need
-
-  // _.each
-  var breaker = {},
-      AP = Array.prototype,
-      OP = Object.prototype,
-
-      hasOwn = OP.hasOwnProperty,
-      toString = OP.toString,
-      forEach = AP.forEach,
-      slice = AP.slice;
-
-  var _each = function( obj, iterator, context ) {
-    var key, i, l;
-
-    if ( !obj ) {
-      return;
-    }
-    if ( forEach && obj.forEach === forEach ) {
-      obj.forEach( iterator, context );
-    } else if ( obj.length === +obj.length ) {
-      for ( i = 0, l = obj.length; i < l; i++ ) {
-        if ( i in obj && iterator.call( context, obj[i], i, obj ) === breaker ) {
-          return;
-        }
-      }
-    } else {
-      for ( key in obj ) {
-        if ( hasOwn.call( obj, key ) ) {
-          if ( iterator.call( context, obj[key], key, obj) === breaker ) {
-            return;
-          }
-        }
-      }
-    }
-  };
-
-  // _.isFunction
-  var _isFunction = function( obj ) {
-    return !!(obj && obj.constructor && obj.call && obj.apply);
-  };
-
-  // _.extend
-  var _extend = function( obj ) {
-
-    _each( slice.call( arguments, 1), function( source ) {
-      var prop;
-
-      for ( prop in source ) {
-        if ( source[prop] !== void 0 ) {
-          obj[ prop ] = source[ prop ];
-        }
-      }
-    });
-    return obj;
-  };
-
-  // And some jQuery specific helpers
-
-  var class2type = { "[object Array]": "array", "[object Function]": "function" };
-
-  var _type = function( obj ) {
-    return !obj ?
-      String( obj ) :
-      class2type[ toString.call(obj) ] || "object";
-  };
-
-  // Now start the jQuery-cum-Underscore implementation. Some very
-  // minor changes to the jQuery source to get this working.
-
-  // Internal Deferred namespace
-  var _d = {};
-
-  var flagsCache = {};
-  // Convert String-formatted flags into Object-formatted ones and store in cache
-  function createFlags( flags ) {
-      var object = flagsCache[ flags ] = {},
-          i, length;
-      flags = flags.split( /\s+/ );
-      for ( i = 0, length = flags.length; i < length; i++ ) {
-          object[ flags[i] ] = true;
-      }
-      return object;
-  }
-
-  _d.Callbacks = function( flags ) {
-
-    // Convert flags from String-formatted to Object-formatted
-    // (we check in cache first)
-    flags = flags ? ( flagsCache[ flags ] || createFlags( flags ) ) : {};
-
-    var // Actual callback list
-      list = [],
-      // Stack of fire calls for repeatable lists
-      stack = [],
-      // Last fire value (for non-forgettable lists)
-      memory,
-      // Flag to know if list was already fired
-      fired,
-      // Flag to know if list is currently firing
-      firing,
-      // First callback to fire (used internally by add and fireWith)
-      firingStart,
-      // End of the loop when firing
-      firingLength,
-      // Index of currently firing callback (modified by remove if needed)
-      firingIndex,
-      // Add one or several callbacks to the list
-      add = function( args ) {
-        var i,
-          length,
-          elem,
-          type,
-          actual;
-        for ( i = 0, length = args.length; i < length; i++ ) {
-          elem = args[ i ];
-          type = _type( elem );
-          if ( type === "array" ) {
-            // Inspect recursively
-            add( elem );
-          } else if ( type === "function" ) {
-            // Add if not in unique mode and callback is not in
-            if ( !flags.unique || !self.has( elem ) ) {
-              list.push( elem );
-            }
-          }
-        }
-      },
-      // Fire callbacks
-      fire = function( context, args ) {
-        args = args || [];
-        memory = !flags.memory || [ context, args ];
-        fired = true;
-        firing = true;
-        firingIndex = firingStart || 0;
-        firingStart = 0;
-        firingLength = list.length;
-        for ( ; list && firingIndex < firingLength; firingIndex++ ) {
-          if ( list[ firingIndex ].apply( context, args ) === false && flags.stopOnFalse ) {
-            memory = true; // Mark as halted
-            break;
-          }
-        }
-        firing = false;
-        if ( list ) {
-          if ( !flags.once ) {
-            if ( stack && stack.length ) {
-              memory = stack.shift();
-              self.fireWith( memory[ 0 ], memory[ 1 ] );
-            }
-          } else if ( memory === true ) {
-            self.disable();
-          } else {
-            list = [];
-          }
-        }
-      },
-      // Actual Callbacks object
-      self = {
-        // Add a callback or a collection of callbacks to the list
-        add: function() {
-          if ( list ) {
-            var length = list.length;
-            add( arguments );
-            // Do we need to add the callbacks to the
-            // current firing batch?
-            if ( firing ) {
-              firingLength = list.length;
-            // With memory, if we're not firing then
-            // we should call right away, unless previous
-            // firing was halted (stopOnFalse)
-            } else if ( memory && memory !== true ) {
-              firingStart = length;
-              fire( memory[ 0 ], memory[ 1 ] );
-            }
-          }
-          return this;
-        },
-        // Remove a callback from the list
-        remove: function() {
-          if ( list ) {
-            var args = arguments,
-              argIndex = 0,
-              argLength = args.length;
-            for ( ; argIndex < argLength ; argIndex++ ) {
-              for ( var i = 0; i < list.length; i++ ) {
-                if ( args[ argIndex ] === list[ i ] ) {
-                  // Handle firingIndex and firingLength
-                  if ( firing ) {
-                    if ( i <= firingLength ) {
-                      firingLength--;
-                      if ( i <= firingIndex ) {
-                        firingIndex--;
-                      }
-                    }
-                  }
-                  // Remove the element
-                  list.splice( i--, 1 );
-                  // If we have some unicity property then
-                  // we only need to do this once
-                  if ( flags.unique ) {
-                    break;
-                  }
-                }
-              }
-            }
-          }
-          return this;
-        },
-        // Control if a given callback is in the list
-        has: function( fn ) {
-          if ( list ) {
-            var i = 0,
-              length = list.length;
-            for ( ; i < length; i++ ) {
-              if ( fn === list[ i ] ) {
-                return true;
-              }
-            }
-          }
-          return false;
-        },
-        // Remove all callbacks from the list
-        empty: function() {
-          list = [];
-          return this;
-        },
-        // Have the list do nothing anymore
-        disable: function() {
-          list = stack = memory = undefined;
-          return this;
-        },
-        // Is it disabled?
-        disabled: function() {
-          return !list;
-        },
-        // Lock the list in its current state
-        lock: function() {
-          stack = undefined;
-          if ( !memory || memory === true ) {
-            self.disable();
-          }
-          return this;
-        },
-        // Is it locked?
-        locked: function() {
-          return !stack;
-        },
-        // Call all callbacks with the given context and arguments
-        fireWith: function( context, args ) {
-          if ( stack ) {
-            if ( firing ) {
-              if ( !flags.once ) {
-                stack.push( [ context, args ] );
-              }
-            } else if ( !( flags.once && memory ) ) {
-              fire( context, args );
-            }
-          }
-          return this;
-        },
-        // Call all the callbacks with the given arguments
-        fire: function() {
-          self.fireWith( this, arguments );
-          return this;
-        },
-        // To know if the callbacks have already been called at least once
-        fired: function() {
-          return !!fired;
-        }
-      };
-
-    return self;
-  };
-
-  _d.Deferred = function( func ) {
-      var doneList = _d.Callbacks( "once memory" ),
-        failList = _d.Callbacks( "once memory" ),
-        progressList = _d.Callbacks( "memory" ),
-        state = "pending",
-        lists = {
-            resolve: doneList,
-            reject: failList,
-            notify: progressList
-        },
-        promise = {
-            done: doneList.add,
-            fail: failList.add,
-            progress: progressList.add,
-
-            state: function() {
-                return state;
-            },
-
-            // Deprecated
-            isResolved: doneList.fired,
-            isRejected: failList.fired,
-
-            then: function( doneCallbacks, failCallbacks, progressCallbacks ) {
-                deferred.done( doneCallbacks ).fail( failCallbacks ).progress( progressCallbacks );
-                return this;
-            },
-            always: function() {
-                deferred.done.apply( deferred, arguments ).fail.apply( deferred, arguments );
-                return this;
-            },
-            pipe: function( fnDone, fnFail, fnProgress ) {
-                return _d.Deferred(function( newDefer ) {
-                    _each( {
-                        done: [ fnDone, "resolve" ],
-                        fail: [ fnFail, "reject" ],
-                        progress: [ fnProgress, "notify" ]
-                    }, function( data, handler ) {
-                        var fn = data[ 0 ],
-                            action = data[ 1 ],
-                            returned;
-                        if ( _isFunction( fn ) ) {
-                            deferred[ handler ](function() {
-                                returned = fn.apply( this, arguments );
-                                if ( returned && _isFunction( returned.promise ) ) {
-                                    returned.promise().then( newDefer.resolve, newDefer.reject, newDefer.notify );
-                                } else {
-                                    newDefer[ action + "With" ]( this === deferred ? newDefer : this, [ returned ] );
-                                }
-                            });
-                        } else {
-                            deferred[ handler ]( newDefer[ action ] );
-                        }
-                    });
-                }).promise();
-            },
-            // Get a promise for this deferred
-            // If obj is provided, the promise aspect is added to the object
-            promise: function( obj ) {
-                if ( !obj ) {
-                    obj = promise;
-                } else {
-                    for ( var key in promise ) {
-                        obj[ key ] = promise[ key ];
-                    }
-                }
-                return obj;
-            }
-        },
-        deferred = promise.promise({}),
-        key;
-
-        for ( key in lists ) {
-            deferred[ key ] = lists[ key ].fire;
-            deferred[ key + "With" ] = lists[ key ].fireWith;
-        }
-
-        // Handle state
-        deferred.done( function() {
-          state = "resolved";
-        }, failList.disable, progressList.lock ).fail( function() {
-          state = "rejected";
-        }, doneList.disable, progressList.lock );
-
-        // Call given func if any
-        if ( func ) {
-          func.call( deferred, deferred );
-        }
-
-        // All done!
-        return deferred;
-    };
-
-    // Deferred helper
-    _d.when = function( firstParam ) {
-      var args = slice.call( arguments, 0 ),
-        i = 0,
-        length = args.length,
-        pValues = new Array( length ),
-        count = length,
-        pCount = length,
-        deferred = length <= 1 && firstParam && _isFunction( firstParam.promise ) ?
-            firstParam :
-            _d.Deferred(),
-        promise = deferred.promise();
-      function resolveFunc( i ) {
-        return function( value ) {
-          args[ i ] = arguments.length > 1 ? slice.call( arguments, 0 ) : value;
-          if ( !( --count ) ) {
-            deferred.resolveWith( deferred, args );
-          }
-        };
-      }
-      function progressFunc( i ) {
-        return function( value ) {
-          pValues[ i ] = arguments.length > 1 ? slice.call( arguments, 0 ) : value;
-          deferred.notifyWith( promise, pValues );
-        };
-      }
-      if ( length > 1 ) {
-        for ( ; i < length; i++ ) {
-          if ( args[ i ] && args[ i ].promise && _isFunction( args[ i ].promise ) ) {
-            args[ i ].promise().then( resolveFunc(i), deferred.reject, progressFunc(i) );
-          } else {
-            --count;
-          }
-        }
-        if ( !count ) {
-          deferred.resolveWith( deferred, args );
-        }
-      } else if ( deferred !== firstParam ) {
-        deferred.resolveWith( deferred, length ? [ firstParam ] : [] );
-      }
-      return promise;
-    };
-
-  // Try exporting as a Common.js Module
-  if ( typeof module !== "undefined" && module.exports ) {
-    module.exports = _d;
-
-  // Or mixin to Underscore.js
-  } else if ( typeof root._ !== "undefined" ) {
-    root._.mixin(_d);
-
-  // Or assign it to window._
-  } else {
-    root._ = _d;
-  }
-
-})(this);
+// Include Miso Dataset lib
 /**
-* Miso.Dataset - v0.1.3 - 5/23/2012
+* Miso.Dataset - v0.2.0 - 6/21/2012
 * http://github.com/misoproject/dataset
 * Copyright (c) 2012 Alex Graul, Irene Ros;
 * Dual Licensed: MIT, GPL
@@ -2236,7 +158,7 @@
         return 0;
       },
       numeric : function(v) {
-        return _.isNaN( Number(v) ) ? 0 : Number(v);
+        return _.isNaN( Number(v) ) ? null : Number(v);
       }
     },
 
@@ -2257,7 +179,13 @@
       },
 
       numeric : function(value) {
-        return _.isNaN(+value) ? 0 : +value;
+        if (_.isNaN(+value) || value === null) {
+          return null;
+        } else if (_.isNumber(+value)) {
+          return +value;
+        } else {
+          return null;
+        }
       }
     },
 
@@ -2283,7 +211,11 @@
         return (n1 < n2 ? -1 : 1);
       },
       numeric : function(value) {
-        return (value) ? 1 : 0;
+        if (_.isNaN(value)) {
+          return null;
+        } else {
+          return (value) ? 1 : 0;  
+        }
       }
     },
 
@@ -2291,7 +223,7 @@
       name : "number",
       regexp : /^[\-\.]?[0-9]+([\.][0-9]+)?$/,
       coerce : function(v) {
-        if (_.isNull(v) || v === "") {
+        if (_.isNull(v)) {
           return null;
         }
         return _.isNaN(v) ? null : +v;
@@ -2766,8 +698,10 @@
     _max : function() {
       var max = -Infinity;
       for (var j = 0; j < this.data.length; j++) {
-        if (Miso.types[this.type].compare(this.data[j], max) > 0) {
-          max = this.numericAt(j);
+        if (this.data[j] !== null) {
+          if (Miso.types[this.type].compare(this.data[j], max) > 0) {
+            max = this.numericAt(j);
+          }  
         }
       }
 
@@ -2777,8 +711,10 @@
     _min : function() {
       var min = Infinity;
       for (var j = 0; j < this.data.length; j++) {
-        if (Miso.types[this.type].compare(this.data[j], min) < 0) {
-          min = this.numericAt(j);
+        if (this.data[j] !== null) {
+          if (Miso.types[this.type].compare(this.data[j], min) < 0) {
+            min = this.numericAt(j);
+          }  
         }
       }
       return Miso.types[this.type].coerce(min, this);
@@ -2922,9 +858,14 @@
     */
     where : function(filter, options) {
       options = options || {};
+      options.filter = options.filter || {};
+      if ( _.isFunction(filter) ) {
+        options.filter.rows = filter;
+      } else {
+        options.filter = filter;
+      }
       
       options.parent = this;
-      options.filter = filter || {};
 
       return new Miso.DataView(options);
     },
@@ -3080,9 +1021,22 @@
     *   iterator - function that is passed each row
     *              iterator(rowObject, index, dataset)
     *   context - options object. Optional.
-    */    
+    */
     each : function(iterator, context) {
       for(var i = 0; i < this.length; i++) {
+        iterator.apply(context || this, [this.rowByPosition(i), i]);
+      }
+    },
+
+    /**
+    * Iterates over all rows in the dataset in reverse order
+    * Parameters:
+    *   iterator - function that is passed each row
+    *              iterator(rowObject, index, dataset)
+    *   context - options object. Optional.
+    */
+    reverseEach : function(iterator, context) {
+      for(var i = this.length-1; i >= 0; i--) {
         iterator.apply(context || this, [this.rowByPosition(i), i]);
       }
     },
@@ -3252,8 +1206,15 @@
     * Parameters:
     *   options - Optional
     */    
-    sort : function(options) {
-      options = options || {};
+    sort : function(args) {
+      var options = {};
+    
+      //If the first param is the comparator, set it as such.
+      if ( _.isFunction(args) ) {
+        options.comparator = args;
+      } else {
+        options = args || options;
+      }
 
       if (options.comparator) {
         this.comparator = options.comparator;
@@ -3443,6 +1404,47 @@
     }
   });
 
+  Miso.Product.define = function(func) {
+    return function(columns, options) {
+      options = options || {};
+      var columnObjects = this._findColumns(columns);
+      var _self = this;
+      options.type = options.type || columnObjects[0].type;
+      options.typeOptions = options.typeOptions || columnObjects[0].typeOptions;
+
+      //define wrapper function to handle coercion
+      var producer = function() {
+        var val = func.call(_self, columnObjects, options);
+        return Miso.types[options.type].coerce(val, options.typeOptions);
+      };
+
+      if (this.syncable) {
+        //create product object to pass back for syncable datasets/views
+        var prod = new Miso.Product({
+          columns : columnObjects,
+          func : function(options) {
+            options = options || {};
+            var delta = this._buildDelta(this.value, producer.call(_self));
+            this.value = delta.changed;
+            if (_self.syncable) {
+              var event = this._buildEvent(delta);
+              if (!_.isUndefined(delta.old) && !options.silent && delta.old !== delta.changed) {
+                this.trigger("change", event);
+              }
+            }
+          }
+        });
+        this.bind("change", prod._sync, prod); 
+        return prod; 
+
+      } else {
+        return producer.call(_self);
+      }
+
+    };
+  };
+
+
   _.extend(Miso.DataView.prototype, {
 
     // finds the column objects that match the single/multiple
@@ -3474,81 +1476,39 @@
     *   options
     *     silent - set to tue to prevent event propagation
     */
-    sum : function(columns, options) {
-      options = options || {};
-      var columnObjects = this._findColumns(columns);
+    sum : Miso.Product.define( function(columns, options) {
+      _.each(columns, function(col) {
+        if (col.type === Miso.types.time.name) {
+          throw new Error("Can't sum up time");
+        }
+      });
+      return _.sum(_.map(columns, function(c) { return c._sum(); }));
+    }),
 
-      var sumFunc = (function(columns){
-        return function() {
-          // check column types, can't sum up time.
-          _.each(columns, function(col) {
-            if (col.type === Miso.types.time.name) {
-              throw new Error("Can't sum up time");
-            }
-          });
-          return _.sum(_.map(columns, function(c) { return c._sum(); }));
-        };
-      }(columnObjects));
-
-      return this._calculated(columnObjects, sumFunc);
-    },
-
-    /**
+     /**
     * return a Product with the value of the maximum 
     * value of the column
     * Parameters:
     *   column - string or array of column names on which the value is calculated 
     */    
-    max : function(columns, options) {
-      options = options || {};
-      var columnObjects = this._findColumns(columns);
+    max : Miso.Product.define( function(columns, options) {
+      return _.max(_.map(columns, function(c) { 
+        return c._max(); 
+      }));
+    }),
 
-      var maxFunc = (function(columns) {
-        return function() {
-
-          var max = _.max(_.map(columns, function(c) { 
-            return c._max(); 
-          }));
-          
-          // save types and type options to later coerce
-          var type = columns[0].type;
-          var typeOptions = columns[0].typeOptions;
-
-          // return the coerced value for column type.
-          return Miso.types[type].coerce(max, typeOptions);
-        };
-      }(columnObjects));
-
-      return this._calculated(columnObjects, maxFunc);  
-      
-    },
-
+  
     /**
     * return a Product with the value of the minimum 
     * value of the column
     * Paramaters:
     *   columns - string or array of column names on which the value is calculated 
     */    
-    min : function(columns, options) {
-      options = options || {};
-      var columnObjects = this._findColumns(columns);
-      
-      var minFunc = (function(columns) {
-        return function() {
-
-          var min = _.min(_.map(columns, function(c) { return c._min(); }));
-
-           // save types and type options to later coerce
-          var type = columns[0].type;
-          var typeOptions = columns[0].typeOptions;
-
-          // return the coerced value for column type.
-          return Miso.types[type].coerce(min, typeOptions);
-        };
-      }(columnObjects));
-
-      return this._calculated(columnObjects, minFunc); 
-    },
+    min : Miso.Product.define( function(columns, options) {
+      return _.min(_.map(columns, function(c) { 
+        return c._min(); 
+      }));
+    }),
 
     /**
     * return a Product with the value of the average
@@ -3556,78 +1516,21 @@
     * Parameters:
     *   column - string or array of column names on which the value is calculated 
     */    
-    mean : function(columns, options) {
-      options = options || {};
-      var columnObjects = this._findColumns(columns);
-
-      var meanFunc = (function(columns){
-        return function() {
-          var vals = [];
-          _.each(columns, function(col) {
-            vals.push(col.data);
-          });
-          
-          vals = _.flatten(vals);
-          
-          // save types and type options to later coerce
-          var type = columns[0].type;
-          var typeOptions = columns[0].typeOptions;
-
-          // convert the values to their appropriate numeric value
-          vals = _.map(vals, function(v) { return Miso.types[type].numeric(v); });
-
-          // return the coerced value for column type.
-          return Miso.types[type].coerce(_.mean(vals), typeOptions);   
-        };
-      }(columnObjects));
-
-      return this._calculated(columnObjects, meanFunc);
-    },
-
-    
-    // return a Product derived by running the passed function
-    // Parameters:
-    //   column - column on which the value is calculated 
-    //   producer - function which derives the product after
-    //              being passed each row
-    _calculated : function(columns, producer) {
-      var _self = this;
-
-      var prod = new Miso.Product({
-        columns : columns,
-        func : function(options) {
-          options = options || {};
-          
-          // build a diff delta. We're using the column name
-          // so that any subscribers know whether they need to 
-          // update if they are sharing a column.
-          var delta = this._buildDelta(this.value, producer.apply(_self));
-
-          // because below we are triggering any change subscribers to this product
-          // before actually returning the changed value
-          // let's just set it here.
-          this.value = delta.changed;
-
-          if (_self.syncable) {
-            var event = this._buildEvent(delta);
-
-            // trigger any subscribers this might have if the values are diff
-            if (!_.isUndefined(delta.old) && !options.silent && delta.old !== delta.changed) {
-              this.trigger("change", event);
-            }  
-          }
-        }
+    mean : Miso.Product.define( function(columns, options) {
+      var vals = [];
+      _.each(columns, function(col) {
+        vals.push(col.data);
       });
 
-      // auto bind to parent dataset if its syncable
-      if (this.syncable) {
-        this.bind("change", prod._sync, prod); 
-        return prod; 
-      } else {
-        return producer();
-      }
-      
-    }
+      vals = _.flatten(vals);
+
+      // save types and type options to later coerce
+      var type = columns[0].type;
+
+      // convert the values to their appropriate numeric value
+      vals = _.map(vals, function(v) { return Miso.types[type].numeric(v); });
+      return _.mean(vals);   
+    })
 
   });
 
@@ -3785,13 +1688,14 @@ Version 0.0.1.2
       // implementation, pass it as an option
       if (options.deferred) {
         this.deferred = options.deferred;
+      } else {
+        this.deferred =  new _.Deferred();
       }
 
       //build any columns present in the constructor
       if ( options.columns ) {
         this.addColumns(options.columns);
       }
-
     },
 
     /**
@@ -3822,7 +1726,7 @@ Version 0.0.1.2
     fetch : function(options) {
       options = options || {};
       
-      var dfd = this.deferred || new _.Deferred();
+      var dfd = this.deferred;
 
       if ( _.isNull(this.importer) ) {
         throw "No importer defined";
@@ -3831,7 +1735,15 @@ Version 0.0.1.2
       this.importer.fetch({
         success: _.bind(function( data ) {
 
-          this._apply( data );
+          try {
+            this._apply( data );
+          } catch (e) {
+            if (options.error) {
+              options.error.call(this, e);
+            } else {
+              throw e;
+            }
+          }
 
           // if a comparator was defined, sort the data
           if (this.comparator) {
@@ -3853,7 +1765,7 @@ Version 0.0.1.2
 
         error : _.bind(function(e) {
           if (options.error) {
-            options.error.call(this);
+            options.error.call(this, e);
           }
 
           dfd.reject(e);
@@ -4627,7 +2539,8 @@ Version 0.0.1.2
     this.params = {
       type : "GET",
       url : _.isFunction(this._url) ? _.bind(this._url, this) : this._url,
-      dataType : options.dataType ? options.dataType : (options.jsonp ? "jsonp" : "json")
+      dataType : options.dataType ? options.dataType : (options.jsonp ? "jsonp" : "json"),
+      callback : options.callback
     };
   };
 
@@ -4682,7 +2595,8 @@ Version 0.0.1.2
           url, 
           options.success,
           options.dataType === "script",
-          options.error
+          options.error,
+          options.callback
         );
 
         return;
@@ -4710,7 +2624,7 @@ Version 0.0.1.2
       }
   };
 
-  Miso.Xhr.getJSONP = function(url, success, isScript, error) {
+  Miso.Xhr.getJSONP = function(url, success, isScript, error, callback) {
     // If this is a script request, ensure that we do not
     // call something that has already been loaded
     if (isScript) {
@@ -4737,7 +2651,7 @@ Version 0.0.1.2
     paramStr  = url.split("?")[ 1 ],
     isFired   = false,
     params    = [],
-    callback, parts, callparam;
+    parts;
 
     // Extract params
     if (paramStr && !isScript) {
@@ -4746,10 +2660,18 @@ Version 0.0.1.2
     if (params.length) {
       parts = params[params.length - 1].split("=");
     }
-    callback = params.length ? (parts[ 1 ] ? parts[ 1 ] : parts[ 0 ]) : "jsonp";
+    if (!callback) {
+      var fallback = _.uniqueId('callback');
+      callback = params.length ? (parts[ 1 ] ? parts[ 1 ] : fallback) : fallback;
+    }
 
     if (!paramStr && !isScript) {
-      url += "?callback=" + callback;
+      url += "?";
+    }
+
+    if ( !paramStr || !/callback/.test(paramStr) ) {
+      if (paramStr) { url += '&'; }
+      url += "callback=" + callback;
     }
 
     if (callback && !isScript) {
@@ -4768,7 +2690,9 @@ Version 0.0.1.2
       };
 
       //  Replace callback param and callback name
-      url = url.replace(parts.join("="), parts[0] + "=" + callback);
+      if (parts) { 
+        url = url.replace(parts.join("="), parts[0] + "=" + callback);
+      }
     }
 
     script.onload = script.onreadystatechange = function() {
@@ -4801,7 +2725,7 @@ Version 0.0.1.2
 
     script.onerror = function(e) {
       if (error) {
-        error.call(null);
+        error.call(null, e);
       }
     };
 
@@ -4964,19 +2888,16 @@ Version 0.0.1.2
           
           options.url = "https://spreadsheets.google.com/tq?key=" + options.key;
                   
-          if (options.sheetName) {
-            options.url += "&sheet=" + options.sheetName;
-          } else {
-            options.url += "&gid=" + (options.worksheet || 1);  
-            delete options.worksheet;
-          }
+          if (typeof options.sheetName === "undefined") {
+            options.sheetName = "Sheet1";
+          } 
 
+          options.url += "&sheet=" + options.sheetName;
           this.callback = "misodsgs" + new Date().getTime();
           options.url += "&tqx=version:0.6;responseHandler:" + this.callback;
           options.url += ";reqId:0;out:json&tq&_=1335871249558#";
 
           delete options.sheetName;
-
         } else {
           options.url = "https://spreadsheets.google.com/feeds/cells/" + 
           options.key + "/" + 
@@ -4988,6 +2909,7 @@ Version 0.0.1.2
       }
     }
     
+
     this.params = {
       type : "GET",
       url : options.url,
@@ -5045,8 +2967,12 @@ Version 0.0.1.2
       var columnData = {}, columnNames = [];
 
       _.each(data.columns, function(column) {
-        columnNames.push( column.name );
-        columnData[ column.name ] = column.data;
+        if (columnNames.indexOf(column.name) !== -1) {
+          throw new Error("You have more than one column named \"" + column.name + "\"");
+        } else {
+          columnNames.push( column.name );
+          columnData[ column.name ] = column.data;  
+        }
       });
 
       return {
@@ -5122,10 +3048,31 @@ Version 0.0.1.2
           keyedData = {},
           i;
 
+      // the fast importer API is not available
+      if (typeof data.status !== "undefined" && data.status === "error") {
+        throw new Error("You can't use the fast importer for this url. Disable the fast flag");
+      }
+
       if (this.fast) {
 
         // init column names
         columns = _.pluck(data.table.cols, "label");
+
+        // check that the column names don't have duplicates
+        if (_.unique(columns).length < columns.length) {
+          var dup = "";
+          
+          _.inject(columns, function(memo, val) { 
+            
+            memo[val] = (memo[val] + 1) || 1; 
+            if (memo[val] > 1) {
+              dup = val;
+            }
+            return memo; 
+          }, {});
+
+          throw new Error("You have more than one column named \"" + dup + "\"");
+        }
 
         // save data
         _.each(data.table.rows, function(row) {
@@ -5155,15 +3102,20 @@ Version 0.0.1.2
           column = parts[1],
           position = parseInt(parts[2], 10);
 
-          if (_.isUndefined(columnPositions[column])) {
+          // this is the first row, thus column names.
+          if (position === 1) {
 
-            // cache the column position
-            columnPositions[column] = columnData.length;
+            // if we've already seen this column name, throw an exception
+            if (columns.indexOf(cell.content.$t) !== -1) {
+              throw new Error("You have more than one column named \"" + cell.content.$t + "\"");
+            } else {
+              // cache the column position
+              columnPositions[column] = columnData.length;
 
-            // we found a new column, so build a new column type.
-            columns[columnPositions[column]]    = cell.content.$t;
-            columnData[columnPositions[column]] = [];
-
+              // we found a new column, so build a new column type.
+              columns[columnPositions[column]]    = cell.content.$t;
+              columnData[columnPositions[column]] = []; 
+            }
 
           } else {
 
@@ -5250,8 +3202,19 @@ Version 0.0.1.2
   _.extend(Miso.Parsers.Delimited.prototype, Miso.Parsers.prototype, {
 
     parse : function(data) {
-      var columns = [];
-      var columnData = {};
+      var columns = [],
+          columnData = {},
+          uniqueSequence = {};
+      
+      var uniqueId = function(str) {
+        if ( !uniqueSequence[str] ) {
+          uniqueSequence[str] = 0;
+        }
+        var id = str + uniqueSequence[str];
+        uniqueSequence[str] += 1;
+        return id;
+      };
+
 
       var parseCSV = function(delimiterPattern, strData, strDelimiter, skipRows, emptyValue) {
 
@@ -5278,7 +3241,9 @@ Version 0.0.1.2
         try {
 
           // trim any empty lines at the end
-          strData = strData.trim();
+          strData = strData//.trim();
+            .replace(/\s+$/,"")
+            .replace(/^[\r|\n|\s]+[\r|\n]/,"\n");
 
           // do we have any rows to skip? if so, remove them from the string
           if (skipRows > 0) {
@@ -5287,7 +3252,7 @@ Version 0.0.1.2
                 strLen = strData.length;
 
             while (rowsSeen < skipRows && charIndex < strLen) {
-              if (/\n|\r|\r\n/.test(strData[charIndex])) {
+              if (/\n|\r|\r\n/.test(strData.charAt(charIndex))) {
                 rowsSeen++;
               } 
               charIndex++;
@@ -5298,8 +3263,7 @@ Version 0.0.1.2
 
           // Keep looping over the regular expression matches
           // until we can no longer find a match.
-          while (arrMatches = delimiterPattern.exec(strData)) {
-
+          function matchHandler(arrMatches) {
             // Get the delimiter that was found.
             var strMatchedDelimiter = arrMatches[ 1 ];
 
@@ -5308,80 +3272,108 @@ Version 0.0.1.2
             // field delimiter. If id does not, then we know
             // that this delimiter is a row delimiter.
             if ( strMatchedDelimiter.length &&
-               ( strMatchedDelimiter !== strDelimiter )){
-                
-                // we have reached a new row.
-                rowIndex++;
+              ( strMatchedDelimiter !== strDelimiter )){
 
-                // if we caught less items than we expected, throw an error
-                if (columnIndex < columnCount-1) {
-                  rowIndex--;
-                  throw new Error("Not enough items in row");
-                }
+            // we have reached a new row.
+            rowIndex++;
 
-                // We are clearly done computing columns.
-                columnCountComputed = true;
+            // if we caught less items than we expected, throw an error
+            if (columnIndex < columnCount-1) {
+              rowIndex--;
+              throw new Error("Not enough items in row");
+            }
 
-                // when we're done with a row, reset the row index to 0
-                columnIndex = 0;
-              
-              } else {
+            // We are clearly done computing columns.
+            columnCountComputed = true;
 
-                // Find the number of columns we're fetching and
-                // create placeholders for them.
-                if (!columnCountComputed) {
-                  columnCount++;
-                }
+            // when we're done with a row, reset the row index to 0
+            columnIndex = 0;
 
-                columnIndex++;
+          } else {
+
+            // Find the number of columns we're fetching and
+            // create placeholders for them.
+            if (!columnCountComputed) {
+              columnCount++;
+            }
+
+            columnIndex++;
+          }
+
+
+          // Now that we have our delimiter out of the way,
+          // let's check to see which kind of value we
+          // captured (quoted or unquoted).
+          var strMatchedValue = null;
+          if (arrMatches[ 2 ]){
+
+            // We found a quoted value. When we capture
+            // this value, unescape any double quotes.
+            strMatchedValue = arrMatches[ 2 ].replace(
+              new RegExp( "\"\"", "g" ),
+              "\""
+            );
+
+          } else {
+
+            // We found a non-quoted value.
+            strMatchedValue = arrMatches[ 3 ];
+          }
+
+
+          // Now that we have our value string, let's add
+          // it to the data array.
+
+          if (columnCountComputed) {
+
+            if (strMatchedValue === '') {
+              strMatchedValue = emptyValue;
+            }
+
+            if (typeof columnData[columns[columnIndex]] === "undefined") {
+              throw new Error("Too many items in row"); 
+            }
+
+            columnData[columns[columnIndex]].push(strMatchedValue);  
+
+          } else {
+
+            var createColumnName = function(start) {
+              var newName = uniqueId(start);
+              while ( columns.indexOf(newName) !== -1 ) {
+                newName = uniqueId(start);
               }
+              return newName;
+            };
 
+            //No column name? Create one starting with X
+            if ( _.isUndefined(strMatchedValue) || strMatchedValue === '' ) {
+              strMatchedValue = 'X';
+            }
 
-              // Now that we have our delimiter out of the way,
-              // let's check to see which kind of value we
-              // captured (quoted or unquoted).
-              var strMatchedValue = null;
-              if (arrMatches[ 2 ]){
+            //Duplicate column name? Create a new one starting with the name
+            if (columns.indexOf(strMatchedValue) !== -1) {
+              strMatchedValue = createColumnName(strMatchedValue);
+            }
 
-                // We found a quoted value. When we capture
-                // this value, unescape any double quotes.
-                strMatchedValue = arrMatches[ 2 ].replace(
-                  new RegExp( "\"\"", "g" ),
-                  "\""
-                );
+            // we are building the column names here
+            columns.push(strMatchedValue);
+            columnData[strMatchedValue] = [];
+          }
+          }        
 
-              } else {
-
-                // We found a non-quoted value.
-                strMatchedValue = arrMatches[ 3 ];
-              }
-
-
-              // Now that we have our value string, let's add
-              // it to the data array.
-              
-              if (columnCountComputed) {
-
-                if (strMatchedValue === '') {
-                  strMatchedValue = emptyValue;
-                }
-
-                if (typeof columnData[columns[columnIndex]] === "undefined") {
-                  throw new Error("Too many items in row"); 
-                }
-                
-                columnData[columns[columnIndex]].push(strMatchedValue);  
-          
-              } else {
-                // we are building the column names here
-                columns.push(strMatchedValue);
-                columnData[strMatchedValue] = [];
-              }
-            
-          } // end while
+        //missing column header at start
+        if ( new RegExp('^' + strDelimiter).test(strData) ) {
+          matchHandler(['','',undefined,'']);
+        }
+        while (arrMatches = delimiterPattern.exec(strData)) {
+          matchHandler(arrMatches);
+        } // end while
         } catch (e) {
           throw new Error("Error while parsing delimited data on row " + rowIndex + ". Message: " + e.message);
         }
+
+      
 
         // Return the parsed data.
         return {
@@ -5402,3 +3394,39 @@ Version 0.0.1.2
 
 
 }(this, _));
+
+
+// Load function that makes Miso plugin loading more formal.
+this.Miso.load = function(moduleName) {
+  try {
+    // Attempt to load from node_modules
+    require(moduleName);
+  } catch (ex) {
+    // If path is not already full qualified prefix with cwd
+    if (!path.existsSync(moduleName)) {
+      moduleName = path.resolve(process.cwd(), moduleName);
+    }
+
+    // Load the correct module
+    require(moduleName);
+  }
+};
+
+// Ensure compatibility with Remote Importer
+this.Miso.Xhr = function(options) {
+  // Make the request using the request module
+  request({
+    url: options.url,
+    method: options.type,
+    json: options.dataType.slice(0, 4) === "json"
+  }, function(error, resp, body) {
+    if (error) {
+      return options.error(error);
+    }
+
+    return options.success(body);
+  });
+};
+
+// Expose the module
+module.exports = this.Miso;
