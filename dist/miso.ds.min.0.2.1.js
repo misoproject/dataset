@@ -1,5 +1,5 @@
 /**
-* Miso.Dataset - v0.2.0 - 6/21/2012
+* Miso.Dataset - v0.2.1 - 6/29/2012
 * http://github.com/misoproject/dataset
 * Copyright (c) 2012 Alex Graul, Irene Ros;
 * Dual Licensed: MIT, GPL
