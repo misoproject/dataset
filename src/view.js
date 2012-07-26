@@ -505,7 +505,7 @@
           } else {
             throw("incorrect value '" + row[column.name] + 
                   "' of type " + Miso.typeOf(row[column.name], column) +
-                  " passed to column with type " + column.type);  
+                  " passed to column '" + column.name + "' with type " + column.type);  
           
           }
         }

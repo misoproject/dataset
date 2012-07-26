@@ -545,7 +545,7 @@ Version 0.0.1.2
             } else {
               throw("incorrect value '" + props[c.name] + 
                     "' of type " + Miso.typeOf(props[c.name], c) +
-                    " passed to column with type " + c.type);  
+                    " passed to column '" + c.name + "' with type " + c.type);  
             }
           }
           c.data[rowIndex] = props[c.name];
