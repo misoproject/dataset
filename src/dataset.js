@@ -245,43 +245,71 @@ Version 0.0.1.2
       againstColumn : function(data) {
         
         var rows = [],
-
             colNames = _.keys(data),   
             row,
             // get against unique col
-            uniqCol = this.column(this.uniqueAgainst),
+            uniqName = this.uniqueAgainst,
+            uniqCol = this.column(uniqName),
             len = data[this._columns[1].name].length,
             dataLength = _.max(_.map(colNames, function(name) {
               return data[name].length;
-            }, this));
+            }, this)),
+            toAdd = [],
+            toUpdate = [],
+            toRemove = [];
 
-        var posToRemove = [], i;
-        for(i = 0; i < len; i++) {
 
-          var datum = data[this.uniqueAgainst][i];
-          // this is a non unique row, remove it from all the data
-          // arrays
-          if (uniqCol.data.indexOf(datum) !== -1) {
-            posToRemove.push(i);
+        console.log('data', data, uniqCol);
+        _.each(data[uniqName], function(key, dataIndex) { 
+          var rowIndex = uniqCol.data.indexOf(key);
+
+          var row = {};
+          _.each(data, function(col, name) {
+            row[name] = col[dataIndex];
+          });
+
+          if (rowIndex === -1) {
+            toAdd.push( row );
+            console.log('adding', row);
+          } else {
+            toUpdate.push( row );
+            var oldRow = this.rowById(this.column('_id').data[rowIndex]);
+            console.log('upd', row, oldRow);
+
           }
-        }
+        }, this);
 
-        // sort and reverse the removal ids, this way we won't
-        // lose position by removing an early id that will shift
-        // array and throw all other ids off.
-        posToRemove.sort().reverse();
 
-        for(i = 0; i < dataLength; i++) {
-          if (posToRemove.indexOf(i) === -1) {
-            row = {};
-            for(var j = 0; j < colNames.length; j++) {
-              row[colNames[j]] = data[colNames[j]][i];
-            }
-            rows.push(row);
-          }
-        }
 
-        this.add(rows);
+
+
+
+        // var posToRemove = [], i;
+        // for(i = 0; i < len; i++) {
+          // var datum = data[this.uniqueAgainst][i];
+          // // this is a non unique row, remove it from all the data
+          // // arrays
+          // if (uniqCol.data.indexOf(datum) !== -1) {
+            // posToRemove.push(i);
+          // }
+        // }
+
+        // // sort and reverse the removal ids, this way we won't
+        // // lose position by removing an early id that will shift
+        // // array and throw all other ids off.
+        // posToRemove.sort().reverse();
+
+        // for(i = 0; i < dataLength; i++) {
+          // if (posToRemove.indexOf(i) === -1) {
+            // row = {};
+            // for(var j = 0; j < colNames.length; j++) {
+              // row[colNames[j]] = data[colNames[j]][i];
+            // }
+            // rows.push(row);
+          // }
+        // }
+
+        // this.add(rows);
       },
 
       //Always blindly add new rows

@@ -610,8 +610,13 @@
 
     var ds = new Miso.Dataset({
       url : "/poller/updated.json",
-      interval : 300,
-      uniqueAgainst : "name"
+      interval : 100,
+      uniqueAgainst : "name",
+      sync: true
+    });
+
+    ds.bind('update', function() {
+      console.log('UPD', arguments);
     });
 
     ds.fetch({ 
@@ -624,55 +629,32 @@
         }
         madereqs++;
           
-        // // check dataset length
-        // equals(ds.length, expectedSize);
-        // ds.eachColumn(function(cn, c) {
-          // equals(c.data.length, 3);
-        // });
+        // check dataset length
+        equals(ds.length, expectedSize);
+        ds.eachColumn(function(cn, c) {
+          equals(c.data.length, 3);
+        });
 
-        // // if (!startId) {
-          // // startId = ds.rowByPosition(0).a;
-        // // }
+        if (!counter) {
+          counter = ds.rowByPosition(0).a;
+          console.log('counter', counter);
+        }
 
-        // // var row0 = ds.rowByPosition(0);
-        // // equal(row0.a, madereqs);
-        // // equal(row0.b, madereqs * 2);
+        var row0 = ds.rowByPosition(0);
+        equal(row0.a, counter);
+        equal(row0.b, counter * 2);
 
-        // // var row1 = ds.rowByPosition(1);
-        // // equal(row1.a, madeReqs + 1);
-        // // equal(row1.a, madeReqs * 2);
+        var row1 = ds.rowByPosition(1);
+        equal(row1.a, counter + 1);
+        equal(row1.b, counter - 1);
 
+        var row2 = ds.rowByPosition(2);
+        equal(row2.a, counter + 2);
+        equal(row2.b, counter - 2);
 
-          // // check the actual data content
-          // // var keycol = [], valcol = [], idscol = [];
-          // // for(var i = 0; i < expectedSize; i++) {
-            // // idscol.push(startId + i);
-            // // keycol.push((startId + i) + "_key");
-            // // valcol.push((startId + i) + "_value");
-          // // }
-          // // ok(_.isEqual(idscol, this.column("id").data));
-          // // ok(_.isEqual(keycol, this.column("key").data));
-          // // ok(_.isEqual(valcol, this.column("value").data));
-          
-           // // // check cache sizes
-          // // var cachedRowids = _.map(
-            // // _.keys(ds._rowPositionById), 
-            // // function(i) { 
-              // // return +i;
-            // // }
-          // // );
-
-          // // ok(_.isEqual(ds._columnPositionByName, { _id : 0, id : 3 , key : 1, value : 2 }));
-          // // equals(ds._rowIdByPosition.length, expectedSize);
-          
-          // // ok(_.isEqual(_.values(ds._rowIdByPosition), cachedRowids));
-          // // ok(_.isEqual(cachedRowids, ds._columns[0].data));
-
-          
-      
       }, 
       error : function(r) { 
-        console.log(r); 
+        console.log('ERROR', arguments); 
       }
     });
   });
