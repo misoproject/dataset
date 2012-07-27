@@ -512,12 +512,6 @@
       interval : 100
     });
 
-    // {
-    //   id: 11
-    //   key: "11_key"
-    //   value: "11_value"
-    // }
-
     var initId = null;
     importer.fetch({
       success: function(data) {
@@ -543,7 +537,6 @@
   });
 
   test("Basic polling non overlapping through dataset api", function() {
-
     stop();
     expect(18);
 
@@ -552,7 +545,7 @@
 
     var ds = new Miso.Dataset({
       url : "/poller/non_overlapping/" + startId + ".json",
-      interval : 300
+      interval : 100
     });
 
     ds.fetch({ 
@@ -609,6 +602,81 @@
     });
   });
 
+  test("Polling with unique constraint for updates", function() {
+    stop();
+    // expect(11);
+
+    var counter, requests = 2, madereqs = 1, expectedSize = 3;
+
+    var ds = new Miso.Dataset({
+      url : "/poller/updated.json",
+      interval : 300,
+      uniqueAgainst : "name"
+    });
+
+    ds.fetch({ 
+      success : function() {  
+
+        // done
+        if (madereqs === requests) {
+          ds.importer.stop();
+          start();
+        }
+        madereqs++;
+          
+        // // check dataset length
+        // equals(ds.length, expectedSize);
+        // ds.eachColumn(function(cn, c) {
+          // equals(c.data.length, 3);
+        // });
+
+        // // if (!startId) {
+          // // startId = ds.rowByPosition(0).a;
+        // // }
+
+        // // var row0 = ds.rowByPosition(0);
+        // // equal(row0.a, madereqs);
+        // // equal(row0.b, madereqs * 2);
+
+        // // var row1 = ds.rowByPosition(1);
+        // // equal(row1.a, madeReqs + 1);
+        // // equal(row1.a, madeReqs * 2);
+
+
+          // // check the actual data content
+          // // var keycol = [], valcol = [], idscol = [];
+          // // for(var i = 0; i < expectedSize; i++) {
+            // // idscol.push(startId + i);
+            // // keycol.push((startId + i) + "_key");
+            // // valcol.push((startId + i) + "_value");
+          // // }
+          // // ok(_.isEqual(idscol, this.column("id").data));
+          // // ok(_.isEqual(keycol, this.column("key").data));
+          // // ok(_.isEqual(valcol, this.column("value").data));
+          
+           // // // check cache sizes
+          // // var cachedRowids = _.map(
+            // // _.keys(ds._rowPositionById), 
+            // // function(i) { 
+              // // return +i;
+            // // }
+          // // );
+
+          // // ok(_.isEqual(ds._columnPositionByName, { _id : 0, id : 3 , key : 1, value : 2 }));
+          // // equals(ds._rowIdByPosition.length, expectedSize);
+          
+          // // ok(_.isEqual(_.values(ds._rowIdByPosition), cachedRowids));
+          // // ok(_.isEqual(cachedRowids, ds._columns[0].data));
+
+          
+      
+      }, 
+      error : function(r) { 
+        console.log(r); 
+      }
+    });
+  });
+
   test("Polling with unique constraint", function() {
     stop();
     expect(11);
@@ -618,7 +686,7 @@
 
     var ds = new Miso.Dataset({
       url : "/poller/overlapping/" + startId + "/5.json",
-      interval : 300,
+      interval : 100,
       uniqueAgainst : "key"
     });
 
@@ -681,7 +749,7 @@
 
     var ds = new Miso.Dataset({
       url : "/poller/overlapping/" + startId + "/5.json",
-      interval : 300,
+      interval : 100,
       resetOnFetch : true
     });
 

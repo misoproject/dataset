@@ -83,3 +83,14 @@ get '/non_overlapping_time.json' do
   end
   arr.to_json
 end
+
+@@counter4 = 0
+get '/updated.json' do
+  arr = [
+    { :id => 0, :name => 'alpha', :a => @@counter4, :b => @@counter4 * 2 },
+    { :id => 0, :name => 'beta', :a => @@counter4 + 1, :b => @@counter4 - 1 },
+    { :id => 0, :name => 'delta', :a => @@counter4 + 2, :b => @@counter4 - 2 }
+  ]
+  @@counter4 += 1
+  arr.to_json
+end
