@@ -611,7 +611,8 @@
         requests = 3, 
         madereqs = 1, 
         expectedSize = 3,
-        events = [];
+        events = [],
+        addEvents = [];
 
     var ds = new Miso.Dataset({
       url : "/poller/updated.json",
@@ -624,6 +625,7 @@
     function verifyEvents() {
       counter = baseCounter+1; //offset for the first request
       console.log(events);
+      equals(addEvents.length, 1);
       equals(events.length / 3, requests-1, 'one less set of update events than reqs');
       _(requests).times(function(i) {
         var row = events[i][0].changed;
@@ -647,6 +649,10 @@
 
     ds.bind('update', function(event) {
       events.push(event.deltas);
+    });
+
+    ds.bind('add', function(event) {
+      addEvents.push(event.deltas);
     });
 
     ds.fetch({ 

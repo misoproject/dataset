@@ -99,7 +99,7 @@
 
     number : {  
       name : "number",
-      regexp : /^[\-\.]?[0-9]+([\.][0-9]+)?$/,
+      regexp : /^\s*[\-\.]?[0-9]+([\.][0-9]+)?\s*$/,
       coerce : function(v) {
         if (_.isNull(v)) {
           return null;

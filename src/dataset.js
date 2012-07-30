@@ -137,8 +137,6 @@ Version 0.0.1.2
         this.uniqueAgainst = options.uniqueAgainst;
       }
 
-      
-
       // if there is no data and no url set, we must be building
       // the dataset from scratch, so create an id column.
       if (_.isUndefined(options.data) && _.isUndefined(options.url)) {
@@ -254,7 +252,7 @@ Version 0.0.1.2
             toRemove = [];
 
         _.each(data[uniqName], function(key, dataIndex) { 
-          var rowIndex = uniqCol.data.indexOf(key);
+          var rowIndex = uniqCol.data.indexOf( Miso.types[uniqCol.type].coerce(key) );
 
           var row = {};
           _.each(data, function(col, name) {
@@ -269,7 +267,9 @@ Version 0.0.1.2
             this.update(oldRow, row);
           }
         }, this);
-        this.add(toAdd);
+        if (toAdd.length > 0) {
+          this.add(toAdd);
+        }
       },
 
       //Always blindly add new rows
