@@ -606,7 +606,12 @@
     stop();
     // expect(11);
 
-    var counter, requests = 2, madereqs = 1, expectedSize = 3;
+    var counter,
+        baseCounter,
+        requests = 3, 
+        madereqs = 1, 
+        expectedSize = 3,
+        events = [];
 
     var ds = new Miso.Dataset({
       url : "/poller/updated.json",
@@ -615,29 +620,49 @@
       sync: true
     });
 
-    ds.bind('update', function() {
-      console.log('UPD', arguments);
+    //verify the update events came through correctly
+    function verifyEvents() {
+      counter = baseCounter+1; //offset for the first request
+      console.log(events);
+      equals(events.length / 3, requests-1, 'one less set of update events than reqs');
+      _(requests).times(function(i) {
+        var row = events[i][0].changed;
+        if (row.name === 'alpha') {
+          equal(row.a, counter);
+          equal(row.b, counter * 2);
+        }
+        if (row.name === 'beta') {
+          equal(row.a, counter + 1, 'beta +1 1');
+          equal(row.b, counter - 1, 'beta +1 1');
+        }
+        if (row.name === 'delta') {
+          equal(row.a, counter + 2, 'delta +- 2');
+          equal(row.b, counter - 2, 'delta +- 2');
+        }
+        if (i % 3 === 2) { 
+          counter += 1;
+        }
+      });
+    }
+
+    ds.bind('update', function(event) {
+      events.push(event.deltas);
     });
 
     ds.fetch({ 
       success : function() {  
 
-        // done
-        if (madereqs === requests) {
-          ds.importer.stop();
-          start();
-        }
-        madereqs++;
-          
         // check dataset length
         equals(ds.length, expectedSize);
         ds.eachColumn(function(cn, c) {
           equals(c.data.length, 3);
         });
 
+        //set the counter on the first req to 
+        //sync req count with server
         if (!counter) {
           counter = ds.rowByPosition(0).a;
-          console.log('counter', counter);
+          baseCounter = counter;
         }
 
         var row0 = ds.rowByPosition(0);
@@ -651,7 +676,15 @@
         var row2 = ds.rowByPosition(2);
         equal(row2.a, counter + 2);
         equal(row2.b, counter - 2);
-
+        
+        // done
+        if (madereqs === requests) {
+          ds.importer.stop();
+          verifyEvents();
+          start();
+        }
+        madereqs++;
+        counter += 1;
       }, 
       error : function(r) { 
         console.log('ERROR', arguments); 
