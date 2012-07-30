@@ -266,7 +266,7 @@ Version 0.0.1.2
           } else {
             toUpdate.push( row );
             var oldRow = this.rowById(this.column('_id').data[rowIndex])._id;
-            this.update(oldRow, row)
+            this.update(oldRow, row);
           }
         }, this);
         this.add(toAdd);

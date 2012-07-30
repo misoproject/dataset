@@ -628,16 +628,16 @@
       _(requests).times(function(i) {
         var row = events[i][0].changed;
         if (row.name === 'alpha') {
-          equal(row.a, counter);
-          equal(row.b, counter * 2);
+          equals(row.a, counter);
+          equals(row.b, counter * 2);
         }
         if (row.name === 'beta') {
-          equal(row.a, counter + 1, 'beta +1 1');
-          equal(row.b, counter - 1, 'beta +1 1');
+          equals(row.a, counter + 1, 'beta +1 1');
+          equals(row.b, counter - 1, 'beta +1 1');
         }
         if (row.name === 'delta') {
-          equal(row.a, counter + 2, 'delta +- 2');
-          equal(row.b, counter - 2, 'delta +- 2');
+          equals(row.a, counter + 2, 'delta +- 2');
+          equals(row.b, counter - 2, 'delta +- 2');
         }
         if (i % 3 === 2) { 
           counter += 1;
@@ -666,16 +666,16 @@
         }
 
         var row0 = ds.rowByPosition(0);
-        equal(row0.a, counter);
-        equal(row0.b, counter * 2);
+        equals(row0.a, counter);
+        equals(row0.b, counter * 2);
 
         var row1 = ds.rowByPosition(1);
-        equal(row1.a, counter + 1);
-        equal(row1.b, counter - 1);
+        equals(row1.a, counter + 1);
+        equals(row1.b, counter - 1);
 
         var row2 = ds.rowByPosition(2);
-        equal(row2.a, counter + 2);
-        equal(row2.b, counter - 2);
+        equals(row2.a, counter + 2);
+        equals(row2.b, counter - 2);
         
         // done
         if (madereqs === requests) {
