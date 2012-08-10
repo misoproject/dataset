@@ -3,6 +3,13 @@
   var Util  = global.Util;
   var Miso    = global.Miso || {};
 
+  module("Code Structure");
+
+  test("predefined Miso components aren't overwritten", function() {
+    ok(Miso.Tester !== undefined);
+    equals(Miso.Tester.foo(), 44);
+  });
+
   module("Inheritance tests");
 
   function verifyHasDataViewPrototype(ds) {

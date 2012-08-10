@@ -1,7 +1,6 @@
 (function(global, _) {
 
-  /* @exports namespace */
-  var Miso = global.Miso = {};
+  var Miso = global.Miso || (global.Miso = {});
 
   Miso.typeOf = function(value, options) {
     var types = _.keys(Miso.types),

@@ -10,7 +10,16 @@
   <script src="../lib/underscore.math.js"></script>
   <script src="../lib/underscore.deferred.js"></script>
   <script src="../lib/moment.js"></script>
+  <!-- test script for checking the namespace isn't overwritten -->
   
+  <script type='text/javascript'>
+    window.Miso = window.Miso || (window.Miso = {});
+    window.Miso.Tester = {
+      foo : function() {
+        return 44;
+      },
+    };
+  </script> 
   <script src="../src/types.js"></script>
   <script src="../src/sync.js"></script>
   <script src="../src/builder.js"></script>
@@ -28,7 +37,7 @@
   <script src="../src/parsers/object.js"></script>
   <script src="../src/parsers/google_spreadsheet.js"></script>
   <script src="../src/parsers/delimited.js"></script>
-  <!-- <script src="../dist/ds.min.js"></script> -->
+ 
 
 
   <!-- Load data sets -->
@@ -58,9 +67,10 @@
   <script src="unit/speed.js"></script>
   <script src="unit/derived.js"></script>
   <script src="unit/bugs.js"></script>
-
+ 
 </head>
 <body>
+ 
   <div class="dataset-test">
     <h1 id="qunit-header">Dataset Test Suite</h1>
     <h2 id="qunit-banner"></h2>
