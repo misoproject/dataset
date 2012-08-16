@@ -1,5 +1,5 @@
 /**
-* Miso.Dataset - v0.2.1 - 6/29/2012
+* Miso.Dataset - v0.2.1 - 8/16/2012
 * http://github.com/misoproject/dataset
 * Copyright (c) 2012 Alex Graul, Irene Ros;
 * Dual Licensed: MIT, GPL
@@ -5539,7 +5539,7 @@ if (!JSON) {
 
 })(this);
 /**
-* Miso.Dataset - v0.2.1 - 6/29/2012
+* Miso.Dataset - v0.2.1 - 8/16/2012
 * http://github.com/misoproject/dataset
 * Copyright (c) 2012 Alex Graul, Irene Ros;
 * Dual Licensed: MIT, GPL
@@ -5549,8 +5549,7 @@ if (!JSON) {
 
 (function(global, _) {
 
-  /* @exports namespace */
-  var Miso = global.Miso = {};
+  var Miso = global.Miso || (global.Miso = {});
 
   Miso.typeOf = function(value, options) {
     var types = _.keys(Miso.types),
@@ -5648,7 +5647,7 @@ if (!JSON) {
 
     number : {  
       name : "number",
-      regexp : /^[\-\.]?[0-9]+([\.][0-9]+)?$/,
+      regexp : /^\s*[\-\.]?[0-9]+([\.][0-9]+)?\s*$/,
       coerce : function(v) {
         if (_.isNull(v)) {
           return null;
@@ -6553,7 +6552,7 @@ if (!JSON) {
           } else {
             throw("incorrect value '" + row[column.name] + 
                   "' of type " + Miso.typeOf(row[column.name], column) +
-                  " passed to column with type " + column.type);  
+                  " passed to column '" + column.name + "' with type " + column.type);  
           
           }
         }
@@ -7103,8 +7102,6 @@ Version 0.0.1.2
         this.uniqueAgainst = options.uniqueAgainst;
       }
 
-      
-
       // if there is no data and no url set, we must be building
       // the dataset from scratch, so create an id column.
       if (_.isUndefined(options.data) && _.isUndefined(options.url)) {
@@ -7211,43 +7208,33 @@ Version 0.0.1.2
       againstColumn : function(data) {
         
         var rows = [],
-
             colNames = _.keys(data),   
             row,
-            // get against unique col
-            uniqCol = this.column(this.uniqueAgainst),
-            len = data[this._columns[1].name].length,
-            dataLength = _.max(_.map(colNames, function(name) {
-              return data[name].length;
-            }, this));
+            uniqName = this.uniqueAgainst,
+            uniqCol = this.column(uniqName),
+            toAdd = [],
+            toUpdate = [],
+            toRemove = [];
 
-        var posToRemove = [], i;
-        for(i = 0; i < len; i++) {
+        _.each(data[uniqName], function(key, dataIndex) { 
+          var rowIndex = uniqCol.data.indexOf( Miso.types[uniqCol.type].coerce(key) );
 
-          var datum = data[this.uniqueAgainst][i];
-          // this is a non unique row, remove it from all the data
-          // arrays
-          if (uniqCol.data.indexOf(datum) !== -1) {
-            posToRemove.push(i);
+          var row = {};
+          _.each(data, function(col, name) {
+            row[name] = col[dataIndex];
+          });
+
+          if (rowIndex === -1) {
+            toAdd.push( row );
+          } else {
+            toUpdate.push( row );
+            var oldRow = this.rowById(this.column('_id').data[rowIndex])._id;
+            this.update(oldRow, row);
           }
+        }, this);
+        if (toAdd.length > 0) {
+          this.add(toAdd);
         }
-
-        // sort and reverse the removal ids, this way we won't
-        // lose position by removing an early id that will shift
-        // array and throw all other ids off.
-        posToRemove.sort().reverse();
-
-        for(i = 0; i < dataLength; i++) {
-          if (posToRemove.indexOf(i) === -1) {
-            row = {};
-            for(var j = 0; j < colNames.length; j++) {
-              row[colNames[j]] = data[colNames[j]][i];
-            }
-            rows.push(row);
-          }
-        }
-
-        this.add(rows);
       },
 
       //Always blindly add new rows
@@ -7511,7 +7498,7 @@ Version 0.0.1.2
             } else {
               throw("incorrect value '" + props[c.name] + 
                     "' of type " + Miso.typeOf(props[c.name], c) +
-                    " passed to column with type " + c.type);  
+                    " passed to column '" + c.name + "' with type " + c.type);  
             }
           }
           c.data[rowIndex] = props[c.name];
@@ -8004,7 +7991,7 @@ Version 0.0.1.2
     type      : "GET",
     async     : true,
     xhr : function() {
-      return new global.XMLHttpRequest();
+      return global.ActiveXObject ? new global.ActiveXObject("Microsoft.XMLHTTP") : new global.XMLHttpRequest();
     }
   }, rparams = /\?/;
 
