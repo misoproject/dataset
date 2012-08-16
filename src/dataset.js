@@ -45,6 +45,7 @@ Version 0.0.1.2
     
     this._columns = [];
     this._columnPositionByName = {};
+    this._computedColumns = [];
     
     if (typeof options !== "undefined") {
       options = options || {};
@@ -352,6 +353,46 @@ Version 0.0.1.2
       }, this);
     },
 
+    /**
+    * Allows adding of a computed column. A computed column is
+    * a column that is somehow based on the other existing columns.
+    * Parameters:
+    *   name : name of new column
+    *   type : The type of the column based on existing types.
+    *   func : The way that the column is derived. It takes a row as a parameter.
+    */
+    addComputedColumn : function(name, type, func) {
+      // check if we already ahve a column by this name.
+      if ( !_.isUndefined(this.column(name)) ) { 
+        throw "There is already a column by this name.";
+      } else {
+
+        // check that this is a known type.
+        if (typeof Miso.types[type] === "undefined") {
+          throw "The type " + type + " doesn't exist";
+        }
+
+        var column = new Miso.Column({
+          name : name,
+          type : type,
+          func : _.bind(func, this)
+        });
+
+        this._columns.push(column);
+        this._computedColumns.push(column);
+        this._columnPositionByName[column.name] = this._columns.length - 1;
+
+        // do we already have data? if so compute the values for this column.
+        if (this.length > 0) {
+          this.each(function(row, i) {
+            column.compute(row, i);
+          }, this);
+        }
+
+        return column;
+      }
+    },
+
     /** 
     * Adds a single column to the dataset
     * Parameters:
@@ -515,7 +556,14 @@ Version 0.0.1.2
         newKeys = _.keys(props);
 
         _.each(newKeys, function(columnName) {
+
           c = this.column(columnName);
+
+          // check if we're trying to update a computed column. If so
+          // fail.
+          if (c.isComputed()) {
+            throw "You're trying to update a computed column. Those get computed!";
+          }
 
           // test if the value passes the type test
           var Type = Miso.types[c.type];
@@ -538,6 +586,23 @@ Version 0.0.1.2
           }
           c.data[rowIndex] = props[c.name];
         }, this);
+        
+        // do we have any computed columns? if so we need to update
+        // the row.
+        if (typeof this._computedColumns !== "undefined") {
+          _.each(this._computedColumns, function(column) {
+
+            // compute the complete row:
+            var newrow = _.extend({}, row, props);
+            
+            var oldValue = newrow[column.name];
+            var newValue = column.compute(newrow, rowIndex);
+            // if this is actually a new value, then add it to the delta.
+            if (oldValue !== newValue) {
+              props[column.name] = newValue;
+            }
+          });
+        }
 
         deltas.push( { _id : row._id, old : row, changed : props } );
       }, this);

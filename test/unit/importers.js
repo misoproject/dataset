@@ -624,7 +624,6 @@
     //verify the update events came through correctly
     function verifyEvents() {
       counter = baseCounter+1; //offset for the first request
-      console.log(events);
       equals(addEvents.length, 1);
       equals(events.length / 3, requests-1, 'one less set of update events than reqs');
       _(requests).times(function(i) {

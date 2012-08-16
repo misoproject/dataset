@@ -57,6 +57,35 @@
       }, this);
     },
 
+    /**
+    * If this is a computed column, it calculates the value
+    * for this column and adds it to the data.
+    * Parameters:
+    *   row - the row from which column is computed.
+    *   i - Optional. the index at which this value will get added.
+    * Returns
+    *   val - the computed value
+    */
+    compute : function(row, i) {
+      if (this.func) {
+        var val = this.func(row);
+        if (typeof i !== "undefined") {
+          this.data[i] = val;  
+        } else {
+          this.data.push(val);
+        }
+        
+        return val;
+      }
+    },
+
+    /**
+    * returns true if this is a computed column. False otherwise.
+    */
+    isComputed : function() {
+      return !_.isUndefined(this.func);
+    },
+
     _sum : function() {
       return _.sum(this.data);
     },
@@ -486,6 +515,11 @@
       _.each(row, function(value, key) {
         var column = this.column(key);
 
+        // is this a computed column? if so throw an error
+        if (column.isComputed()) {
+          throw "You're trying to update a computed column. Those get computed!";
+        }
+
         // if we suddenly see values for data that didn't exist before as a column
         // just drop it. First fetch defines the column structure.
         if (typeof column !== "undefined") {
@@ -511,12 +545,22 @@
         }
       }, this);
 
+      // do we have any computed columns? If so we need to calculate their values.
+      if (this._computedColumns) {
+        _.each(this._computedColumns, function(column) {
+          var newVal = column.compute(row);
+          row[column.name] = newVal;
+        });
+      }
+
       // if we don't have a comparator, just append them at the end.
       if (_.isUndefined(this.comparator)) {
         
         // add all data
         _.each(this._columns, function(column) {
-          column.data.push(!_.isUndefined(row[column.name]) && !_.isNull(row[column.name]) ? row[column.name] : null);
+          if (!column.isComputed()) {
+            column.data.push(!_.isUndefined(row[column.name]) && !_.isNull(row[column.name]) ? row[column.name] : null);
+          }
         });
 
         this.length++;

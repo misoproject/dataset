@@ -86,4 +86,314 @@
     ok(_.isEqual(ds.column("two").data, [100,0,100]));
     ok(_.isEqual(ds.column("three").data, [0,100,0]));
   });
+
+  module("Computed Columns");
+  test("Add computed column to empty dataset", function() {
+    var ds = new Miso.Dataset({
+      data: { columns : [ 
+        { name : "one",   data : [] },
+        { name : "two",   data : [] }
+      ]},
+      strict: true
+    });
+
+    ds.fetch().then(function() {
+      ok(_.isEqual(ds.columnNames(), ["one", "two"]));
+
+      ds.addComputedColumn("three", "number", function(row) {
+        return row.one + row.two;
+      });
+
+      ok(_.isEqual(ds.columnNames(), ["one", "two", "three"]));      
+    });
+
+  });
+
+  test("Add a computed column with a bogus type - should fail", 3, function() {
+    var ds = new Miso.Dataset({
+      data: { columns : [ 
+        { name : "one",   data : [] },
+        { name : "two",   data : [] }
+      ]},
+      strict: true
+    });
+
+    ds.fetch().then(function() {
+      ok(_.isEqual(ds.columnNames(), ["one", "two"]));
+
+      raises(function() {
+        ds.addComputedColumn("three", "NOTYPE", function(row) {
+          return row.one + row.two;
+        });
+      }, "The type NOTYPE doesn't exist");
+
+      ok(_.isEqual(ds.columnNames(), ["one", "two"]));
+    });
+  });
+
+  test("Add a computed column with a name that already exists", 3, function() {
+    var ds = new Miso.Dataset({
+      data: { columns : [ 
+        { name : "one",   data : [] },
+        { name : "two",   data : [] }
+      ]},
+      strict: true
+    });
+
+    ds.fetch().then(function() {
+      ok(_.isEqual(ds.columnNames(), ["one", "two"]));
+
+      raises(function() {
+        ds.addComputedColumn("one", "number", function(row) {
+          return row.one + row.two;
+        });
+      }, "There is already a column by this name.");
+
+      ok(_.isEqual(ds.columnNames(), ["one", "two"]));
+    });
+  });
+
+  test("Add computed column to dataset with values", 3, function() {
+    var ds = new Miso.Dataset({
+      data: { columns : [ 
+        { name : "one",   data : [1,2,3] },
+        { name : "two",   data : [10,20,30] }
+      ]},
+      strict: true
+    });
+
+    ds.fetch().then(function() {
+      ok(_.isEqual(ds.columnNames(), ["one", "two"]));
+
+      var newcol = ds.addComputedColumn("three", "number", function(row) {
+        return row.one + row.two;
+      });
+
+      ok(_.isEqual(ds.columnNames(), ["one", "two", "three"]));
+      ok(_.isEqual(newcol.data, [11,22,33]));
+    });
+  });
+
+  test("Add row to a dataset with one computed column", 5, function() {
+    var ds = new Miso.Dataset({
+      data: { columns : [ 
+        { name : "one",   data : [1,2,3] },
+        { name : "two",   data : [10,20,30] }
+      ]},
+      strict: true
+    });
+
+    ds.fetch().then(function() {
+      ok(_.isEqual(ds.columnNames(), ["one", "two"]));
+
+      var newcol = ds.addComputedColumn("three", "number", function(row) {
+        return row.one + row.two;
+      });
+
+      ok(_.isEqual(ds.columnNames(), ["one", "two", "three"]));
+      ok(_.isEqual(newcol.data, [11,22,33]));
+
+      // add a row
+      ds.add({
+        one : 4,
+        two : 40
+      });
+
+      equals(newcol.data.length, 4);
+      ok(_.isEqual(newcol.data, [11,22,33,44]), newcol.data);
+    });
+  });
+
+  test("Add a row to a dataset with multiple computed columns one of which depends on a computed column", 8, function() {
+
+    var ds = new Miso.Dataset({
+      data: { columns : [ 
+        { name : "one",   data : [1,2,3] },
+        { name : "two",   data : [10,20,30] }
+      ]},
+      strict: true
+    });
+
+    ds.fetch().then(function() {
+      ok(_.isEqual(ds.columnNames(), ["one", "two"]));
+
+      var newcol = ds.addComputedColumn("three", "number", function(row) {
+        return row.one + row.two;
+      });
+      var newcol2 = ds.addComputedColumn("four", "number", function(row) {
+        return row.one + row.two + row.three;
+      });
+
+      ok(_.isEqual(ds.columnNames(), ["one", "two", "three", "four"]));
+      ok(_.isEqual(newcol.data, [11,22,33]));
+      ok(_.isEqual(newcol2.data, [22,44,66]), newcol2.data);
+      
+      // add a row
+      ds.add({
+        one : 4,
+        two : 40
+      });
+
+      equals(newcol.data.length, 4);
+      equals(newcol2.data.length, 4);
+      ok(_.isEqual(newcol.data, [11,22,33,44]), newcol.data);
+      ok(_.isEqual(newcol2.data,  [22,44,66,88]), newcol2.data);
+    });
+
+  });
+
+  test("Can't add a row with a computed column value.", 9, function() {
+
+    var ds = new Miso.Dataset({
+      data: { columns : [ 
+        { name : "one",   data : [1,2,3] },
+        { name : "two",   data : [10,20,30] }
+      ]},
+      strict: true
+    });
+
+    ds.fetch().then(function() {
+      ok(_.isEqual(ds.columnNames(), ["one", "two"]));
+
+      var newcol = ds.addComputedColumn("three", "number", function(row) {
+        return row.one + row.two;
+      });
+      var newcol2 = ds.addComputedColumn("four", "number", function(row) {
+        return row.one + row.two + row.three;
+      });
+
+      ok(_.isEqual(ds.columnNames(), ["one", "two", "three", "four"]));
+      ok(_.isEqual(newcol.data, [11,22,33]));
+      ok(_.isEqual(newcol2.data, [22,44,66]), newcol2.data);
+      
+      // add a row
+      raises(function() {
+        ds.add({
+          one : 4,
+          two : 40,
+          three: 34
+        });  
+      });
+      
+      equals(newcol.data.length, 3);
+      equals(newcol2.data.length, 3);
+      ok(_.isEqual(newcol.data, [11,22,33]), newcol.data);
+      ok(_.isEqual(newcol2.data,  [22,44,66]), newcol2.data);
+    });
+
+  });
+
+  test("Update a row in a dataset with a single computed column", 3, function() {
+    var ds = new Miso.Dataset({
+      data: { columns : [ 
+        { name : "one",   data : [1,2,3] },
+        { name : "two",   data : [10,20,30] }
+      ]},
+      strict: true
+    });
+
+    ds.fetch().then(function() {
+      ok(_.isEqual(ds.columnNames(), ["one", "two"]));
+
+      var newcol = ds.addComputedColumn("three", "number", function(row) {
+        return row.one + row.two;
+      });
+      var newcol2 = ds.addComputedColumn("four", "number", function(row) {
+        return row.one + row.two + row.three;
+      });
+
+      var firstId = ds.rowByPosition(0)._id;
+
+      ds.update(firstId, {
+        one : 100
+      });
+
+      ok(_.isEqual(newcol.data, [110,22,33]), newcol.data);
+      ok(_.isEqual(newcol2.data,  [220,44,66]), newcol2.data);
+    });
+  });
+
+  test("remove row and make sure computed column row is removed too", 2, function() {
+    var ds = new Miso.Dataset({
+      data: { columns : [ 
+        { name : "one",   data : [1,2,3] },
+        { name : "two",   data : [10,20,30] }
+      ]},
+      strict: true
+    });
+
+    ds.fetch().then(function() {
+      ok(_.isEqual(ds.columnNames(), ["one", "two"]));
+
+      var newcol = ds.addComputedColumn("three", "number", function(row) {
+        return row.one + row.two;
+      });
+
+      var firstId = ds.rowByPosition(0)._id;
+      ds.remove(firstId);
+
+      ok(_.isEqual(newcol.data, [22,33]), newcol.data);
+    });
+  });
+
+  test("check that syncable datasets notify properly of computed columns too during addition", 2, function() {
+    var ds = new Miso.Dataset({
+      data: { columns : [ 
+        { name : "one",   data : [1,2,3] },
+        { name : "two",   data : [10,20,30] }
+      ]},
+      strict: true,
+      sync: true
+    });
+
+    ds.fetch().then(function() {
+      ok(_.isEqual(ds.columnNames(), ["one", "two"]));
+
+      var newcol = ds.addComputedColumn("three", "number", function(row) {
+        return row.one + row.two;
+      });
+
+      stop();
+      ds.bind("add", function(event) {
+        ok(event.deltas[0].changed.three === 44);
+        start();
+      });
+
+      ds.add({
+        one : 4,
+        two : 40
+      });
+
+    });
+  });
+
+  test("check that syncable datasets notify properly of computed columns too during addition", 2, function() {
+    var ds = new Miso.Dataset({
+      data: { columns : [ 
+        { name : "one",   data : [1,2,3] },
+        { name : "two",   data : [10,20,30] }
+      ]},
+      strict: true,
+      sync: true
+    });
+
+    ds.fetch().then(function() {
+      ok(_.isEqual(ds.columnNames(), ["one", "two"]));
+
+      var newcol = ds.addComputedColumn("three", "number", function(row) {
+        return row.one + row.two;
+      });
+
+      stop();
+      ds.bind("change", function(event) {
+        ok(event.deltas[0].changed.three === 110);
+        start();
+      });
+
+      ds.update(ds.rowByPosition(0)._id, {
+        one : 100
+      });
+
+    });
+  });
 }(this));
