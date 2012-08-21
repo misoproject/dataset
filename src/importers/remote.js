@@ -58,7 +58,7 @@
     type      : "GET",
     async     : true,
     xhr : function() {
-      return new global.XMLHttpRequest();
+      return global.ActiveXObject ? new global.ActiveXObject("Microsoft.XMLHTTP") : new global.XMLHttpRequest();
     }
   }, rparams = /\?/;
 
