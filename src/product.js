@@ -95,7 +95,7 @@
             var delta = this._buildDelta(this.value, producer.call(_self));
             this.value = delta.changed;
             if (_self.syncable) {
-              var event = this._buildEvent(delta);
+              var event = this._buildEvent(delta, this);
               if (!_.isUndefined(delta.old) && !options.silent && delta.old !== delta.changed) {
                 this.trigger("change", event);
               }

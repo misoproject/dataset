@@ -17,6 +17,21 @@
     });
   });
 
+
+  test("adding a row with custom idAttribute", function() {
+    var ds = Util.baseSampleCustomID();
+    ds.add( { one: 100 } );
+
+    equals(ds._columns[1].data.length, 4, "row adding to 'one'");
+    ok(!_.isUndefined(ds._rowIdByPosition[3]), "rowIdByPosition updated");
+    _.each([1,2], function(i) {
+      equals(ds._columns[i].data.length, 4, "column length increased on "+ds._columns[i].name);
+      strictEqual(ds._columns[i].data[3], null, "null added to column "+ds._columns[i].name);
+    });
+
+    ok(_.isEqual(ds.rowById(100), { one : 100, two : null, three : null }));
+  });
+
   test("adding a row with wrong types", function() {
     var ds = Util.baseSample();
     raises(function() {
@@ -51,6 +66,16 @@
     equals(ds.length, 2);
   });
 
+  test("removing a row with an id with custom idAttribute", function() {
+    var ds = Util.baseSampleCustomID();
+    var firstRowId = ds.rowByPosition(0).one;
+
+    ds.remove(firstRowId);
+    strictEqual( ds._rowPositionById[firstRowId], undefined );
+    ok( ds._rowIdByPosition[0] !== firstRowId );
+    equals(ds.length, 2);
+  });
+
   test("upating a row with an incorrect type", function() {
     var ds = Util.baseSample();
     _.each(['a', []], function(value) {
@@ -68,6 +93,27 @@
       ds.update(firstRowId, { 'one': value } );
       equals(ds._columns[1].data[0], value, "value updated to "+value);
     });
+  });
+
+  test("updating a row with custom idAttribute (non id column)", function() {
+    var ds = Util.baseSampleCustomID();
+    ds._columns[1].type = 'untyped';
+    var firstRowId = ds.rowByPosition(0).one;
+
+    _.each([100, 'a', null, undefined, []], function(value) {
+      ds.update(firstRowId, { 'two': value } );
+      equals(ds._columns[1].data[0], value, "value updated to "+value);
+    });
+  });
+
+  test("updating a row with a custom idAttribute (updating id col)", 1, function() {
+    var ds = Util.baseSampleCustomID();
+    var firstRowId = ds.rowByPosition(0).one;
+
+    raises(function() {
+      ds.update(firstRowId, { one : 1 });
+    }, "You can't update the id column");
+
   });
 
   test("#105 - updating a row with a function", function() {
@@ -394,6 +440,24 @@
         one : 100
       });
 
+    });
+  });
+
+  module("Custom idAttribute");
+
+  test("Specify custom idAttribute", function() {
+    var ds = new Miso.Dataset({
+      data: { columns : [ 
+        { name : "one",   data : [1,2,3] },
+        { name : "two",   data : [10,20,30] }
+      ]},
+      strict: true,
+      idAttribute: 'one'
+    });
+    ds.fetch().then(function() {
+      ok(_.isEqual(ds.rowById(1), { one : 1, two : 10 }));
+      ok(_.isEqual(ds.rowById(2), { one : 2, two : 20 }));
+      ok(_.isEqual(ds.rowById(3), { one : 3, two : 30 }));
     });
   });
 }(this));

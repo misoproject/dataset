@@ -73,6 +73,8 @@ Version 0.0.1.2
         this.syncable = true;
       }
 
+      this.idAttribute = options.idAttribute || '_id';
+
       // initialize importer from options or just create a blank
       // one for now, we'll detect it later.
       this.importer = options.importer || null;
@@ -264,7 +266,7 @@ Version 0.0.1.2
             toAdd.push( row );
           } else {
             toUpdate.push( row );
-            var oldRow = this.rowById(this.column('_id').data[rowIndex])._id;
+            var oldRow = this.rowById(this.column(this.idAttribute).data[rowIndex])[this.idAttribute];
             this.update(oldRow, row);
           }
         }, this);
@@ -423,7 +425,7 @@ Version 0.0.1.2
     _addIdColumn : function( count ) {
       // if we have any data, generate actual ids.
 
-      if (!_.isUndefined(this.column("_id"))) {
+      if (!_.isUndefined(this.column(this.idAttribute))) {
         return;
       }
 
@@ -435,23 +437,27 @@ Version 0.0.1.2
       }
 
       // add the id column
-      this.addColumn({ name: "_id", type : "number", data : ids });
+      var idCol = this.addColumn({ name: this.idAttribute, data : ids });
+      // is this the default _id? if so set numeric type. Otherwise,
+      // detect data
+      if (this.idAttribute === "_id") {
+        idCol.type = "number";
+      }
 
       // did we accidentally add it to the wrong place? (it should always be first.)
-      if (this._columnPositionByName._id !== 0) {
+      if (this._columnPositionByName[this.idAttribute] !== 0) {
 
         // we need to move it to the beginning and unshift all the other
         // columns
-        var idCol = this._columns[this._columnPositionByName._id],
-            oldIdColPos = this._columnPositionByName._id;
+        var oldIdColPos = this._columnPositionByName[this.idAttribute];
 
         // move col back 
         this._columns.splice(oldIdColPos, 1);
         this._columns.unshift(idCol);
         
-        this._columnPositionByName._id = 0;
+        this._columnPositionByName[this.idAttribute] = 0;
         _.each(this._columnPositionByName, function(pos, colName) {
-          if (colName !== "_id" && this._columnPositionByName[colName] < oldIdColPos) {
+          if (colName !== this.idAttribute && this._columnPositionByName[colName] < oldIdColPos) {
             this._columnPositionByName[colName]++;
           }
         }, this);
@@ -478,8 +484,8 @@ Version 0.0.1.2
       var deltas = [];
 
       _.each(rows, function(row) {
-        if (!row._id) {
-          row._id = _.uniqueId();
+        if (!row[this.idAttribute]) {
+          row[this.idAttribute] = _.uniqueId();
         }
 
         this._add(row, options);
@@ -492,7 +498,7 @@ Version 0.0.1.2
       }, this);
       
       if (this.syncable && !options.silent) {
-        var e = this._buildEvent(deltas);
+        var e = this._buildEvent(deltas, this);
         this.trigger('add', e );
         this.trigger('change', e );
       }
@@ -513,7 +519,7 @@ Version 0.0.1.2
 
       this.each(function(row, rowIndex) {
         if (filter(row)) {
-          rowsToRemove.push(row._id);
+          rowsToRemove.push(row[this.idAttribute]);
           deltas.push( { old: row } );
         }
       });
@@ -526,7 +532,7 @@ Version 0.0.1.2
       }, this);
       
       if (this.syncable && (!options || !options.silent)) {
-        var ev = this._buildEvent( deltas );
+        var ev = this._buildEvent( deltas, this );
         this.trigger('remove', ev );
         this.trigger('change', ev );
       }
@@ -557,6 +563,11 @@ Version 0.0.1.2
 
         _.each(newKeys, function(columnName) {
 
+          // check that we aren't trying to update the id column
+          if (columnName === this.idAttribute) {
+            throw "You can't update the id column";
+          }
+          
           c = this.column(columnName);
 
           // check if we're trying to update a computed column. If so
@@ -604,7 +615,9 @@ Version 0.0.1.2
           });
         }
 
-        deltas.push( { _id : row._id, old : row, changed : props } );
+        var delta = { old : row, changed : props };
+        delta[this.idAttribute] = row[this.idAttribute];
+        deltas.push(delta);
       }, this);
 
       // do we just have a single id? array it up.
@@ -634,7 +647,7 @@ Version 0.0.1.2
       }
 
       if (this.syncable && (!options || !options.silent)) {
-        var ev = this._buildEvent( deltas );
+        var ev = this._buildEvent( deltas, this );
         this.trigger('update', ev );
         this.trigger('change', ev );
       }
@@ -659,5 +672,6 @@ Version 0.0.1.2
     }
 
   });
+  
 }(this, _, moment));
 

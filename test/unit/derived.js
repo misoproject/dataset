@@ -44,6 +44,34 @@
     }});
   });
 
+
+  test("Counting rows with custom idAttribute", function() {
+  var ds = new Miso.Dataset({
+      data : countData,
+      strict: true,
+      idAttribute : "things"
+    }).fetch({ success :function() {
+      
+      var counted = this.countBy('category'),
+          aCount = counted.rows(function(row) {
+            return row.category === 'a';
+          }).rowByPosition(0).count,
+          bCount = counted.rows(function(row) {
+            return row.category === 'b';
+          }).rowByPosition(0).count,
+          nullCount = counted.rows(function(row) {
+            return row.category === null;
+          }).rowByPosition(0).count;
+      
+      equals(4, counted.columns().length);
+      equals(4, aCount);
+      equals(2, bCount);
+      equals(1, nullCount);
+
+      // equals(ma.length, this.length - 2);
+    }});
+  });
+
   test("Counting rows with moment objs", function() {
   var ds = new Miso.Dataset({
       data : [
@@ -96,6 +124,7 @@
     }).fetch({ success :function() {
       
       var ma = this.movingAverage(["A", "B", "C"], 3);
+
       equals(ma.length, this.length - 2);
       ok(_.isEqual(ma.column("A").data, _.movingAvg(this.column("A").data, 3)));
       ok(_.isEqual(ma.column("B").data, _.movingAvg(this.column("B").data, 3)), "Actual" + ma.column("B").data + " ,expected: " + _.movingAvg(this.column("B").data, 3));
@@ -103,7 +132,35 @@
     }});
   });
 
-  test("Singe column moving average", function() {
+  test("Basic Moving Average custom idAttribute", function() {
+    var ds = new Miso.Dataset({
+      data : getMovingAverageData(),
+      strict: true,
+      idAttribute : "A"
+    }).fetch({ success :function() {
+      
+      var ma = this.movingAverage(["B", "C"], 3);
+      equals(ma.length, this.length - 2);
+      ok(_.isEqual(ma.column("B").data, _.movingAvg(this.column("B").data, 3)), "Actual" + ma.column("B").data + " ,expected: " + _.movingAvg(this.column("B").data, 3));
+      ok(_.isEqual(ma.column("C").data, _.movingAvg(this.column("C").data, 3)));
+    }});
+  });
+
+  test("Basic Moving Average custom idAttribute should fail when including id col", 1, function() {
+    var ds = new Miso.Dataset({
+      data : getMovingAverageData(),
+      strict: true,
+      idAttribute : "A"
+    }).fetch({ success :function() {
+      
+      raises(function(){
+        var ma = this.movingAverage(["A","B"], 3);  
+      });
+    
+    }});
+  });
+
+  test("Single column moving average", function() {
     var ds = new Miso.Dataset({
       data : getMovingAverageData(),
       strict: true
@@ -223,6 +280,22 @@
     });
   });
 
+  test("base group by with custom idAttribute", function() {
+    
+    var ds = new Miso.Dataset({
+      data : getData(),
+      strict: true,
+      idAttribute: "count"
+    });
+
+    _.when(ds.fetch()).then(function(){
+      var groupedData = ds.groupBy("state", ["anothercount"]);
+
+      ok(_.isEqual(groupedData.column("state").data, ["AZ", "MA"]), "states correct");
+      ok(_.isEqual(groupedData.column("anothercount").data, [60,150]), "anothercounts correct");
+    });
+  });
+
   test("base group by syncable update", function() {
     
     var ds = new Miso.Dataset({
@@ -242,6 +315,32 @@
       ok(_.isEqual(groupedData._columns[2].data, ["MN", "AZ", "MA"]), "states correct");
       ok(_.isEqual(groupedData._columns[3].data, [1,5,15]), "counts correct");
       ok(_.isEqual(groupedData._columns[4].data, [10,50,150]), "anothercounts correct");
+    });
+  });
+
+  test("base group by syncable update with custom idAttribute", function() {
+    
+    var ds = new Miso.Dataset({
+      data : getData(),
+      strict: true,
+      sync : true,
+      idAttribute: "count"
+    });
+
+    _.when(ds.fetch()).then(function(){
+      var groupedData = ds.groupBy("state", ["anothercount"]);
+      var rowid = ds._columns[0].data[0];
+      
+      ds.update(rowid, {
+        state : "MN"
+      });
+
+      // TODO: the count column get overwritten since these are new rows... so it really
+      // is no longer a count column. It's just an id column. Not sure what to do about it
+      // at this point. Should it just go back to being an _id column? I think maybe?
+      ok(_.isEqual(groupedData.column("_oids").data, [[1], [2,3], [4,5,6]]), "oids correct");
+      ok(_.isEqual(groupedData.column("state").data, ["MN", "AZ", "MA"]), "states correct");
+      ok(_.isEqual(groupedData.column("anothercount").data, [10,50,150]), "anothercounts correct");
     });
   });
 

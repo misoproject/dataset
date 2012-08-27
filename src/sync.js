@@ -10,11 +10,12 @@
   *   deltas - array of deltas.
   *     each delta: { changed : {}, old : {} }
   */
-  Miso.Event = function(deltas) {
+  Miso.Event = function(deltas, dataset) {
     if (!_.isArray(deltas)) {
       deltas = [deltas];
     }
     this.deltas = deltas;
+    this.dataset = dataset || null;
   };
 
   _.extend(Miso.Event.prototype, {
@@ -26,9 +27,9 @@
         cols = _.chain(cols)
           .union(_.keys(delta.old), _.keys(delta.changed) )
           .reject(function(col) {
-            return col === '_id';
-          }).value();
-      });
+            return col === this.dataset.idAttribute;
+          }, this).value();
+      }, this);
 
       return cols;
     }
@@ -150,7 +151,7 @@
   };
 
   // Used to build event objects accross the application.
-  Miso.Events._buildEvent = function(delta) {
-    return new Miso.Event(delta);
+  Miso.Events._buildEvent = function(delta, dataset) {
+    return new Miso.Event(delta, dataset);
   };
 }(this, _));

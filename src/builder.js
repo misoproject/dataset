@@ -76,7 +76,7 @@
 
       // cache the row id positions in both directions.
       // iterate over the _id column and grab the row ids
-      _.each(dataset._columns[dataset._columnPositionByName._id].data, function(id, index) {
+      _.each(dataset._columns[dataset._columnPositionByName[dataset.idAttribute]].data, function(id, index) {
         dataset._rowPositionById[id] = index;
         dataset._rowIdByPosition.push(id);
       }, dataset);  
