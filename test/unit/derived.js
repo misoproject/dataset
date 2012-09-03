@@ -169,12 +169,12 @@
         { 
           name : "state",
           type : "string",
-          data : ["AZ", "AZ", "AZ", "MA", "MA", "MA"]
+          data : ["AZ", "AZ", "AZ", "MA", "MA", "MA", "AZ", "MA", "MA"]
         },
         {
           name : "count",
           type : "number",
-          data : [1,2,3,4,5,6]
+          data : [1,2,3,4,5,6,null,null,undefined]
         },
         {
           name : "anothercount",
@@ -318,6 +318,9 @@
         ["count", "anothercount"], {
           method : function(array) {
             return _.reduce(array, function(memo, num){ 
+              if ( _.isUndefined(num) || _.isNull(num) ) {
+                num = 1;
+              }
               return memo * num; 
             }, 1);
           }
@@ -325,7 +328,7 @@
 
       ok(_.isEqual(groupedData._columns[2].data, ["AZ", "MA"]), "states correct");
       ok(_.isEqual(groupedData._columns[3].data, [6,120]), "counts correct");
-      ok(_.isEqual(groupedData._columns[4].data, [6000,120000]), "anothercounts correct" + groupedData._columns[3].data);
+      ok(_.isEqual(groupedData._columns[4].data, [6000,120000]), "anothercounts correct");
     });
   });
 
