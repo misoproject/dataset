@@ -48,6 +48,14 @@ module.exports = function(grunt) {
         ]
       },
 
+      fullnodepsrequire: {
+        dest : "dist/miso.ds.<%= pkg.version %>.m.js",
+        src : [
+          "dist/miso.ds.<%= pkg.version %>.js",
+          "src/require.js"
+        ]
+      },
+      
       fulldeps: {
         dest : "dist/miso.ds.deps.<%= pkg.version %>.js",
         src : [
@@ -116,7 +124,15 @@ module.exports = function(grunt) {
           "dist/miso.ds.<%= pkg.version %>.js" 
         ]
       },
-      
+
+      monnodepsrequire : {
+        dest : "dist/miso.ds.min.<%= pkg.version %>.m.js",
+        src : [
+          "<banner>",
+          "dist/miso.ds.<%= pkg.version %>.m.js"
+        ]
+      },
+
       mindeps : {
         dest : "dist/miso.ds.deps.min.<%= pkg.version %>.js",
         src : [
@@ -204,7 +220,7 @@ module.exports = function(grunt) {
         browser : true,
         bitwise  : true,
         loopfunc : true,
-        predef : [ "_", "moment", "log", "template" ]
+        predef : [ "_", "moment", "log", "template", "exports", "define" ]
       },
       globals : {
         QUnit : true,
