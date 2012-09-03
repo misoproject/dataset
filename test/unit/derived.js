@@ -12,11 +12,40 @@
       },
       { name : "category", 
         data : ['a','b','a','a','c','c', null,'a','b','c'], 
-        type : "numeric" 
+        type : "string" 
+      },
+      { name : "stuff", 
+        data : [window, window, {}, {}, undefined, null, null, [], [1], 6], 
+        type : "mixed" 
       }
     ]
   };
 
+  test("counting a mess", function() {
+    var ds = new Miso.Dataset({
+      data : countData,
+      strict: true
+    }).fetch({ success :function() {
+      var counted = this.countBy('stuff'),
+          nullCount = counted.rows(function(row) {
+            return row.stuff === null;
+          }).rowByPosition(0).count,
+          objCount = counted.rows(function(row) {
+            return _.isEqual(row.stuff, {});
+          }).rowByPosition(0).count,
+          arrCount = counted.rows(function(row) {
+            return _.isEqual(row.stuff, []);
+          }).rowByPosition(0).count;
+      
+      equals(6, counted.columns().length);
+      equals(3, nullCount);
+      equals(2, objCount);
+      equals(1, arrCount);
+
+    }});
+
+
+  });
 
   test("Counting rows", function() {
   var ds = new Miso.Dataset({

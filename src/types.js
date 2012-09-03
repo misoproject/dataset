@@ -33,9 +33,9 @@
         return true;
       },
       compare : function(s1, s2) {
-        if (s1 < s2) { return -1; }
-        if (s1 > s2) { return 1;  }
-        return 0;
+        if ( _.isEqual(s1, s2) ) { return 0; }
+        if (s1 < s2)  { return -1;}
+        if (s1 > s2)  { return 1; }
       },
       numeric : function(v) {
         return v === null || _.isNaN(+v) ? null : +v;
