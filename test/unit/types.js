@@ -4,7 +4,9 @@
   var Miso    = global.Miso || {};  
 
   var numbers = ['123', '0.34', '.23'];
-  
+  var not_numbers = [null, NaN,undefined];
+
+
   module("Miso Numeric Type");
   test("Check number type", function() {
     var notNumbers = ['a', {}, 'll22'];
@@ -20,10 +22,41 @@
     });
   });
 
+  test("Check all non numeric values return null on numeric", function() {
+    expect(10);
+
+    _.each(Miso.types, function(type) {
+      // not checking undefined - we either coerrced it out and can't computationally
+      // derive it like a NaN
+      _.each([NaN, null], function(not_a_number) {
+        ok(type.numeric(not_a_number) === null, "["+type.name+"] " + not_a_number + " is represented as " + type.numeric(not_a_number));
+      });
+    });
+  });
+
+  test("Check all non numeric values return null on coerce", function() {
+    expect(15);
+
+    _.each(Miso.types, function(type) {
+      _.each(not_numbers, function(not_a_number) {
+        ok(type.coerce(not_a_number) === null, "["+type.name+"] " + not_a_number + " is represented as " + type.coerce(not_a_number));
+      });
+    });
+  });
+
+
   test("Coerce number type", function() {
     var coerced = [123, 0.34, 0.23];
     _.each(numbers, function(num, i) {
       equals(Miso.types.number.coerce(num), coerced[i], "Should return true for a number");
+    });
+  });
+
+
+  test("Coerce to null", function() {
+    var coerced = ['foo', undefined, NaN, {}];
+    _.each(coerced, function(num, i) {
+      equals(Miso.types.number.coerce(coerced[i]), null, "Should return null for invalid input");
     });
   });
 
