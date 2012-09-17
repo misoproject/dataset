@@ -74,7 +74,7 @@
       }
     },
 
-    boolean : {
+    "boolean" : {
       name : "boolean",
       regexp : /^(true|false)$/,
       coerce : function(v) {
