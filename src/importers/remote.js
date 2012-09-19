@@ -216,9 +216,9 @@
   };
 
   Miso.Xhr.httpData = function(settings) {
-    var data, json = null;
+    var data, json = null, handleResponse;
 
-    settings.ajax.onreadystatechange = function() {
+    handleResponse = function () {
       if (settings.ajax.readyState === 4) {
         try {
           json = JSON.parse(settings.ajax.responseText);
@@ -246,6 +246,12 @@
         }
       }
     };
+
+    if ( settings.ajax.readyState === 4 ) {
+      handleResponse(); // Internet Exploder doesn't bother with readystatechange handlers for cached resources... trigger the handler manually
+    } else {
+      settings.ajax.onreadystatechange = handleResponse;
+    }
 
     return data;
   };
