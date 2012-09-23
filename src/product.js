@@ -1,7 +1,6 @@
 (function(global, _) {
 
-  // shorthand
-  var Miso = global.Miso;
+  var Dataset = global.Miso.Dataset;
 
   /**
   * A Miso.Product is a single computed value that can be obtained 
@@ -12,7 +11,7 @@
   *   func - the function that derives the computation.
   *   columns - the columns from which the function derives the computation
   */
-  Miso.Product = (Miso.Product || function(options) {
+  Dataset.Product = function(options) {
     options = options || {};
     
     // save column name. This will be necessary later
@@ -35,9 +34,9 @@
 
     this.func({ silent : true });
     return this;
-  });
+  };
 
-  _.extend(Miso.Product.prototype, Miso.Events, {
+  _.extend(Dataset.Product.prototype, Dataset.Events, {
 
     /**
     * return the raw value of the product
@@ -72,7 +71,7 @@
     }
   });
 
-  Miso.Product.define = function(func) {
+  Dataset.Product.define = function(func) {
     return function(columns, options) {
       options = options || {};
       var columnObjects = this._findColumns(columns);
@@ -83,12 +82,12 @@
       //define wrapper function to handle coercion
       var producer = function() {
         var val = func.call(_self, columnObjects, options);
-        return Miso.types[options.type].coerce(val, options.typeOptions);
+        return Dataset.types[options.type].coerce(val, options.typeOptions);
       };
 
       if (this.syncable) {
         //create product object to pass back for syncable datasets/views
-        var prod = new Miso.Product({
+        var prod = new Dataset.Product({
           columns : columnObjects,
           func : function(options) {
             options = options || {};
@@ -113,7 +112,7 @@
   };
 
 
-  _.extend(Miso.DataView.prototype, {
+  _.extend(Dataset.DataView.prototype, {
 
     // finds the column objects that match the single/multiple
     // input columns. Helper method.
@@ -144,9 +143,9 @@
     *   options
     *     silent - set to tue to prevent event propagation
     */
-    sum : Miso.Product.define( function(columns, options) {
+    sum : Dataset.Product.define( function(columns, options) {
       _.each(columns, function(col) {
-        if (col.type === Miso.types.time.name) {
+        if (col.type === Dataset.types.time.name) {
           throw new Error("Can't sum up time");
         }
       });
@@ -159,7 +158,7 @@
     * Parameters:
     *   column - string or array of column names on which the value is calculated 
     */    
-    max : Miso.Product.define( function(columns, options) {
+    max : Dataset.Product.define( function(columns, options) {
       return _.max(_.map(columns, function(c) { 
         return c._max(); 
       }));
@@ -172,7 +171,7 @@
     * Paramaters:
     *   columns - string or array of column names on which the value is calculated 
     */    
-    min : Miso.Product.define( function(columns, options) {
+    min : Dataset.Product.define( function(columns, options) {
       return _.min(_.map(columns, function(c) { 
         return c._min(); 
       }));
@@ -184,7 +183,7 @@
     * Parameters:
     *   column - string or array of column names on which the value is calculated 
     */    
-    mean : Miso.Product.define( function(columns, options) {
+    mean : Dataset.Product.define( function(columns, options) {
       var vals = [];
       _.each(columns, function(col) {
         vals.push(col.data);
@@ -196,7 +195,7 @@
       var type = columns[0].type;
 
       // convert the values to their appropriate numeric value
-      vals = _.map(vals, function(v) { return Miso.types[type].numeric(v); });
+      vals = _.map(vals, function(v) { return Dataset.types[type].numeric(v); });
       return _.mean(vals);   
     })
 

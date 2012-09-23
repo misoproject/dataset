@@ -1,12 +1,12 @@
 (function(global, _) {
   
-  var Miso = global.Miso || {};
+  var Dataset = global.Miso.Dataset;
   
   /**
   * This is a generic collection of dataset-building utilities
   * that are used by Miso.Dataset and Miso.DataView.
   */
-  Miso.Builder = {
+  Dataset.Builder = {
 
     /**
     * Detects the type of a column based on some input data.
@@ -22,7 +22,7 @@
       // and then squashing it to create a unique subset.
       var type = _.inject(data.slice(0, 5), function(memo, value) {
 
-        var t = Miso.typeOf(value);
+        var t = Dataset.typeOf(value);
 
         if (value !== "" && memo.indexOf(t) === -1 && !_.isNull(value)) {
           memo.push(t);
@@ -58,7 +58,7 @@
           column.force = true;
           return; 
         } else {
-          Miso.Builder.detectColumnType(column, data);
+          Dataset.Builder.detectColumnType(column, data);
         }
 
       }, this);
@@ -72,7 +72,7 @@
     */
     cacheRows : function(dataset) {
 
-      Miso.Builder.clearRowCache(dataset);
+      Dataset.Builder.clearRowCache(dataset);
 
       // cache the row id positions in both directions.
       // iterate over the _id column and grab the row ids

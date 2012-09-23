@@ -1,6 +1,6 @@
 (function(global, _) {
 
-  var Miso = (global.Miso || (global.Miso = {}));
+  var Dataset = global.Miso.Dataset;
 
   /**
   * Delimited data parser.
@@ -9,7 +9,7 @@
   *   options
   *     delimiter : ","
   */
-  Miso.Parsers.Delimited = function(options) {
+  Dataset.Parsers.Delimited = function(options) {
     options = options || {};
 
     this.delimiter = options.delimiter || ",";
@@ -40,7 +40,7 @@
     };
   }
 
-  _.extend(Miso.Parsers.Delimited.prototype, Miso.Parsers.prototype, {
+  _.extend(Dataset.Parsers.Delimited.prototype, Dataset.Parsers.prototype, {
 
     parse : function(data) {
       var columns = [],

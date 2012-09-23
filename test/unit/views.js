@@ -1,7 +1,7 @@
 (function(global) {
   
   var Util  = global.Util;
-  var Miso  = global.Miso || {};  
+  var Dataset = global.Miso.Dataset;
 
   module("Columns");
 
@@ -36,7 +36,7 @@
   });
 
   test("Column median", function() {
-    var ds = new Miso.Dataset({
+    var ds = new Dataset({
       data : {
         columns : [
           { name : 'vals', data : [1,2,3,4,5,6,7,8,9,10] },
@@ -54,7 +54,7 @@
   });
 
   test("Column mean", function() {
-    var ds = new Miso.Dataset({
+    var ds = new Dataset({
       data : {
         columns : [
           { name : 'vals', data : [1,2,3,4,5,6,7,8,9,10] },
@@ -72,7 +72,7 @@
   });
 
   test("Column before function", function() {
-    var ds = new Miso.Dataset({
+    var ds = new Dataset({
       data : {
         columns : [
           { name : 'vals', data : [1,2,3,4,5,6,7,8,9,10] }
@@ -310,7 +310,7 @@ module("Views :: Syncing");
         delta.old[col] = oldVal;
         delta.changed[col] = 100;
         
-        var event = Miso.Events._buildEvent(delta);
+        var event = Dataset.Events._buildEvent(delta);
 
         // trigger view sync with delta
         // view.sync(delta);
@@ -349,7 +349,7 @@ module("Views :: Syncing");
         delta.old[col] = oldVal;
         delta.changed[col] = 100;
         
-        var event = Miso.Events._buildEvent(delta);
+        var event = Dataset.Events._buildEvent(delta);
 
         // trigger view sync with delta
         // view.sync(delta);
@@ -416,7 +416,7 @@ module("Views :: Syncing");
     delta.old[colname] = oldVal;
     delta.changed[colname] = 100;
 
-    var event = Miso.Events._buildEvent(delta);
+    var event = Dataset.Events._buildEvent(delta);
 
     // trigger dataset change
     ds.trigger("change", event);
@@ -445,7 +445,7 @@ module("Views :: Syncing");
     };
 
     // create event representing deletion
-    var event = Miso.Events._buildEvent(delta);
+    var event = Dataset.Events._buildEvent(delta);
 
     // delete actual row
     ds._remove( ds._rowIdByPosition[0] );
@@ -492,7 +492,7 @@ module("Views :: Syncing");
     };
 
     // create event representing addition
-    var event = Miso.Events._buildEvent(delta);
+    var event = Dataset.Events._buildEvent(delta);
 
     // for now, we aren't adding the actual data to the original dataset
     // just simulating that addition. Eventually when we ammend the api
@@ -533,7 +533,7 @@ module("Views :: Syncing");
     };
 
     // create event representing addition
-    var event = Miso.Events._buildEvent(delta);
+    var event = Dataset.Events._buildEvent(delta);
 
     // for now, we aren't adding the actual data to the original dataset
     // just simulating that addition. Eventually when we ammend the api
@@ -558,7 +558,7 @@ module("Views :: Syncing");
   });
 
   test("Basic Sort", function() {
-    var ds = new Miso.Dataset({
+    var ds = new Dataset({
       data: { columns : [ 
         { name : "one",   data : [10, 2, 3, 14, 3, 4] },
         { name : "two",   data : [4,  5, 6, 1,  1, 1] },
@@ -584,7 +584,7 @@ module("Views :: Syncing");
   });
 
    test("Sort with options param", function() {
-    var ds = new Miso.Dataset({
+    var ds = new Dataset({
       data: { columns : [ 
         { name : "one",   data : [10, 2, 3, 14, 3, 4] },
         { name : "two",   data : [4,  5, 6, 1,  1, 1] },
@@ -611,7 +611,7 @@ module("Views :: Syncing");
   });
 
   test("setting sort comparator when sorting", function() {
-    var ds = new Miso.Dataset({
+    var ds = new Dataset({
       data: { columns : [ 
         { name : "one",   data : [10, 2, 3, 14, 3, 4] },
         { name : "two",   data : [4,  5, 6, 1,  1, 1] },
@@ -635,7 +635,7 @@ module("Views :: Syncing");
   });
 
   test("Basic Sort reverse", function() {
-    var ds = new Miso.Dataset({
+    var ds = new Dataset({
       data: { columns : [ 
         { name : "one",   data : [10, 2, 6, 14, 3, 4] },
         { name : "two",   data : [4,  5, 6, 1,  1, 1] },
@@ -659,7 +659,7 @@ module("Views :: Syncing");
   });
 
   test("Sort in init", function() {
-    var ds = new Miso.Dataset({
+    var ds = new Dataset({
       data: { columns : [ 
         { name : "one",   data : [10, 2, 6, 14, 3, 4] },
         { name : "two",   data : [4,  5, 6, 1,  1, 1] },
@@ -680,7 +680,7 @@ module("Views :: Syncing");
   });
 
   test("Add row in sorted order", function() {
-    var ds = new Miso.Dataset({
+    var ds = new Dataset({
       data: { columns : [ 
         { name : "one",   data : [10, 2, 6, 14, 3, 4] },
         { name : "two",   data : [4,  5, 6, 1,  1, 1] },
@@ -706,7 +706,7 @@ module("Views :: Syncing");
   });
 
   test("Add row in reverse sorted order", function() {
-    var ds = new Miso.Dataset({
+    var ds = new Dataset({
       data: { columns : [ 
         { name : "one",   data : [10, 2, 6, 14, 3, 4] },
         { name : "two",   data : [4,  5, 6, 1,  1, 1] },
@@ -733,7 +733,7 @@ module("Views :: Syncing");
 
   module("export");
   test("Export to json", function(){
-    var ds = new Miso.Dataset({
+    var ds = new Dataset({
       data: { columns : [ 
         { name : "one",   data : [10, 2, 6, 14, 3, 4] },
         { name : "two",   data : [4,  5, 6, 1,  1, 1] },

@@ -1,13 +1,13 @@
 (function(global) {
 
   var Util  = global.Util;
-  var Miso    = global.Miso || {};
+  var Dataset = global.Miso.Dataset;
 
   module("Code Structure");
 
   test("predefined Miso components aren't overwritten", function() {
-    ok(Miso.Tester !== undefined);
-    equals(Miso.Tester.foo(), 44);
+    ok(global.Miso.Tester !== undefined);
+    equals(global.Miso.Tester.foo(), 44);
   });
 
   module("Inheritance tests");
@@ -72,7 +72,7 @@
       { a : 1, b : 0, c: 1}
     ];
 
-    var ds = new Miso.Dataset({
+    var ds = new Dataset({
       data : data 
     });
 
@@ -89,7 +89,7 @@
       { a : 1, b : 0, c: 1}
     ];
 
-    var ds = new Miso.Dataset({
+    var ds = new Dataset({
       data : data 
     });
 
@@ -99,7 +99,7 @@
       }});
       verifyHasDataViewPrototype(dv);    
       verifyNODatasetPrototypeMethods(dv);
-      Miso.DataView.prototype.lol = function() {};
+      Dataset.DataView.prototype.lol = function() {};
       ok(!_.isUndefined(this.lol));
     }});
 
@@ -112,7 +112,7 @@
       { a : 1, b : 0, c: 1}
     ];
 
-    var ds = new Miso.Dataset({
+    var ds = new Dataset({
       data : data 
     });
 
@@ -120,14 +120,14 @@
       var gb = ds.groupBy("a", ["b"]);
       verifyHasDataViewPrototype(gb);   
       verifyDatasetPrototypeMethods(gb); 
-      Miso.DataView.prototype.lol = function() {};
+      Dataset.DataView.prototype.lol = function() {};
       ok(!_.isUndefined(gb.lol));
     }});
   });
 
   module("Fetching");
   test("Basic fetch + success callback", function() {
-    var ds = new Miso.Dataset({
+    var ds = new Dataset({
       data: [
         { one : 1, two : 4, three : 7 },
         { one : 2, two : 5, three : 8 },
@@ -137,7 +137,7 @@
 
     ds.fetch({
       success: function() {
-        equals(this instanceof Miso.Dataset, true);
+        equals(this instanceof Dataset, true);
         ok(_.isEqual(this.columnNames(), ["one", "two", "three"]));
       }
     });
@@ -173,7 +173,7 @@
   // });
 
   test("Basic fetch + deferred callback", function() {
-    var ds = new Miso.Dataset({
+    var ds = new Dataset({
       data: [
         { one : 1, two : 4, three : 7 },
         { one : 2, two : 5, three : 8 },
@@ -182,20 +182,20 @@
     });
 
     _.when(ds.fetch()).then(function() {
-      equals(ds instanceof Miso.Dataset, true);
+      equals(ds instanceof Dataset, true);
       ok(_.isEqual(ds.columnNames(), ["one", "two", "three"]));
     });
   });
 
   test("Instantiation ready callback", function() {
-    var ds = new Miso.Dataset({
+    var ds = new Dataset({
       data: [
         { one : 1, two : 4, three : 7 },
         { one : 2, two : 5, three : 8 },
         { one : 3, two : 6, three : 9 }
       ],
       ready : function() {
-        equals(this instanceof Miso.Dataset, true);
+        equals(this instanceof Dataset, true);
         ok(_.isEqual(this.columnNames(), ["one", "two", "three"]));
       }
     }).fetch();
@@ -204,13 +204,14 @@
   module("Type raw extraction");
   test("Numeric raw extraction", 2, function() {
     var ds = Util.baseSample();
+    console.log('xxx', ds._columns[1]);
     equals(ds._columns[1].type, "number");
     equals(ds._columns[1].numericAt(1), ds._columns[1].data[1]);    
   });
 
   test("String raw extraction", 3, function() {
-    var ds = new Miso.Dataset({
-      data : Miso.alphabet_strict,
+    var ds = new Dataset({
+      data : window.Miso.alphabet_strict,
       strict: true
     }).fetch({
       success: function() {
@@ -222,7 +223,7 @@
   });
 
   test("Time raw extraction", 2, function() {
-    var ds = new Miso.Dataset({
+    var ds = new Dataset({
       data : [
         { 'character' : '12/31 2012' },
         { 'character' : '01/31 2011' }

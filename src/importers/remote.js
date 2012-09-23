@@ -1,5 +1,7 @@
 (function(global, _) {
-  var Miso = (global.Miso || (global.Miso = {}));
+
+  var Dataset = global.Miso.Dataset;
+  
 
   /**
   * A remote importer is responsible for fetching data from a url.
@@ -10,7 +12,7 @@
   *     dataType - ajax datatype
   *     jsonp  - true if it's a jsonp request, false otherwise.
   */
-  Miso.Importers.Remote = function(options) {
+  Dataset.Importers.Remote = function(options) {
     options = options || {};
 
     this._url = options.url;
@@ -25,7 +27,7 @@
     };
   };
 
-  _.extend(Miso.Importers.Remote.prototype, Miso.Importers.prototype, {
+  _.extend(Dataset.Importers.Remote.prototype, Dataset.Importers.prototype, {
     fetch : function(options) {
 
       // call the original fetch method of object parsing.
@@ -42,7 +44,7 @@
       }
 
       // make ajax call to fetch remote url.
-      Miso.Xhr(_.extend(this.params, {
+      Dataset.Xhr(_.extend(this.params, {
         success : this.callback ? this.callback : callback,
         error   : options.error
       }));
@@ -62,7 +64,7 @@
     }
   }, rparams = /\?/;
 
-  Miso.Xhr = function(options) {
+  Dataset.Xhr = function(options) {
 
     // json|jsonp etc.
     options.dataType = options.dataType && options.dataType.toLowerCase() || null;
@@ -72,7 +74,7 @@
     if (options.dataType &&
       (options.dataType === "jsonp" || options.dataType === "script" )) {
 
-        Miso.Xhr.getJSONP(
+        Dataset.Xhr.getJSONP(
           url, 
           options.success,
           options.dataType === "script",
@@ -101,11 +103,11 @@
         settings.ajax.open(settings.type, settings.url, settings.async);
         settings.ajax.send(settings.data || null);
 
-        return Miso.Xhr.httpData(settings);
+        return Dataset.Xhr.httpData(settings);
       }
   };
 
-  Miso.Xhr.getJSONP = function(url, success, isScript, error, callback) {
+  Dataset.Xhr.getJSONP = function(url, success, isScript, error, callback) {
     // If this is a script request, ensure that we do not
     // call something that has already been loaded
     if (isScript) {
@@ -215,7 +217,7 @@
     return;
   };
 
-  Miso.Xhr.httpData = function(settings) {
+  Dataset.Xhr.httpData = function(settings) {
     var data, json = null, handleResponse;
 
     handleResponse = function () {

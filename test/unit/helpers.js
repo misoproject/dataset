@@ -22,6 +22,7 @@
     return ds;
   };
 
+  Util.baseSample();
 
   Util.baseSyncingSample = function() {
     var ds = null;

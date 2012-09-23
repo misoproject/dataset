@@ -2,6 +2,7 @@
   
   var Util  = global.Util;
   var Miso    = global.Miso || {};
+  var Dataset = Miso.Dataset;
 
   module("CountBy");
   var countData = {
