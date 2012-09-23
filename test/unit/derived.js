@@ -239,7 +239,7 @@
       ok(_.isEqual(ma.column("B").data, _.movingAvg(this.column("B").data, 3)));
       ok(_.isEqual(ma.column("C").data, _.movingAvg(this.column("C").data, 3)));
 
-      this.update(this.column("_id").data[0], {
+      this.update({ _id : this.column("_id").data[0],
         A : 100, B : 100, C : 100
       });
 
@@ -338,7 +338,8 @@
       var groupedData = ds.groupBy("state", ["count", "anothercount"]);
       var rowid = ds._columns[0].data[0];
       
-      ds.update(rowid, {
+      ds.update({
+        _id : rowid,
         state : "MN"
       });
 
@@ -361,10 +362,12 @@
       var groupedData = ds.groupBy("state", ["anothercount"]);
       var rowid = ds._columns[0].data[0];
       
-      ds.update(rowid, {
+      ds.update({
+        count : rowid,
         state : "MN"
       });
 
+      console.log(groupedData.column("_oids").data);
       // TODO: the count column get overwritten since these are new rows... so it really
       // is no longer a count column. It's just an id column. Not sure what to do about it
       // at this point. Should it just go back to being an _id column? I think maybe?
