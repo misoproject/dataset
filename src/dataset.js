@@ -12,7 +12,6 @@ Version 0.0.1.2
   // take on miso dataview's prototype
   Dataset.prototype = new Dataset.DataView();
 
-  console.log(Dataset.prototype);
   // add dataset methods to dataview.
   _.extend(Dataset.prototype, {
 
