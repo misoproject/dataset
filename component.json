@@ -1,0 +1,12 @@
+{
+  "name": "miso.dataset",
+  "version": "0.2.2",
+  "main": "./dist/miso.ds.0.2.2.js",
+  "dependencies" : {
+    "json2" : "*",
+    "lodash" : "0.6.1",
+    "moment" : "1.7.0",
+    "underscore.deferred" : "*",
+    "underscore.math" : "git://github.com/syntagmatic/underscore.math.git"
+  }
+}

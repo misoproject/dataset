@@ -1,6 +1,6 @@
 (function(global, _) {
 
-  var Miso = global.Miso;
+  var Dataset = global.Miso.Dataset;
 
   /**
   * A single column in a dataset
@@ -15,14 +15,14 @@
   * Returns:
   *   new Miso.Column
   */
-  Miso.Column = function(options) {
+  Dataset.Column = function(options) {
     _.extend(this, options);
     this._id = options.id || _.uniqueId();
     this.data = options.data || [];
     return this;
   };
 
-  _.extend(Miso.Column.prototype, {
+  _.extend(Dataset.Column.prototype, {
 
     /**
     * Converts any value to this column's type for a given position
@@ -33,7 +33,7 @@
     *   number
     */
     toNumeric : function(value) {
-      return Miso.types[this.type].numeric(value);
+      return Dataset.types[this.type].numeric(value);
     },
 
     /**
@@ -53,7 +53,7 @@
     */
     coerce : function() {
       this.data = _.map(this.data, function(datum) {
-        return Miso.types[this.type].coerce(datum, this);
+        return Dataset.types[this.type].coerce(datum, this);
       }, this);
     },
 
@@ -96,36 +96,36 @@
         m += this.numericAt(j);
       }
       m /= this.data.length;
-      return Miso.types[this.type].coerce(m, this);
+      return Dataset.types[this.type].coerce(m, this);
     },
 
     _median : function() {
-      return Miso.types[this.type].coerce(_.median(this.data), this);
+      return Dataset.types[this.type].coerce(_.median(this.data), this);
     },
 
     _max : function() {
       var max = -Infinity;
       for (var j = 0; j < this.data.length; j++) {
         if (this.data[j] !== null) {
-          if (Miso.types[this.type].compare(this.data[j], max) > 0) {
+          if (Dataset.types[this.type].compare(this.data[j], max) > 0) {
             max = this.numericAt(j);
           }  
         }
       }
 
-      return Miso.types[this.type].coerce(max, this);
+      return Dataset.types[this.type].coerce(max, this);
     },
 
     _min : function() {
       var min = Infinity;
       for (var j = 0; j < this.data.length; j++) {
         if (this.data[j] !== null) {
-          if (Miso.types[this.type].compare(this.data[j], min) < 0) {
+          if (Dataset.types[this.type].compare(this.data[j], min) < 0) {
             min = this.numericAt(j);
           }  
         }
       }
-      return Miso.types[this.type].coerce(min, this);
+      return Dataset.types[this.type].coerce(min, this);
     }
   });
 
@@ -140,7 +140,7 @@
   * Returns
   *   new Miso.Dataview.
   */
-  Miso.DataView = function(options) {
+  Dataset.DataView = function(options) {
     if (typeof options !== "undefined") {
       options = options || (options = {});
 
@@ -152,14 +152,14 @@
     }
   };
 
-  _.extend(Miso.DataView.prototype, {
+  _.extend(Dataset.DataView.prototype, {
 
     _initialize: function(options) {
       
       // is this a syncable dataset? if so, pull
       // required methoMiso and mark this as a syncable dataset.
       if (this.parent.syncable === true) {
-        _.extend(this, Miso.Events);
+        _.extend(this, Dataset.Events);
         this.syncable = true;
       }
 
@@ -173,8 +173,8 @@
       // initialize columns.
       this._columns = this._selectData();
 
-      Miso.Builder.cacheColumns(this);
-      Miso.Builder.cacheRows(this);
+      Dataset.Builder.cacheColumns(this);
+      Dataset.Builder.cacheRows(this);
 
       // bind to parent if syncable
       if (this.syncable) {
@@ -194,7 +194,7 @@
 
         // ===== ADD NEW ROW
 
-        if (typeof rowPos === "undefined" && Miso.Event.isAdd(d)) {
+        if (typeof rowPos === "undefined" && Dataset.Event.isAdd(d)) {
           // this is an add event, since we couldn't find an
           // existing row to update and now need to just add a new
           // one. Use the delta's changed properties as the new row
@@ -228,7 +228,7 @@
     
         // if this is a delete event OR the row no longer
         // passes the filter, remove it.
-        if (Miso.Event.isRemove(d) || 
+        if (Dataset.Event.isRemove(d) || 
             (this.filter.row && !this.filter.row(row))) {
 
           // Since this is now a delete event, we need to convert it
@@ -263,7 +263,7 @@
     *   filter - object with optional columns array and filter object/function 
     *   options - Options.
     * Returns:
-    *   new Miso.DataView
+    *   new Miso.Dataset.DataView
     */
     where : function(filter, options) {
       options = options || {};
@@ -276,7 +276,7 @@
       
       options.parent = this;
 
-      return new Miso.DataView(options);
+      return new Dataset.DataView(options);
     },
 
     _selectData : function() {
@@ -286,7 +286,7 @@
         
         // check if this column passes the column filter
         if (this.filter.columns(parentColumn)) {
-          selectedColumns.push(new Miso.Column({
+          selectedColumns.push(new Dataset.Column({
             name : parentColumn.name,
             data : [], 
             type : parentColumn.type,
@@ -397,7 +397,7 @@
     *   Miso.DataView.
     */    
     columns : function(columnsArray) {
-     return new Miso.DataView({
+     return new Dataset.DataView({
         filter : { columns : columnsArray },
         parent : this
       });
@@ -526,7 +526,7 @@
         // if we suddenly see values for data that didn't exist before as a column
         // just drop it. First fetch defines the column structure.
         if (typeof column !== "undefined") {
-          var Type = Miso.types[column.type];
+          var Type = Dataset.types[column.type];
 
           // test if value matches column type
           if (column.force || Type.test(row[column.name], column)) {
@@ -541,7 +541,7 @@
 
           } else {
             throw("incorrect value '" + row[column.name] + 
-                  "' of type " + Miso.typeOf(row[column.name], column) +
+                  "' of type " + Dataset.typeOf(row[column.name], column) +
                   " passed to column '" + column.name + "' with type " + column.type);  
           
           }
@@ -621,7 +621,7 @@
     * the same as where
     */    
     rows : function(filter) {
-      return new Miso.DataView({
+      return new Dataset.DataView({
         filter : { rows : filter },
         parent : this
       });

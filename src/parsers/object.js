@@ -1,14 +1,15 @@
 (function(global, _) {
-  var Miso = (global.Miso || (global.Miso = {}));
+
+  var Dataset = global.Miso.Dataset;
 
   /**
   * Object parser
   * Converts an array of objects to strict format.
   * Each object is a flat json object of properties.
   */
-  Miso.Parsers.Obj = Miso.Parsers;
+  Dataset.Parsers.Obj = Dataset.Parsers;
 
-  _.extend(Miso.Parsers.Obj.prototype, Miso.Parsers.prototype, {
+  _.extend(Dataset.Parsers.Obj.prototype, Dataset.Parsers.prototype, {
 
     parse : function( data ) {
       var columns = _.keys(data[0]),

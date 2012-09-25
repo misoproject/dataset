@@ -3,18 +3,18 @@
 
 (function(global, _) {
 
-  var Miso = (global.Miso || (global.Miso = {}));
+  var Dataset = global.Miso.Dataset;
   /**
   * Google Spreadsheet Parser. 
   * This is utilizing the format that can be obtained using this:
   * http://code.google.com/apis/gdata/samples/spreadsheet_sample.html
   * Used in conjunction with the Google Spreadsheet Importer.
   */
-  Miso.Parsers.GoogleSpreadsheet = function(options) {
+  Dataset.Parsers.GoogleSpreadsheet = function(options) {
     this.fast = options.fast || false;
   };
 
-  _.extend(Miso.Parsers.GoogleSpreadsheet.prototype, Miso.Parsers.prototype, {
+  _.extend(Dataset.Parsers.GoogleSpreadsheet.prototype, Dataset.Parsers.prototype, {
 
     parse : function(data) {
       var columns = [],

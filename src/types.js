@@ -1,9 +1,9 @@
 (function(global, _) {
 
-  var Miso = global.Miso || (global.Miso = {});
+  var Dataset = global.Miso.Dataset;
 
-  Miso.typeOf = function(value, options) {
-    var types = _.keys(Miso.types),
+  Dataset.typeOf = function(value, options) {
+    var types = _.keys(Dataset.types),
         chosenType;
 
     //move string and mixed to the end
@@ -11,7 +11,7 @@
     types.push(types.splice(_.indexOf(types, 'mixed'), 1)[0]);
 
     chosenType = _.find(types, function(type) {
-      return Miso.types[type].test(value, options);
+      return Dataset.types[type].test(value, options);
     });
 
     chosenType = _.isUndefined(chosenType) ? 'string' : chosenType;
@@ -19,34 +19,42 @@
     return chosenType;
   };
   
-  Miso.types = {
+  Dataset.types = {
     
     mixed : {
       name : 'mixed',
       coerce : function(v) {
+        if (_.isNull(v) || typeof v === "undefined" || _.isNaN(v)) {
+          return null;
+        }
         return v;
       },
       test : function(v) {
         return true;
       },
       compare : function(s1, s2) {
-        if (s1 < s2) { return -1; }
-        if (s1 > s2) { return 1;  }
-        return 0;
+        if ( _.isEqual(s1, s2) ) { return 0; }
+        if (s1 < s2)  { return -1;}
+        if (s1 > s2)  { return 1; }
       },
       numeric : function(v) {
-        return _.isNaN( Number(v) ) ? null : Number(v);
+        return v === null || _.isNaN(+v) ? null : +v;
       }
     },
 
     string : {
       name : "string",
       coerce : function(v) {
-        return v == null ? null : v.toString();
+        if (_.isNaN(v) || v === null || typeof v === "undefined") {
+          return null;
+        }
+        return v.toString();
       },
+
       test : function(v) {
         return (v === null || typeof v === "undefined" || typeof v === 'string');
       },
+
       compare : function(s1, s2) {
         if (s1 == null && s2 != null) { return -1; }
         if (s1 != null && s2 == null) { return 1; }
@@ -66,10 +74,13 @@
       }
     },
 
-    boolean : {
+    "boolean" : {
       name : "boolean",
       regexp : /^(true|false)$/,
       coerce : function(v) {
+        if (_.isNaN(v) || v === null || typeof v === "undefined") {
+          return null;
+        }
         if (v === 'false') { return false; }
         return Boolean(v);
       },
@@ -88,7 +99,7 @@
         return (n1 < n2 ? -1 : 1);
       },
       numeric : function(value) {
-        if (_.isNaN(value)) {
+        if (value === null || _.isNaN(value)) {
           return null;
         } else {
           return (value) ? 1 : 0;  
@@ -100,10 +111,11 @@
       name : "number",
       regexp : /^\s*[\-\.]?[0-9]+([\.][0-9]+)?\s*$/,
       coerce : function(v) {
-        if (_.isNull(v)) {
+        var cv = +v;
+        if (_.isNull(v) || typeof v === "undefined" || _.isNaN(cv)) {
           return null;
         }
-        return _.isNaN(v) ? null : +v;
+        return cv;
       },
       test : function(v) {
         if (v === null || typeof v === "undefined" || typeof v === 'number' || this.regexp.test( v ) ) {
@@ -120,6 +132,9 @@
         return (n1 < n2 ? -1 : 1);
       },
       numeric : function(value) {
+        if (_.isNaN(value) || value === null) {
+          return null;
+        }
         return value;
       }
     },
@@ -169,6 +184,11 @@
 
       coerce : function(v, options) {
         options = options || {};
+
+        if (_.isNull(v) || typeof v === "undefined" || _.isNaN(v)) {
+          return null;
+        }
+
         // if string, then parse as a time
         if (_.isString(v)) {
           var format = options.format || this.format;
@@ -201,6 +221,9 @@
         return 0;
       },
       numeric : function( value ) {
+        if (_.isNaN(value) || value === null) {
+          return null;
+        }
         return value.valueOf();
       }
     }

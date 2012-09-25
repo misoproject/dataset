@@ -41,7 +41,6 @@
     return ds;
   };
 
-
   Util.baseSyncingSample = function() {
     var ds = null;
 
@@ -81,5 +80,5 @@
     return ds;
   };
 
-
 }(this));
+

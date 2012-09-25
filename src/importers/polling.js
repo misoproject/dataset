@@ -1,6 +1,6 @@
 (function(global,_){
   
-  var Miso = (global.Miso || (global.Miso = {}));
+  var Dataset = global.Miso.Dataset;
 
   /**
   * A remote polling importer that queries a url once every 1000
@@ -9,15 +9,15 @@
   *   interval - poll every N milliseconds. Default is 1000.
   *   extract  - a method to pass raw data through before handing back to parser.
   */
-  Miso.Importers.Polling = function(options) {
+  Dataset.Importers.Polling = function(options) {
     options = options || {};
     this.interval = options.interval || 1000;
     this._def = null;
 
-    Miso.Importers.Remote.apply(this, [options]);
+    Dataset.Importers.Remote.apply(this, [options]);
   };
 
-  _.extend(Miso.Importers.Polling.prototype, Miso.Importers.Remote.prototype, {
+  _.extend(Dataset.Importers.Polling.prototype, Dataset.Importers.Remote.prototype, {
     fetch : function(options) {
 
       if (this._def === null) {
@@ -52,7 +52,7 @@
         importer._def = _.Deferred();
       });
 
-      Miso.Xhr(_.extend(this.params, {
+      Dataset.Xhr(_.extend(this.params, {
         success : this.success_callback,
         error : this.error_callback
       }));

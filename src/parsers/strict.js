@@ -1,5 +1,6 @@
 (function(global, _) {
-  var Miso = (global.Miso || (global.Miso = {}));
+
+  var Dataset = global.Miso.Dataset;
 
   /**
   * Strict format parser.
@@ -12,11 +13,11 @@
   *   }
   * }
   */
-  Miso.Parsers.Strict = function( options ) {
+  Dataset.Parsers.Strict = function( options ) {
     this.options = options || {};
   }; 
 
-  _.extend( Miso.Parsers.Strict.prototype, Miso.Parsers.prototype, {
+  _.extend( Dataset.Parsers.Strict.prototype, Dataset.Parsers.prototype, {
 
     parse : function( data ) {
       var columnData = {}, columnNames = [];

@@ -46,6 +46,7 @@
   });
 
   module("Event Object");
+   
    test("affectedColumns for add event", function() {
 
     var ds = new Miso.Dataset({

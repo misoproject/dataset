@@ -2,6 +2,7 @@
   
   var Util  = global.Util;
   var Miso    = global.Miso || {};
+  var Dataset = Miso.Dataset;
 
   module("CountBy");
   var countData = {
@@ -12,11 +13,40 @@
       },
       { name : "category", 
         data : ['a','b','a','a','c','c', null,'a','b','c'], 
-        type : "numeric" 
+        type : "string" 
+      },
+      { name : "stuff", 
+        data : [window, window, {}, {}, undefined, null, null, [], [1], 6], 
+        type : "mixed" 
       }
     ]
   };
 
+  test("counting a mess", function() {
+    var ds = new Miso.Dataset({
+      data : countData,
+      strict: true
+    }).fetch({ success :function() {
+      var counted = this.countBy('stuff'),
+          nullCount = counted.rows(function(row) {
+            return row.stuff === null;
+          }).rowByPosition(0).count,
+          objCount = counted.rows(function(row) {
+            return _.isEqual(row.stuff, {});
+          }).rowByPosition(0).count,
+          arrCount = counted.rows(function(row) {
+            return _.isEqual(row.stuff, []);
+          }).rowByPosition(0).count;
+      
+      equals(6, counted.columns().length);
+      equals(3, nullCount);
+      equals(2, objCount);
+      equals(1, arrCount);
+
+    }});
+
+
+  });
 
   test("Counting rows", function() {
   var ds = new Miso.Dataset({
@@ -417,6 +447,9 @@
         ["count", "anothercount"], {
           method : function(array) {
             return _.reduce(array, function(memo, num){ 
+              if ( _.isUndefined(num) || _.isNull(num) ) {
+                num = 1;
+              }
               return memo * num; 
             }, 1);
           }
@@ -424,7 +457,7 @@
 
       ok(_.isEqual(groupedData._columns[2].data, ["AZ", "MA"]), "states correct");
       ok(_.isEqual(groupedData._columns[3].data, [6,120]), "counts correct");
-      ok(_.isEqual(groupedData._columns[4].data, [6000,120000]), "anothercounts correct" + groupedData._columns[3].data);
+      ok(_.isEqual(groupedData._columns[4].data, [6000,120000]), "anothercounts correct");
     });
   });
 

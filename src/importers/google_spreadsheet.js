@@ -1,6 +1,6 @@
 (function(global, _) {
 
-  var Miso = (global.Miso || (global.Miso = {}));
+  var Dataset = global.Miso.Dataset;
   
   /**
   * Instantiates a new google spreadsheet importer.
@@ -14,7 +14,7 @@
   *     url - a more complex url (that may include filtering.) In this case
   *           make sure it's returning the feed json data.
   */
-  Miso.Importers.GoogleSpreadsheet = function(options) {
+  Dataset.Importers.GoogleSpreadsheet = function(options) {
     options = options || {};
     if (options.url) {
 
@@ -65,6 +65,6 @@
     return this;
   };
 
-  _.extend(Miso.Importers.GoogleSpreadsheet.prototype, Miso.Importers.Remote.prototype);
+  _.extend(Dataset.Importers.GoogleSpreadsheet.prototype, Dataset.Importers.Remote.prototype);
 
 }(this, _));

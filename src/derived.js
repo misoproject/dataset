@@ -1,6 +1,6 @@
 (function(global, _) {
 
-  var Miso = global.Miso || (global.Miso = {});
+  var Dataset = global.Miso.Dataset;
 
   /**
   * A Miso.Derived dataset is a regular dataset that has been derived
@@ -15,10 +15,10 @@
   *   a derived dataset instance
   */
 
-  Miso.Derived = function(options) {
+  Dataset.Derived = function(options) {
     options = options || {};
 
-    Miso.Dataset.call(this);
+    Dataset.call(this);
     
     // save parent dataset reference
     this.parent = options.parent;
@@ -40,17 +40,17 @@
     });
 
     if (this.parent.syncable) {
-      _.extend(this, Miso.Events);
+      _.extend(this, Dataset.Events);
       this.syncable = true;
       this.parent.bind("change", this._sync, this);  
     }
   };
 
   // take in dataset's prototype.
-  Miso.Derived.prototype = new Miso.Dataset();
+  Dataset.Derived.prototype = new Dataset();
 
   // inherit all of dataset's methods.
-  _.extend(Miso.Derived.prototype, {
+  _.extend(Dataset.Derived.prototype, {
     _sync : function(event) {
       // recompute the function on an event.
       // TODO: would be nice to be more clever about this at some point.
@@ -61,7 +61,7 @@
 
 
   // add derived methods to dataview (and thus dataset & derived)
-  _.extend(Miso.DataView.prototype, {
+  _.extend(Dataset.DataView.prototype, {
 
     /**
     * moving average
@@ -77,7 +77,7 @@
       
       options = options || {};
 
-      var d = new Miso.Derived({
+      var d = new Dataset.Derived({
         parent : this,
         method : options.method || _.mean,
         size : size,
@@ -98,7 +98,7 @@
       }, this);
 
       // save column positions on new dataset.
-      Miso.Builder.cacheColumns(d);
+      Dataset.Builder.cacheColumns(d);
 
       // apply with the arguments columns, size, method
       var computeMovingAverage = function() {
@@ -134,7 +134,7 @@
           oidcol.data.push(this.parent.column(this.parent.idAttribute).data.slice(i, i+size));
         }
         
-        Miso.Builder.cacheRows(this);
+        Dataset.Builder.cacheRows(this);
         
         return this;
       };
@@ -150,7 +150,7 @@
     countBy : function(byColumn, options) {
 
       options = options || {};
-      var d = new Miso.Derived({
+      var d = new Dataset.Derived({
         parent : this,
         method : _.sum,
         args : arguments
@@ -165,7 +165,7 @@
 
       d.addColumn({ name : 'count', type : 'number' });
       d.addColumn({ name : '_oids', type : 'mixed' });
-      Miso.Builder.cacheColumns(d);
+      Dataset.Builder.cacheColumns(d);
 
       var names = d.column(byColumn).data, 
           values = d.column('count').data, 
@@ -175,7 +175,7 @@
       function findIndex(names, datum, type) {
         var i;
         for(i = 0; i < names.length; i++) {
-          if (Miso.types[type].compare(names[i], datum) === 0) {
+          if (Dataset.types[type].compare(names[i], datum) === 0) {
             return i;
           }
         }
@@ -195,7 +195,7 @@
         }
       }, d);
 
-      Miso.Builder.cacheRows(d);
+      Dataset.Builder.cacheRows(d);
       return d;
     },
 
@@ -216,7 +216,7 @@
       
       options = options || {};
 
-      var d = new Miso.Derived({
+      var d = new Dataset.Derived({
 
         // save a reference to parent dataset
         parent : this,
@@ -244,7 +244,7 @@
       }, d);
 
       // save column positions on new dataset.
-      Miso.Builder.cacheColumns(d);
+      Dataset.Builder.cacheColumns(d);
 
       // will get called with all the arguments passed to this
       // host function
@@ -253,7 +253,7 @@
         var self = this;
 
         // clear row cache if it exists
-        Miso.Builder.clearRowCache(this);
+        Dataset.Builder.clearRowCache(this);
 
         // a cache of values
         var categoryPositions = {},
@@ -328,7 +328,7 @@
 
         }, this);
 
-        Miso.Builder.cacheRows(this);
+        Dataset.Builder.cacheRows(this);
         return this;
       };
       

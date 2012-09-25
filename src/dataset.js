@@ -7,57 +7,13 @@ Version 0.0.1.2
 
 (function(global, _, moment) {
 
-  var Miso = global.Miso;
-
-  /**
-  * Instantiates a new dataset.
-  * Parameters:
-  * options - optional parameters. 
-  *   data : "Object - an actual javascript object that already contains the data",  
-  *   url : "String - url to fetch data from",
-  *   sync : Set to true to be able to bind to dataset changes. False by default.
-  *   jsonp : "boolean - true if this is a jsonp request",
-  *   delimiter : "String - a delimiter string that is used in a tabular datafile",
-  *   strict : "Whether to expect the json in our format or whether to interpret as raw array of objects, default false",
-  *   extract : "function to apply to JSON before internal interpretation, optional"
-  *   ready : the callback function to act on once the data is fetched. Isn't reuired for local imports
-  *           but is required for remote url fetching.
-  *   columns: A way to manually override column type detection. Expects an array of 
-  *            objects of the following structure: 
-  *           { name : 'columnname', type: 'columntype', 
-  *             ... (additional params required for type here.) }
-  *   comparator : function (optional) - takes two rows and returns 1, 0, or -1  if row1 is
-  *     before, equal or after row2. 
-  *   deferred : by default we use underscore.deferred, but if you want to pass your own (like jquery's) just
-  *              pass it here.
-  *   importer : The classname of any importer (passes through auto detection based on parameters. 
-  *              For example: <code>Miso.Importers.Polling</code>.
-  *   parser   : The classname of any parser (passes through auto detection based on parameters. 
-  *              For example: <code>Miso.Parsers.Delimited</code>.
-  *   resetOnFetch : set to true if any subsequent fetches after first one should overwrite the
-  *                  current data.
-  *   uniqueAgainst : Set to a column name to check for duplication on subsequent fetches.
-  *   interval : Polling interval. Set to any value in milliseconds to enable polling on a url.
-  }
-  */
-  Miso.Dataset = function(options) {
-    this.length = 0;
-    
-    this._columns = [];
-    this._columnPositionByName = {};
-    this._computedColumns = [];
-    
-    if (typeof options !== "undefined") {
-      options = options || {};
-      this._initialize(options);
-    }
-  };
+  var Dataset = global.Miso.Dataset;
 
   // take on miso dataview's prototype
-  Miso.Dataset.prototype = new Miso.DataView();
+  Dataset.prototype = new Dataset.DataView();
 
   // add dataset methods to dataview.
-  _.extend(Miso.Dataset.prototype, {
+  _.extend(Dataset.prototype, {
 
     /**
     * @private
@@ -69,7 +25,7 @@ Version 0.0.1.2
       // is this a syncable dataset? if so, pull
       // required methods and mark this as a syncable dataset.
       if (options.sync === true) {
-        _.extend(this, Miso.Events);
+        _.extend(this, Dataset.Events);
         this.syncable = true;
       }
 
@@ -80,14 +36,14 @@ Version 0.0.1.2
       this.importer = options.importer || null;
 
       // default parser is object parser, unless otherwise specified.
-      this.parser  = options.parser || Miso.Parsers.Obj;
+      this.parser  = options.parser || Dataset.Parsers.Obj;
 
       // figure out out if we need another parser.
       if (_.isUndefined(options.parser)) {
         if (options.strict) {
-          this.parser = Miso.Parsers.Strict;
+          this.parser = Dataset.Parsers.Strict;
         } else if (options.delimiter) {
-          this.parser = Miso.Parsers.Delimited;
+          this.parser = Dataset.Parsers.Delimited;
         } 
       }
 
@@ -96,21 +52,21 @@ Version 0.0.1.2
         if (options.url) {
 
           if (!options.interval) {
-            this.importer = Miso.Importers.Remote;  
+            this.importer = Dataset.Importers.Remote;  
           } else {
-            this.importer = Miso.Importers.Polling;
+            this.importer = Dataset.Importers.Polling;
             this.interval = options.interval;
           }
           
         } else {
-          this.importer = Miso.Importers.Local;
+          this.importer = Dataset.Importers.Local;
         }
       }
 
       // initialize importer and parser
       this.parser = new this.parser(options);
 
-      if (this.parser instanceof Miso.Parsers.Delimited) {
+      if (this.parser instanceof Dataset.Parsers.Delimited) {
         options.dataType = "text";
       }
 
@@ -255,7 +211,7 @@ Version 0.0.1.2
             toRemove = [];
 
         _.each(data[uniqName], function(key, dataIndex) { 
-          var rowIndex = uniqCol.data.indexOf( Miso.types[uniqCol.type].coerce(key) );
+          var rowIndex = uniqCol.data.indexOf( Dataset.types[uniqCol.type].coerce(key) );
 
           var row = {};
           _.each(data, function(col, name) {
@@ -314,7 +270,7 @@ Version 0.0.1.2
         );
         
         // detect column types, add all rows blindly and cache them.
-        Miso.Builder.detectColumnTypes(this, parsed.data);
+        Dataset.Builder.detectColumnTypes(this, parsed.data);
         this._applications.blind.call( this, parsed.data );
         
         this.fetched = true;
@@ -343,7 +299,7 @@ Version 0.0.1.2
         this._applications.blind.call( this, parsed.data );
       }
 
-      Miso.Builder.cacheRows(this);
+      Dataset.Builder.cacheRows(this);
     },
 
     /**
@@ -370,11 +326,11 @@ Version 0.0.1.2
       } else {
 
         // check that this is a known type.
-        if (typeof Miso.types[type] === "undefined") {
+        if (typeof Dataset.types[type] === "undefined") {
           throw "The type " + type + " doesn't exist";
         }
 
-        var column = new Miso.Column({
+        var column = new Dataset.Column({
           name : name,
           type : type,
           func : _.bind(func, this)
@@ -408,7 +364,7 @@ Version 0.0.1.2
         return false; 
       }
 
-      column = new Miso.Column( column );
+      column = new Dataset.Column( column );
 
       this._columns.push( column );
       this._columnPositionByName[column.name] = this._columns.length - 1;
@@ -577,7 +533,7 @@ Version 0.0.1.2
           }
 
           // test if the value passes the type test
-          var Type = Miso.types[c.type];
+          var Type = Dataset.types[c.type];
           
           if (Type) {
             if (Type.test(props[c.name], c)) {
@@ -591,7 +547,7 @@ Version 0.0.1.2
               props[c.name] = Type.coerce(props[c.name], c);
             } else {
               throw("incorrect value '" + props[c.name] + 
-                    "' of type " + Miso.typeOf(props[c.name], c) +
+                    "' of type " + Dataset.typeOf(props[c.name], c) +
                     " passed to column '" + c.name + "' with type " + c.type);  
             }
           }

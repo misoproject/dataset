@@ -1,7 +1,8 @@
 (function(global) {
   
-  var Util  = global.Util;
-  var Miso    = global.Miso || {};  
+  var Util = global.Util;
+  var Miso = global.Miso || {};  
+  var Dataset = Miso.Dataset;
 
   module("Products :: Sum");
   test("Basic Sum Product", function() {
@@ -35,7 +36,7 @@
   });
 
   test("Time Sum Should Fail", 2, function() {
-    var ds = new Miso.Dataset({
+    var ds = new Dataset({
       data : [
         { "one" : 1, "t" : "2010/01/13" },
         { "one" : 5, "t" : "2010/05/15" },
@@ -101,7 +102,7 @@
   });
 
   test("Time Max Product", function() {
-    var ds = new Miso.Dataset({
+    var ds = new Dataset({
       data : [
         { "one" : 1, "t" : "2010/01/13" },
         { "one" : 5, "t" : "2010/05/15" },
@@ -122,7 +123,7 @@
   });
 
   test("Time Max Product non syncable", function() {
-    var ds = new Miso.Dataset({
+    var ds = new Dataset({
       data : [
         { "one" : 1, "t" : "2010/01/13" },
         { "one" : 5, "t" : "2010/05/15" },
@@ -178,7 +179,7 @@
   });
 
   test("Time Min Product", function() {
-    var ds = new Miso.Dataset({
+    var ds = new Dataset({
       data : [
         { "one" : 1, "t" : "2010/01/13" },
         { "one" : 5, "t" : "2010/05/15" },
@@ -200,7 +201,7 @@
   });
 
   test("Time Min Product Non Syncable", 2, function() {
-    var ds = new Miso.Dataset({
+    var ds = new Dataset({
       data : [
         { "one" : 1, "t" : "2010/01/13" },
         { "one" : 5, "t" : "2010/05/15" },
@@ -218,7 +219,7 @@
   });
 
   test("Basic Mean Product", function() {
-    var ds = new Miso.Dataset({
+    var ds = new Dataset({
       data : {
         columns : [
           { name : 'vals', data : [1,2,3,4,5,6,7,8,9,10] },
@@ -260,7 +261,7 @@
   });
 
   test("Basic Mean Product Non Syncable", function() {
-    var ds = new Miso.Dataset({
+    var ds = new Dataset({
       data : {
         columns : [
           { name : 'vals', data : [1,2,3,4,5,6,7,8,9,10] },
@@ -293,7 +294,7 @@
   });
 
   test("Basic Time Mean Product", function() {
-    var ds = new Miso.Dataset({
+    var ds = new Dataset({
       data : [
         { "one" : 1,  "t" : "2010/01/01" },
         { "one" : 5,  "t" : "2010/01/15" },
@@ -369,7 +370,7 @@
         counter = 0;
 
     equals(_.isUndefined(max.bind), true);
-    equals(Miso.typeOf(max), "number");
+    equals(Dataset.typeOf(max), "number");
   });
 
 
@@ -394,7 +395,7 @@
   test("Defining a custom product", function() {
 
     var ds = Util.baseSyncingSample();
-    var min = Miso.Product.define(function() {
+    var min = Dataset.Product.define(function() {
       var min = Infinity;
       _.each(this._column('one').data, function(value) {
         if (value < min) {
@@ -415,7 +416,7 @@
   test("Defining a new product on the Miso prototype", function() {
 
     var ds = Util.baseSyncingSample();
-    Miso.Dataset.prototype.custom = Miso.Product.define(function() {
+    Dataset.prototype.custom = Dataset.Product.define(function() {
       var min = Infinity;
       _.each(this._column('one').data, function(value) {
         if (value < min) {
@@ -438,7 +439,7 @@
   test("Defining a new product a dataset", function() {
 
     var ds = Util.baseSyncingSample();
-    ds.custom =  Miso.Product.define(function() {
+    ds.custom =  Dataset.Product.define(function() {
       var min = Infinity;
       _.each(this._column('one').data, function(value) {
         if (value < min) {
