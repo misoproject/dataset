@@ -31,7 +31,11 @@
       ok(strictData._columnPositionByName[column.name] === i, "proper column position has been set");
     });
 
-    checkColumnTypes(strictData);
+    if (strictData.idAttribute !== "_id") {
+      checkColumnTypesCustomidAttribute(strictData);
+    } else {
+      checkColumnTypes(strictData);  
+    }
   }
 
   function checkColumnTypes(strictData) {
@@ -48,10 +52,35 @@
     ok(strictData._column('numeric_value').type === "number", "numeric_value is numeric type");
   }
 
+   function checkColumnTypesCustomidAttribute(strictData) {
+
+    // check data size
+    ok(strictData.length === 24, "there are 24 rows");
+    ok(strictData._columns.length === 4, "there are 5 columns");
+
+    // check column types
+    ok(strictData._column('character').type === "string", "character is string type");
+    ok(strictData._column('name').type === "string", "name is string type");
+    ok(strictData._column('is_modern').type === "boolean", "is_modern is boolean type");
+    ok(strictData._column('numeric_value').type === "number", "numeric_value is numeric type");
+  }
+
   test("Basic Strict Import through Dataset API", 47, function() {
     var ds = new Dataset({ 
       data : Miso.alphabet_strict, 
       strict: true
+    });
+    _.when(ds.fetch()).then(function(){
+      verifyImport(Miso.alphabet_strict, ds);
+      equals(typeof ds.columns, "function", "columns is the function, not the columns obj");
+    });
+  });
+
+  test("Basic Strict Import through Dataset API with custom idAttribute", 44, function() {
+    var ds = new Miso.Dataset({ 
+      data : Miso.alphabet_strict, 
+      strict: true,
+      idAttribute: "character"
     });
     _.when(ds.fetch()).then(function(){
       verifyImport(Miso.alphabet_strict, ds);
@@ -140,6 +169,22 @@
     var ds = new Dataset({ 
       url : url, 
       jsonp : false, 
+      strict: true,
+      ready : function() {
+        verifyImport({}, this);   
+        start();
+      }
+    });
+    ds.fetch();
+    stop();
+  });
+
+  test("Basic json url fetch through Dataset API with custom idAttribute", 43, function() {
+    var url = "data/alphabet_strict.json";
+    var ds = new Miso.Dataset({ 
+      url : url, 
+      jsonp : false, 
+      idAttribute : "name",
       strict: true,
       ready : function() {
         verifyImport({}, this);   
@@ -390,6 +435,21 @@
     } catch(e) {
       equals(e.message, "Error while parsing delimited data on row 2. Message: Not enough items in row");
     }
+  });
+
+  test("Delimited CR characters caught", 2, function() {
+    var ds = new Miso.Dataset({
+      url : "data/offending.csv",
+      delimiter : ","
+    });
+    stop();
+
+    ds.fetch().then(function() {
+      ok(ds.length === 71);
+      ok(ds._columns.length === 31);
+      
+      start();
+    });
   });
 
   module("Google Spreadsheet Support");

@@ -10,11 +10,12 @@
   *   deltas - array of deltas.
   *     each delta: { changed : {}, old : {} }
   */
-  Dataset.Event = function(deltas) {
+  Dataset.Event = function(deltas, dataset) {
     if (!_.isArray(deltas)) {
       deltas = [deltas];
     }
     this.deltas = deltas;
+    this.dataset = dataset || null;
   };
 
   _.extend(Dataset.Event.prototype, {
@@ -26,9 +27,9 @@
         cols = _.chain(cols)
           .union(_.keys(delta.old), _.keys(delta.changed) )
           .reject(function(col) {
-            return col === '_id';
-          }).value();
-      });
+            return col === this.dataset.idAttribute;
+          }, this).value();
+      }, this);
 
       return cols;
     }
@@ -150,7 +151,7 @@
   };
 
   // Used to build event objects accross the application.
-  Dataset.Events._buildEvent = function(delta) {
-    return new Dataset.Event(delta);
+  Dataset.Events._buildEvent = function(delta, dataset) {
+    return new Dataset.Event(delta, dataset);
   };
 }(this, _));

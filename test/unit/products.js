@@ -15,6 +15,15 @@
     });
   });
 
+  test("Basic Sum Product with custom idAttribute", function() {
+    var ds = Util.baseSyncingSampleCustomidAttribute();
+    
+    _.each(ds._columns, function(column){
+      var sum = ds.sum(column.name);
+      ok(sum.val() === _.sum(column.data), "sum is correct for column "+ column.name);
+    });
+  });
+
   test("Basic Sum Product Non Syncable", function() {
     var ds = Util.baseSample();
     
@@ -191,7 +200,7 @@
     });
   });
 
-  test("Time Min Product Non Syncable", function() {
+  test("Time Min Product Non Syncable", 2, function() {
     var ds = new Dataset({
       data : [
         { "one" : 1, "t" : "2010/01/13" },
@@ -203,7 +212,7 @@
       ]
     });
 
-    _.when(ds.fetch(), function(){
+    _.when(ds.fetch()).then(function(){
       equals(ds.column("t").type, "time");
       equals(ds.min("t").valueOf(), ds.column("t").data[0].valueOf());
     });

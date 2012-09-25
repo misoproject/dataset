@@ -106,9 +106,28 @@
     });
    });
 
+  test("Basic View creation with custom idAttribute", function() {
+    var ds = Util.baseSampleCustomID();
+    var view = ds.where({});
+    _.each(ds._columns, function(column, i) {
+      ok(_.isEqual(ds._columns[i].data, view._columns[i].data), "data has been copied");  
+    });
+   });
+
 
   test("One Row Filter View creation", function() {
     var ds = Util.baseSample();
+    var view = ds.where({
+      rows : [ds._columns[0].data[0]]
+    });
+
+    _.each(ds._columns, function(column, i) {
+      ok(_.isEqual(ds._columns[i].data.slice(0, 1), view._columns[i].data), "data has been copied");  
+    });
+  });
+
+  test("One Row Filter View creation with custom idAttribute", function() {
+    var ds = Util.baseSampleCustomID();
     var view = ds.where({
       rows : [ds._columns[0].data[0]]
     });
@@ -129,10 +148,32 @@
     });
   });
 
+  test("One Row Filter View creation with short syntax with custom idAttribute", function() {
+    var ds = Util.baseSampleCustomID();
+    var view = ds.where(function(row) {
+      return row.one === ds._columns[0].data[0];
+    });
+
+    _.each(ds._columns, function(column, i) {
+      ok(_.isEqual(ds._columns[i].data.slice(0, 1), view._columns[i].data), "data has been copied");  
+    });
+  });
+
   test("Two Row Filter View creation", function() {
     var ds = Util.baseSample();
     var view = ds.where({
       rows : [ds._columns[0].data[0], ds._columns[0].data[1]]
+    });
+
+    _.each(ds._columns, function(column, i) {
+      ok(_.isEqual(ds._columns[i].data.slice(0, 2), view._columns[i].data), "data has been copied");  
+    });
+  });
+
+  test("Two Row Filter View creation with custom idAttribute", function() {
+    var ds = Util.baseSampleCustomID();
+    var view = ds.where({
+      rows : [ds.column('one').data[0], ds.column('one').data[1]]
     });
 
     _.each(ds._columns, function(column, i) {
@@ -145,6 +186,19 @@
     var view = ds.where({
       rows : function(row) {
         return row._id === ds._columns[0].data[0];
+      }
+    });
+
+    _.each(ds._columns, function(column, i) {
+      ok(_.isEqual(ds._columns[i].data.slice(0, 1), view._columns[i].data), "data has been copied");
+    });
+  });
+
+  test("Function Row Filter View creation with custom idAttribute", function() {
+    var ds = Util.baseSampleCustomID();
+    var view = ds.where({
+      rows : function(row) {
+        return row.one === ds._columns[0].data[0];
       }
     });
 
@@ -166,10 +220,44 @@
     equals(view.min(["three"]), 7);
   });
 
+  test("Function Row Filter View creation with computed product with custom idAttribute", function() {
+    var ds = Util.baseSampleCustomID();
+    var view = ds.where({
+      rows : function(row) {
+        return true;
+      }
+    });
+
+    equals(view.mean("three"), 8);
+    equals(view.max("three"), 9);
+    equals(view.min(["three"]), 7);
+  });
 
   test("Using string syntax for columns", function() {
     var ds = Util.baseSample();
     var view = ds.where({ columns : 'one' });
+    equals(view._columns.length, 2, "one data columns + _id"); //one column + _id
+    _.each(view._columns, function(column, columnIndex) {
+      _.each(column.data, function(d, rowIndex) {
+        equals(d, ds._columns[columnIndex].data[rowIndex], "data matches parent");
+      });
+    });
+  });
+
+  test("Using string syntax for columns with custom idAttribute (the id col)", function() {
+    var ds = Util.baseSampleCustomID();
+    var view = ds.where({ columns : 'one' });
+    equals(view._columns.length, 1, "one data columns + _id"); //one column + _id
+    _.each(view._columns, function(column, columnIndex) {
+      _.each(column.data, function(d, rowIndex) {
+        equals(d, ds._columns[columnIndex].data[rowIndex], "data matches parent");
+      });
+    });
+  });
+
+  test("Using string syntax for columns with custom idAttribute (non id col)", function() {
+    var ds = Util.baseSampleCustomID();
+    var view = ds.where({ columns : 'two' });
     equals(view._columns.length, 2, "one data columns + _id"); //one column + _id
     _.each(view._columns, function(column, columnIndex) {
       _.each(column.data, function(d, rowIndex) {
@@ -183,6 +271,18 @@
     var view = ds.where({ columns : [ 'one', 'two' ]});
 
     equals(view._columns.length, 3, "two data columns + _id"); //one column + _id
+    _.each(view._columns, function(column, columnIndex) {
+      _.each(column.data, function(d, rowIndex) {
+        equals(d, ds._columns[columnIndex].data[rowIndex], "data matches parent");
+      });
+    });
+  });
+
+  test("Columns View creation with idAttribute", function() {
+    var ds = Util.baseSampleCustomID();
+    var view = ds.where({ columns : [ 'one', 'two' ]});
+
+    equals(view._columns.length, 2, "two data columns + _id"); //one column + _id
     _.each(view._columns, function(column, columnIndex) {
       _.each(column.data, function(d, rowIndex) {
         equals(d, ds._columns[columnIndex].data[rowIndex], "data matches parent");
@@ -204,9 +304,28 @@
     });
   });
 
+  test("Select by columns and rows by idAttribute (id col)", function() {
+    var ds = Util.baseSampleCustomID();
+    var view = ds.where({
+      rows : [ds._columns[0].data[0], ds._columns[0].data[1]],
+      columns : [ 'one' ]
+    });
+
+    equals(view.length, 2, "view has two rows");
+    equals(view._columns.length, 1, "view has one column"); //id column + data column
+    _.each(view._columns[0].data, function(d, rowIndex) {
+      equals(d, ds._columns[0].data[rowIndex], "data matches parent");
+    });
+  });
+
   test("get all column names minus the id col", function() {
     var ds = Util.baseSample();
     ok(_.isEqual(ds.columnNames(), ["one", "two", "three"]), "All column names fetched");  
+  });
+
+  test("get all column names minus the id col custom idAttribute", function() {
+    var ds = Util.baseSampleCustomID();
+    ok(_.isEqual(ds.columnNames(), [ "two", "three"]), "All column names fetched");  
   });
 
 module("Views :: Rows Selection");

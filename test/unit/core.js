@@ -36,6 +36,7 @@
     ok(!_.isUndefined(ds.movingAverage));
     ok(!_.isUndefined(ds.groupBy));
     ok(!_.isUndefined(ds.countBy));
+    ok(!_.isUndefined(ds.idAttribute));
   }
 
   function verifyDatasetPrototypeMethods(ds) {
@@ -81,6 +82,7 @@
       verifyDatasetPrototypeMethods(this); 
     }});
   });
+
   test("DataView ineritance", function() {
     var data = [
       { a : 0, b : 0, c: 1},
@@ -187,6 +189,38 @@
     });
   });
 
+  test("Basic fetch + deferred callback with custom idAttribute", function() {
+    var ds = new Dataset({
+      data: [
+        { one : 1, two : 4, three : 7 },
+        { one : 2, two : 5, three : 8 },
+        { one : 3, two : 6, three : 9 }
+      ],
+      idAttribute: "two"
+    });
+
+    _.when(ds.fetch()).then(function() {
+      equals(ds instanceof Dataset, true);
+      ok(_.isEqual(ds.columnNames(), ["one", "three"])); // no id columns
+    });
+  });
+
+  test("Basic fetch + deferred callback with custom idAttribute with non unique values", 1, function() {
+    var ds = new Dataset({
+      data: [
+        { one : 1, two : 4, three : 7 },
+        { one : 1, two : 5, three : 8 },
+        { one : 3, two : 6, three : 9 }
+      ],
+      idAttribute: "one"
+    });
+
+    raises(function() {
+      ds.fetch();
+    });
+    
+  });
+
   test("Instantiation ready callback", function() {
     var ds = new Dataset({
       data: [
@@ -204,7 +238,6 @@
   module("Type raw extraction");
   test("Numeric raw extraction", 2, function() {
     var ds = Util.baseSample();
-    console.log('xxx', ds._columns[1]);
     equals(ds._columns[1].type, "number");
     equals(ds._columns[1].numericAt(1), ds._columns[1].data[1]);    
   });

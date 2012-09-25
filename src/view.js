@@ -163,12 +163,13 @@
         this.syncable = true;
       }
 
-      // save filter
-      this.filter = {
-        columns : this._columnFilter(options.filter.columns || undefined),
-        rows    : this._rowFilter(options.filter.rows || undefined)
-      };
+      this.idAttribute = this.parent.idAttribute;
 
+      // save filter
+      this.filter = { };
+      this.filter.columns = _.bind(this._columnFilter(options.filter.columns || undefined), this);
+      this.filter.rows = _.bind(this._rowFilter(options.filter.rows || undefined), this);
+      
       // initialize columns.
       this._columns = this._selectData();
 
@@ -189,7 +190,7 @@
       _.each(deltas, function(d, deltaIndex) {
         
         // find row position based on delta _id
-        var rowPos = this._rowPositionById[d._id];
+        var rowPos = this._rowPositionById[d[this.idAttribute]];
 
         // ===== ADD NEW ROW
 
@@ -234,10 +235,10 @@
           // to such so that any child views, know how to interpet it.
 
           var newDelta = {
-            _id : d._id,
             old : this.rowByPosition(rowPos),
             changed : {}
           };
+          newDelta[this.idAttribute] = d[this.idAttribute];
 
           // replace the old delta with this delta
           event.deltas.splice(deltaIndex, 1, newDelta);
@@ -330,7 +331,7 @@
         if (_.isString(columnFilter) ) {
           columnFilter = [ columnFilter ];
         }
-        columnFilter.push('_id');
+        columnFilter.push(this.idAttribute);
         columnSelector = function(column) {
           return _.indexOf(columnFilter, column.name) === -1 ? false : true;
         };
@@ -361,9 +362,11 @@
         rowSelector = rowFilter;
 
       } else { //array
-        rowSelector = function(row) {
-          return _.indexOf(rowFilter, row._id) === -1 ? false : true;
-        };
+        rowSelector = _.bind(function(row) {
+          return _.indexOf(rowFilter, row[this.idAttribute]) === -1 ? 
+            false : 
+            true;
+        }, this);
       }
 
       return rowSelector;
@@ -408,8 +411,8 @@
     columnNames : function() {
       var cols = _.pluck(this._columns, 'name');
       return _.reject(cols, function( colName ) {
-        return colName === '_id' || colName === '_oids';
-      });
+        return colName === this.idAttribute || colName === '_oids';
+      }, this);
     },
 
     /** 
@@ -568,8 +571,14 @@
         // add row indeces to the cache
         this._rowIdByPosition = this._rowIdByPosition || (this._rowIdByPosition = []);
         this._rowPositionById = this._rowPositionById || (this._rowPositionById = {});
-        this._rowIdByPosition.push(row._id);
-        this._rowPositionById[row._id] = this._rowIdByPosition.length;
+
+        // if this row already exists, throw an error
+        if (typeof this._rowPositionById[row[this.idAttribute]] !== "undefined") {
+          throw "The id " + row[this.idAttribute] + " is not unique. The " + this.idAttribute + " column must be unique";
+        }
+
+        this._rowPositionById[row[this.idAttribute]] = this._rowIdByPosition.length;
+        this._rowIdByPosition.push(row[this.idAttribute]);
       
       // otherwise insert them in the right place. This is a somewhat
       // expensive operation.    
@@ -583,7 +592,7 @@
         this.length++;
         for(i = 0; i < this.length; i++) {
           var row2 = this.rowByPosition(i);
-          if (_.isUndefined(row2._id) || this.comparator(row, row2) < 0) {
+          if (_.isUndefined(row2[this.idAttribute]) || this.comparator(row, row2) < 0) {
             
             _.each(this._columns, function(column) {
               insertAt(i, (row[column.name] ? row[column.name] : null), column.data);
@@ -598,9 +607,9 @@
         this._rowIdByPosition = [];
         this._rowPositionById = {};
         this.each(function(row, i) {
-          this._rowIdByPosition.push(row._id);
-          this._rowPositionById[row._id] = i;
-        });
+          this._rowIdByPosition.push(row[this.idAttribute]);
+          this._rowPositionById[row[this.idAttribute]] = i;
+        }, this);
       }
       
       return this;
