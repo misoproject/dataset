@@ -1,9 +1,9 @@
 (function(global, _) {
 
-  var Miso = global.Miso || (global.Miso = {});
+  var Dataset = global.Miso.Dataset;
 
-  Miso.typeOf = function(value, options) {
-    var types = _.keys(Miso.types),
+  Dataset.typeOf = function(value, options) {
+    var types = _.keys(Dataset.types),
         chosenType;
 
     //move string and mixed to the end
@@ -11,7 +11,7 @@
     types.push(types.splice(_.indexOf(types, 'mixed'), 1)[0]);
 
     chosenType = _.find(types, function(type) {
-      return Miso.types[type].test(value, options);
+      return Dataset.types[type].test(value, options);
     });
 
     chosenType = _.isUndefined(chosenType) ? 'string' : chosenType;
@@ -19,7 +19,7 @@
     return chosenType;
   };
   
-  Miso.types = {
+  Dataset.types = {
     
     mixed : {
       name : 'mixed',
@@ -33,9 +33,9 @@
         return true;
       },
       compare : function(s1, s2) {
-        if (s1 < s2) { return -1; }
-        if (s1 > s2) { return 1;  }
-        return 0;
+        if ( _.isEqual(s1, s2) ) { return 0; }
+        if (s1 < s2)  { return -1;}
+        if (s1 > s2)  { return 1; }
       },
       numeric : function(v) {
         return v === null || _.isNaN(+v) ? null : +v;
@@ -74,7 +74,7 @@
       }
     },
 
-    boolean : {
+    "boolean" : {
       name : "boolean",
       regexp : /^(true|false)$/,
       coerce : function(v) {

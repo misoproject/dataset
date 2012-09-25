@@ -1,6 +1,6 @@
 (function(global, _) {
 
-  var Miso = global.Miso;
+  var Dataset = global.Miso.Dataset;
 
   /**
   * A single column in a dataset
@@ -15,14 +15,14 @@
   * Returns:
   *   new Miso.Column
   */
-  Miso.Column = function(options) {
+  Dataset.Column = function(options) {
     _.extend(this, options);
     this._id = options.id || _.uniqueId();
     this.data = options.data || [];
     return this;
   };
 
-  _.extend(Miso.Column.prototype, {
+  _.extend(Dataset.Column.prototype, {
 
     /**
     * Converts any value to this column's type for a given position
@@ -33,7 +33,7 @@
     *   number
     */
     toNumeric : function(value) {
-      return Miso.types[this.type].numeric(value);
+      return Dataset.types[this.type].numeric(value);
     },
 
     /**
@@ -53,7 +53,7 @@
     */
     coerce : function() {
       this.data = _.map(this.data, function(datum) {
-        return Miso.types[this.type].coerce(datum, this);
+        return Dataset.types[this.type].coerce(datum, this);
       }, this);
     },
 
@@ -96,36 +96,36 @@
         m += this.numericAt(j);
       }
       m /= this.data.length;
-      return Miso.types[this.type].coerce(m, this);
+      return Dataset.types[this.type].coerce(m, this);
     },
 
     _median : function() {
-      return Miso.types[this.type].coerce(_.median(this.data), this);
+      return Dataset.types[this.type].coerce(_.median(this.data), this);
     },
 
     _max : function() {
       var max = -Infinity;
       for (var j = 0; j < this.data.length; j++) {
         if (this.data[j] !== null) {
-          if (Miso.types[this.type].compare(this.data[j], max) > 0) {
+          if (Dataset.types[this.type].compare(this.data[j], max) > 0) {
             max = this.numericAt(j);
           }  
         }
       }
 
-      return Miso.types[this.type].coerce(max, this);
+      return Dataset.types[this.type].coerce(max, this);
     },
 
     _min : function() {
       var min = Infinity;
       for (var j = 0; j < this.data.length; j++) {
         if (this.data[j] !== null) {
-          if (Miso.types[this.type].compare(this.data[j], min) < 0) {
+          if (Dataset.types[this.type].compare(this.data[j], min) < 0) {
             min = this.numericAt(j);
           }  
         }
       }
-      return Miso.types[this.type].coerce(min, this);
+      return Dataset.types[this.type].coerce(min, this);
     }
   });
 
@@ -140,7 +140,7 @@
   * Returns
   *   new Miso.Dataview.
   */
-  Miso.DataView = function(options) {
+  Dataset.DataView = function(options) {
     if (typeof options !== "undefined") {
       options = options || (options = {});
 
@@ -152,28 +152,29 @@
     }
   };
 
-  _.extend(Miso.DataView.prototype, {
+  _.extend(Dataset.DataView.prototype, {
 
     _initialize: function(options) {
       
       // is this a syncable dataset? if so, pull
       // required methoMiso and mark this as a syncable dataset.
       if (this.parent.syncable === true) {
-        _.extend(this, Miso.Events);
+        _.extend(this, Dataset.Events);
         this.syncable = true;
       }
 
-      // save filter
-      this.filter = {
-        columns : this._columnFilter(options.filter.columns || undefined),
-        rows    : this._rowFilter(options.filter.rows || undefined)
-      };
+      this.idAttribute = this.parent.idAttribute;
 
+      // save filter
+      this.filter = { };
+      this.filter.columns = _.bind(this._columnFilter(options.filter.columns || undefined), this);
+      this.filter.rows = _.bind(this._rowFilter(options.filter.rows || undefined), this);
+      
       // initialize columns.
       this._columns = this._selectData();
 
-      Miso.Builder.cacheColumns(this);
-      Miso.Builder.cacheRows(this);
+      Dataset.Builder.cacheColumns(this);
+      Dataset.Builder.cacheRows(this);
 
       // bind to parent if syncable
       if (this.syncable) {
@@ -189,11 +190,11 @@
       _.each(deltas, function(d, deltaIndex) {
         
         // find row position based on delta _id
-        var rowPos = this._rowPositionById[d._id];
+        var rowPos = this._rowPositionById[d[this.idAttribute]];
 
         // ===== ADD NEW ROW
 
-        if (typeof rowPos === "undefined" && Miso.Event.isAdd(d)) {
+        if (typeof rowPos === "undefined" && Dataset.Event.isAdd(d)) {
           // this is an add event, since we couldn't find an
           // existing row to update and now need to just add a new
           // one. Use the delta's changed properties as the new row
@@ -227,17 +228,17 @@
     
         // if this is a delete event OR the row no longer
         // passes the filter, remove it.
-        if (Miso.Event.isRemove(d) || 
+        if (Dataset.Event.isRemove(d) || 
             (this.filter.row && !this.filter.row(row))) {
 
           // Since this is now a delete event, we need to convert it
           // to such so that any child views, know how to interpet it.
 
           var newDelta = {
-            _id : d._id,
             old : this.rowByPosition(rowPos),
             changed : {}
           };
+          newDelta[this.idAttribute] = d[this.idAttribute];
 
           // replace the old delta with this delta
           event.deltas.splice(deltaIndex, 1, newDelta);
@@ -262,7 +263,7 @@
     *   filter - object with optional columns array and filter object/function 
     *   options - Options.
     * Returns:
-    *   new Miso.DataView
+    *   new Miso.Dataset.DataView
     */
     where : function(filter, options) {
       options = options || {};
@@ -275,7 +276,7 @@
       
       options.parent = this;
 
-      return new Miso.DataView(options);
+      return new Dataset.DataView(options);
     },
 
     _selectData : function() {
@@ -285,7 +286,7 @@
         
         // check if this column passes the column filter
         if (this.filter.columns(parentColumn)) {
-          selectedColumns.push(new Miso.Column({
+          selectedColumns.push(new Dataset.Column({
             name : parentColumn.name,
             data : [], 
             type : parentColumn.type,
@@ -330,7 +331,7 @@
         if (_.isString(columnFilter) ) {
           columnFilter = [ columnFilter ];
         }
-        columnFilter.push('_id');
+        columnFilter.push(this.idAttribute);
         columnSelector = function(column) {
           return _.indexOf(columnFilter, column.name) === -1 ? false : true;
         };
@@ -361,9 +362,11 @@
         rowSelector = rowFilter;
 
       } else { //array
-        rowSelector = function(row) {
-          return _.indexOf(rowFilter, row._id) === -1 ? false : true;
-        };
+        rowSelector = _.bind(function(row) {
+          return _.indexOf(rowFilter, row[this.idAttribute]) === -1 ? 
+            false : 
+            true;
+        }, this);
       }
 
       return rowSelector;
@@ -394,7 +397,7 @@
     *   Miso.DataView.
     */    
     columns : function(columnsArray) {
-     return new Miso.DataView({
+     return new Dataset.DataView({
         filter : { columns : columnsArray },
         parent : this
       });
@@ -408,8 +411,8 @@
     columnNames : function() {
       var cols = _.pluck(this._columns, 'name');
       return _.reject(cols, function( colName ) {
-        return colName === '_id' || colName === '_oids';
-      });
+        return colName === this.idAttribute || colName === '_oids';
+      }, this);
     },
 
     /** 
@@ -523,7 +526,7 @@
         // if we suddenly see values for data that didn't exist before as a column
         // just drop it. First fetch defines the column structure.
         if (typeof column !== "undefined") {
-          var Type = Miso.types[column.type];
+          var Type = Dataset.types[column.type];
 
           // test if value matches column type
           if (column.force || Type.test(row[column.name], column)) {
@@ -538,7 +541,7 @@
 
           } else {
             throw("incorrect value '" + row[column.name] + 
-                  "' of type " + Miso.typeOf(row[column.name], column) +
+                  "' of type " + Dataset.typeOf(row[column.name], column) +
                   " passed to column '" + column.name + "' with type " + column.type);  
           
           }
@@ -568,8 +571,14 @@
         // add row indeces to the cache
         this._rowIdByPosition = this._rowIdByPosition || (this._rowIdByPosition = []);
         this._rowPositionById = this._rowPositionById || (this._rowPositionById = {});
-        this._rowIdByPosition.push(row._id);
-        this._rowPositionById[row._id] = this._rowIdByPosition.length;
+
+        // if this row already exists, throw an error
+        if (typeof this._rowPositionById[row[this.idAttribute]] !== "undefined") {
+          throw "The id " + row[this.idAttribute] + " is not unique. The " + this.idAttribute + " column must be unique";
+        }
+
+        this._rowPositionById[row[this.idAttribute]] = this._rowIdByPosition.length;
+        this._rowIdByPosition.push(row[this.idAttribute]);
       
       // otherwise insert them in the right place. This is a somewhat
       // expensive operation.    
@@ -583,7 +592,7 @@
         this.length++;
         for(i = 0; i < this.length; i++) {
           var row2 = this.rowByPosition(i);
-          if (_.isUndefined(row2._id) || this.comparator(row, row2) < 0) {
+          if (_.isUndefined(row2[this.idAttribute]) || this.comparator(row, row2) < 0) {
             
             _.each(this._columns, function(column) {
               insertAt(i, (row[column.name] ? row[column.name] : null), column.data);
@@ -598,9 +607,9 @@
         this._rowIdByPosition = [];
         this._rowPositionById = {};
         this.each(function(row, i) {
-          this._rowIdByPosition.push(row._id);
-          this._rowPositionById[row._id] = i;
-        });
+          this._rowIdByPosition.push(row[this.idAttribute]);
+          this._rowPositionById[row[this.idAttribute]] = i;
+        }, this);
       }
       
       return this;
@@ -612,7 +621,7 @@
     * the same as where
     */    
     rows : function(filter) {
-      return new Miso.DataView({
+      return new Dataset.DataView({
         filter : { rows : filter },
         parent : this
       });

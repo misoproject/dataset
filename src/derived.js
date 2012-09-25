@@ -1,6 +1,6 @@
 (function(global, _) {
 
-  var Miso = global.Miso || (global.Miso = {});
+  var Dataset = global.Miso.Dataset;
 
   /**
   * A Miso.Derived dataset is a regular dataset that has been derived
@@ -15,14 +15,20 @@
   *   a derived dataset instance
   */
 
-  Miso.Derived = function(options) {
+  Dataset.Derived = function(options) {
     options = options || {};
 
-    Miso.Dataset.call(this);
+    Dataset.call(this);
     
     // save parent dataset reference
     this.parent = options.parent;
 
+    // the id column in a derived dataset is always _id
+    // since there might not be a 1-1 mapping to each row
+    // but could be a 1-* mapping at which point a new id 
+    // is needed.
+    this.idAttribute = "_id";
+    
     // save the method we apply to bins.
     this.method = options.method;
 
@@ -34,17 +40,17 @@
     });
 
     if (this.parent.syncable) {
-      _.extend(this, Miso.Events);
+      _.extend(this, Dataset.Events);
       this.syncable = true;
       this.parent.bind("change", this._sync, this);  
     }
   };
 
   // take in dataset's prototype.
-  Miso.Derived.prototype = new Miso.Dataset();
+  Dataset.Derived.prototype = new Dataset();
 
   // inherit all of dataset's methods.
-  _.extend(Miso.Derived.prototype, {
+  _.extend(Dataset.Derived.prototype, {
     _sync : function(event) {
       // recompute the function on an event.
       // TODO: would be nice to be more clever about this at some point.
@@ -55,7 +61,7 @@
 
 
   // add derived methods to dataview (and thus dataset & derived)
-  _.extend(Miso.DataView.prototype, {
+  _.extend(Dataset.DataView.prototype, {
 
     /**
     * moving average
@@ -71,7 +77,7 @@
       
       options = options || {};
 
-      var d = new Miso.Derived({
+      var d = new Dataset.Derived({
         parent : this,
         method : options.method || _.mean,
         size : size,
@@ -80,13 +86,19 @@
 
       // copy over all columns
       this.eachColumn(function(columnName) {
+        
+        // don't try to compute a moving average on the id column.
+        if (columnName === this.idAttribute) {
+          throw "You can't compute a moving average on the id column";
+        }
+
         d.addColumn({
           name : columnName, type : this.column(columnName).type, data : []
         });
       }, this);
 
       // save column positions on new dataset.
-      Miso.Builder.cacheColumns(d);
+      Dataset.Builder.cacheColumns(d);
 
       // apply with the arguments columns, size, method
       var computeMovingAverage = function() {
@@ -98,7 +110,9 @@
         }
 
         // copy the ids
-        this.column("_id").data = this.parent.column("_id").data.slice(size-1, this.parent.length);
+        this.column(this.idAttribute).data = this.parent
+          .column(this.parent.idAttribute)
+          .data.slice(size-1, this.parent.length);
 
         // copy the columns we are NOT combining minus the sliced size.
         this.eachColumn(function(columnName, column, i) {
@@ -117,10 +131,10 @@
         var oidcol = this.column("_oids");
         oidcol.data = [];
         for(var i = 0; i < this.length; i++) {
-          oidcol.data.push(this.parent.column("_id").data.slice(i, i+size));
+          oidcol.data.push(this.parent.column(this.parent.idAttribute).data.slice(i, i+size));
         }
         
-        Miso.Builder.cacheRows(this);
+        Dataset.Builder.cacheRows(this);
         
         return this;
       };
@@ -136,7 +150,7 @@
     countBy : function(byColumn, options) {
 
       options = options || {};
-      var d = new Miso.Derived({
+      var d = new Dataset.Derived({
         parent : this,
         method : _.sum,
         args : arguments
@@ -148,19 +162,20 @@
         name : byColumn,
         type : parentByColumn.type
       });
+
       d.addColumn({ name : 'count', type : 'number' });
       d.addColumn({ name : '_oids', type : 'mixed' });
-      Miso.Builder.cacheColumns(d);
+      Dataset.Builder.cacheColumns(d);
 
-      var names = d._column(byColumn).data, 
-          values = d._column('count').data, 
-          _oids = d._column('_oids').data,
-          _ids = d._column('_id').data;
+      var names = d.column(byColumn).data, 
+          values = d.column('count').data, 
+          _oids = d.column('_oids').data,
+          _ids = d.column(d.idAttribute).data;
 
       function findIndex(names, datum, type) {
         var i;
         for(i = 0; i < names.length; i++) {
-          if (Miso.types[type].compare(names[i], datum) === 0) {
+          if (Dataset.types[type].compare(names[i], datum) === 0) {
             return i;
           }
         }
@@ -173,14 +188,14 @@
           names.push( row[byColumn] );
           _ids.push( _.uniqueId() );
           values.push( 1 );
-          _oids.push( [row._id] );
+          _oids.push( [row[this.parent.idAttribute]] );
         } else {
           values[index] += 1;
-          _oids[index].push( row._id ); 
+          _oids[index].push( row[this.parent.idAttribute]); 
         }
-      });
+      }, d);
 
-      Miso.Builder.cacheRows(d);
+      Dataset.Builder.cacheRows(d);
       return d;
     },
 
@@ -201,7 +216,7 @@
       
       options = options || {};
 
-      var d = new Miso.Derived({
+      var d = new Dataset.Derived({
 
         // save a reference to parent dataset
         parent : this,
@@ -229,14 +244,16 @@
       }, d);
 
       // save column positions on new dataset.
-      Miso.Builder.cacheColumns(d);
+      Dataset.Builder.cacheColumns(d);
 
       // will get called with all the arguments passed to this
       // host function
       var computeGroupBy = function() {
 
+        var self = this;
+
         // clear row cache if it exists
-        Miso.Builder.clearRowCache(this);
+        Dataset.Builder.clearRowCache(this);
 
         // a cache of values
         var categoryPositions = {},
@@ -266,7 +283,7 @@
             // bin the values
             _.each(columns, function(columnToGroup) {
               var column = this.column(columnToGroup);
-              var idCol  = this.column("_id");
+              var idCol  = this.column(this.idAttribute);
               column.data[categoryCount] = [];
               idCol.data[categoryCount] = _.uniqueId();
             }, this);
@@ -300,7 +317,7 @@
               
               // save the original ids that created this group by?
               oidcol.data[binPos] = oidcol.data[binPos] || [];
-              oidcol.data[binPos].push(_.map(bin, function(row) { return row._id; }));
+              oidcol.data[binPos].push(_.map(bin, function(row) { return row[self.parent.idAttribute]; }));
               oidcol.data[binPos] = _.flatten(oidcol.data[binPos]);
 
               // compute the final value.
@@ -311,7 +328,7 @@
 
         }, this);
 
-        Miso.Builder.cacheRows(this);
+        Dataset.Builder.cacheRows(this);
         return this;
       };
       

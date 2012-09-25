@@ -2,6 +2,7 @@
   
   var Util  = global.Util;
   var Miso  = global.Miso || {};  
+  var Dataset = Miso.Dataset;
 
   function verifyImport(obj, strictData) {
 
@@ -30,7 +31,11 @@
       ok(strictData._columnPositionByName[column.name] === i, "proper column position has been set");
     });
 
-    checkColumnTypes(strictData);
+    if (strictData.idAttribute !== "_id") {
+      checkColumnTypesCustomidAttribute(strictData);
+    } else {
+      checkColumnTypes(strictData);  
+    }
   }
 
   function checkColumnTypes(strictData) {
@@ -47,10 +52,35 @@
     ok(strictData._column('numeric_value').type === "number", "numeric_value is numeric type");
   }
 
+   function checkColumnTypesCustomidAttribute(strictData) {
+
+    // check data size
+    ok(strictData.length === 24, "there are 24 rows");
+    ok(strictData._columns.length === 4, "there are 5 columns");
+
+    // check column types
+    ok(strictData._column('character').type === "string", "character is string type");
+    ok(strictData._column('name').type === "string", "name is string type");
+    ok(strictData._column('is_modern').type === "boolean", "is_modern is boolean type");
+    ok(strictData._column('numeric_value').type === "number", "numeric_value is numeric type");
+  }
+
   test("Basic Strict Import through Dataset API", 47, function() {
-    var ds = new Miso.Dataset({ 
+    var ds = new Dataset({ 
       data : Miso.alphabet_strict, 
       strict: true
+    });
+    _.when(ds.fetch()).then(function(){
+      verifyImport(Miso.alphabet_strict, ds);
+      equals(typeof ds.columns, "function", "columns is the function, not the columns obj");
+    });
+  });
+
+  test("Basic Strict Import through Dataset API with custom idAttribute", 44, function() {
+    var ds = new Miso.Dataset({ 
+      data : Miso.alphabet_strict, 
+      strict: true,
+      idAttribute: "character"
     });
     _.when(ds.fetch()).then(function(){
       verifyImport(Miso.alphabet_strict, ds);
@@ -61,7 +91,7 @@
   module("Column creation, coercion &amp; type setting");
 
   test("Manually creating a column", function() {
-    var ds = new Miso.Dataset({ 
+    var ds = new Dataset({ 
       columns : [
         { name : 'testOne' },
         { name : 'testTwo', type: 'time' }
@@ -73,7 +103,7 @@
   });
 
   test("Manual column type override", function() {
-    var ds = new Miso.Dataset({
+    var ds = new Dataset({
       data : Miso.alphabet_strict,
       strict : true,
       columns : [
@@ -93,7 +123,7 @@
       data.columns[1].data.push( moment() );
     });
 
-    var ds = new Miso.Dataset({
+    var ds = new Dataset({
       data : data,
       strict: true,
       columns: [
@@ -110,7 +140,7 @@
 
   test("Manual column type override with extra properties", function() {
 
-    var ds = new Miso.Dataset({
+    var ds = new Dataset({
       data : [
         { 'character' : '12/31 2012' },
         { 'character' : '01/31 2011' }
@@ -128,7 +158,7 @@
 
   module("Obj Importer");
   test("Convert object to dataset", 46, function() {
-    var ds = new Miso.Dataset({ data : Miso.alphabet_obj });
+    var ds = new Dataset({ data : Miso.alphabet_obj });
     _.when(ds.fetch()).then(function(){
       verifyImport(Miso.alphabet_obj, ds);
     });
@@ -136,7 +166,7 @@
 
   test("Basic json url fetch through Dataset API", 46, function() {
     var url = "data/alphabet_strict.json";
-    var ds = new Miso.Dataset({ 
+    var ds = new Dataset({ 
       url : url, 
       jsonp : false, 
       strict: true,
@@ -149,8 +179,24 @@
     stop();
   });
 
-  test("Basic json url fetch through Dataset API + url is a function", 46, function() {
+  test("Basic json url fetch through Dataset API with custom idAttribute", 43, function() {
+    var url = "data/alphabet_strict.json";
     var ds = new Miso.Dataset({ 
+      url : url, 
+      jsonp : false, 
+      idAttribute : "name",
+      strict: true,
+      ready : function() {
+        verifyImport({}, this);   
+        start();
+      }
+    });
+    ds.fetch();
+    stop();
+  });
+
+  test("Basic json url fetch through Dataset API + url is a function", 46, function() {
+    var ds = new Dataset({ 
       url : function() {
         return "data/alphabet_strict.json";
       }, 
@@ -167,7 +213,7 @@
 
   test("Basic jsonp url fetch with Dataset API", 46, function() {
     var url = "data/alphabet_obj.json?callback=";
-    var ds = new Miso.Dataset({ 
+    var ds = new Dataset({ 
       url : url,
       jsonp : true,
       extract: function(raw) {
@@ -184,7 +230,7 @@
 
   test("Basic jsonp url fetch with Dataset API without setting callback=", 46, function() {
     var url = "data/alphabet_obj.json";
-    var ds = new Miso.Dataset({
+    var ds = new Dataset({
       url : url,
       jsonp : true,
       extract: function(raw) {
@@ -201,7 +247,7 @@
 
   test("Basic jsonp url fetch with Dataset API setting a callback in the url", 46, function() {
     var url = "data/alphabet_obj.json?callback=testing";
-    var ds = new Miso.Dataset({
+    var ds = new Dataset({
       url : url,
       jsonp : true,
       extract: function(raw) {
@@ -218,7 +264,7 @@
 
   test("Basic jsonp url fetch with Dataset API without setting callback param but with other params", 46, function() {
     var url = "data/alphabet_obj.json?a=b";
-    var ds = new Miso.Dataset({
+    var ds = new Dataset({
       url : url,
       jsonp : true,
       extract: function(raw) {
@@ -235,7 +281,7 @@
 
   test("Basic jsonp url fetch with Dataset API &amp; custom callback", 47, function() {
     var url = "data/alphabet_obj.json?callback=";
-    var ds = new Miso.Dataset({
+    var ds = new Dataset({
       url : url,
       jsonp : true,
       extract: function(raw) {
@@ -255,7 +301,7 @@
 
   test("Basic delimiter parsing test with Dataset API", 46, function() {
 
-    var ds = new Miso.Dataset({ 
+    var ds = new Dataset({ 
       data : window.Miso.alphabet_csv,
       delimiter : ","
     });
@@ -266,9 +312,9 @@
 
   test("Basic delimiter parsing test with Dataset API via url", 46, function() {
     stop();
-    var ds = new Miso.Dataset({ 
+    var ds = new Dataset({ 
       url : "data/alphabet.csv",
-      parser: Miso.Parsers.Delimited
+      parser: Dataset.Parsers.Delimited
     });
 
     ds.fetch({
@@ -280,7 +326,7 @@
   });
 
   test("Basic delimiter parsing test with custom separator with Dataset API", 46, function() {
-    var ds = new Miso.Dataset({ 
+    var ds = new Dataset({ 
       data : window.Miso.alphabet_customseparator,
       delimiter : "###"
     });
@@ -290,7 +336,7 @@
   });
 
   test("Basic remote delimiter parsing test with custom separator with Dataset API", 46, function() {
-    var ds = new Miso.Dataset({ 
+    var ds = new Dataset({ 
       url : "data/alphabet_customseparator.json",
       delimiter : "###"
     });
@@ -307,7 +353,7 @@
                "1,,5\n" +
                "5,,4";
     
-    var ds = new Miso.Dataset({
+    var ds = new Dataset({
       data : data,
       delimiter : ",",
       emptyValue : "CAT"
@@ -327,7 +373,7 @@
                "1,,4,5\n" +
                "5,3,4";
     try {
-      var ds = new Miso.Dataset({
+      var ds = new Dataset({
         data : data,
         delimiter : ","
       });
@@ -343,7 +389,7 @@
                "1,2,3\n" +
                "1,4,5\n" +
                "5,3,4";
-    var ds = new Miso.Dataset({
+    var ds = new Dataset({
       data : data,
       delimiter : ",",
       skipRows : 1
@@ -363,7 +409,7 @@
                "1,2,3\n" +
                "1,4,5\n" +
                "5,3,4";
-    var ds = new Miso.Dataset({
+    var ds = new Dataset({
       data : data,
       delimiter : ",",
       skipRows : 3
@@ -381,7 +427,7 @@
                "1,5\n" +
                "5,3,4";
     try {
-      var ds = new Miso.Dataset({
+      var ds = new Dataset({
         data : data,
         delimiter : ","
       });
@@ -389,6 +435,21 @@
     } catch(e) {
       equals(e.message, "Error while parsing delimited data on row 2. Message: Not enough items in row");
     }
+  });
+
+  test("Delimited CR characters caught", 2, function() {
+    var ds = new Miso.Dataset({
+      url : "data/offending.csv",
+      delimiter : ","
+    });
+    stop();
+
+    ds.fetch().then(function() {
+      ok(ds.length === 71);
+      ok(ds._columns.length === 31);
+      
+      start();
+    });
   });
 
   module("Google Spreadsheet Support");
@@ -405,7 +466,7 @@
 
     // ignoring id column, since that changes.
     for(var i = 1; i < d.length; i++) {
-      ok(_.isEqual(d._columns[i].data, obj._columns[i].data), "Expected: "+d._columns[i].data + " Got: " + window.Miso.google_spreadsheet_strict._columns[i].data);
+      ok(_.isEqual(d._columns[i].data, obj._columns[i].data), "Expected: "+d._columns[i].data + " Got: " + Miso.google_spreadsheet_strict._columns[i].data);
     }
   }
 
@@ -414,13 +475,13 @@
     var key = "0Asnl0xYK7V16dFpFVmZUUy1taXdFbUJGdGtVdFBXbFE";
     var worksheet = "1";
 
-    var ds = new Miso.Dataset({
-      importer: Miso.Importers.GoogleSpreadsheet,
-      parser : Miso.Parsers.GoogleSpreadsheet,
+    var ds = new Dataset({
+      importer: Dataset.Importers.GoogleSpreadsheet,
+      parser : Dataset.Parsers.GoogleSpreadsheet,
       key : key,
       worksheet: worksheet,
       ready : function() {
-        verifyGoogleSpreadsheet(this, window.Miso.google_spreadsheet_strict);
+        verifyGoogleSpreadsheet(this, Miso.google_spreadsheet_strict);
         start();
       }
     });
@@ -432,12 +493,12 @@
     var key = "0Asnl0xYK7V16dFpFVmZUUy1taXdFbUJGdGtVdFBXbFE";
     var sheetName = "States";
 
-    var ds = new Miso.Dataset({
+    var ds = new Dataset({
       key : key,
       sheetName : sheetName,
       fast : true,
-      importer: Miso.Importers.GoogleSpreadsheet,
-      parser : Miso.Parsers.GoogleSpreadsheet
+      importer: Dataset.Importers.GoogleSpreadsheet,
+      parser : Dataset.Parsers.GoogleSpreadsheet
     });
     stop();
     ds.fetch({
@@ -452,11 +513,11 @@
   });
 
   test("more columns than rows in Google Spreadsheet", function() {
-    var ds = new Miso.Dataset({
+    var ds = new Dataset({
       key : "0AgzGUzeWla8QdDZLZnVieS1pOU5VRGxJNERvZ000SUE",
       worksheet : "1",
-      importer: Miso.Importers.GoogleSpreadsheet,
-      parser : Miso.Parsers.GoogleSpreadsheet
+      importer: Dataset.Importers.GoogleSpreadsheet,
+      parser : Dataset.Parsers.GoogleSpreadsheet
     });
     ds.fetch({
       success : function() {
@@ -476,12 +537,12 @@
   });
 
   test("more columns than rows in Google Spreadsheet fast parse", function() {
-    var ds = new Miso.Dataset({
+    var ds = new Dataset({
       key : "0AgzGUzeWla8QdDZLZnVieS1pOU5VRGxJNERvZ000SUE",
       worksheet : "1",
       fast : true,
-      importer: Miso.Importers.GoogleSpreadsheet,
-      parser : Miso.Parsers.GoogleSpreadsheet
+      importer: Dataset.Importers.GoogleSpreadsheet,
+      parser : Dataset.Parsers.GoogleSpreadsheet
     });
     ds.fetch({
       success : function() {
@@ -507,7 +568,7 @@
     var reqs = 5, madereqs = 0;
     expect(reqs);
 
-    var importer = new Miso.Importers.Polling({
+    var importer = new Dataset.Importers.Polling({
       url : "/poller/non_overlapping/5.json",
       interval : 100
     });
@@ -543,7 +604,7 @@
     var startId = Math.floor(Math.random() * 100);
     var reqs = 6, madereqs = 1, expectedSize = reqs * 10;
 
-    var ds = new Miso.Dataset({
+    var ds = new Dataset({
       url : "/poller/non_overlapping/" + startId + ".json",
       interval : 100
     });
@@ -614,7 +675,7 @@
         events = [],
         addEvents = [];
 
-    var ds = new Miso.Dataset({
+    var ds = new Dataset({
       url : "/poller/updated.json",
       interval : 100,
       uniqueAgainst : "name",
@@ -704,7 +765,7 @@
     var startId = Math.floor(Math.random() * 100);
     var reqs = 6, madereqs = 1, expectedSize = 10 + ((reqs-2) * 5);
 
-    var ds = new Miso.Dataset({
+    var ds = new Dataset({
       url : "/poller/overlapping/" + startId + "/5.json",
       interval : 100,
       uniqueAgainst : "key"
@@ -767,7 +828,7 @@
     var startId = Math.floor(Math.random() * 100);
     var reqs = 6, madereqs = 1, expectedSize = 10;
 
-    var ds = new Miso.Dataset({
+    var ds = new Dataset({
       url : "/poller/overlapping/" + startId + "/5.json",
       interval : 100,
       resetOnFetch : true

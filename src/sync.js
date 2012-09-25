@@ -1,6 +1,6 @@
 (function(global, _) {
 
-  var Miso = global.Miso || (global.Miso = {});
+  var Dataset = global.Miso.Dataset;
 
   /**
   * A representation of an event as it is passed through the
@@ -10,14 +10,15 @@
   *   deltas - array of deltas.
   *     each delta: { changed : {}, old : {} }
   */
-  Miso.Event = function(deltas) {
+  Dataset.Event = function(deltas, dataset) {
     if (!_.isArray(deltas)) {
       deltas = [deltas];
     }
     this.deltas = deltas;
+    this.dataset = dataset || null;
   };
 
-  _.extend(Miso.Event.prototype, {
+  _.extend(Dataset.Event.prototype, {
     affectedColumns : function() {
       var cols = [];
       _.each(this.deltas, function(delta) {
@@ -26,15 +27,15 @@
         cols = _.chain(cols)
           .union(_.keys(delta.old), _.keys(delta.changed) )
           .reject(function(col) {
-            return col === '_id';
-          }).value();
-      });
+            return col === this.dataset.idAttribute;
+          }, this).value();
+      }, this);
 
       return cols;
     }
   });
 
-   _.extend(Miso.Event, {
+   _.extend(Dataset.Event, {
     /**
     * Returns true if the event is a deletion
     */
@@ -71,7 +72,7 @@
   
   
   //Event Related Methods
-  Miso.Events = {};
+  Dataset.Events = {};
 
   /**
   * Bind callbacks to dataset events
@@ -82,7 +83,7 @@
   * Returns 
   *   object being bound to.
   */
-  Miso.Events.bind = function (ev, callback, context) {
+  Dataset.Events.bind = function (ev, callback, context) {
     var calls = this._callbacks || (this._callbacks = {});
     var list  = calls[ev] || (calls[ev] = {});
     var tail = list.tail || (list.tail = list.next = {});
@@ -102,7 +103,7 @@
   * Returns:
   *   The object being unbound from.
   */
-  Miso.Events.unbind = function(ev, callback) {
+  Dataset.Events.unbind = function(ev, callback) {
     var calls, node, prev;
     if (!ev) {
       this._callbacks = null;
@@ -130,7 +131,7 @@
   * Returns;
   *   object being triggered on.
   */
-  Miso.Events.trigger = function(eventName) {
+  Dataset.Events.trigger = function(eventName) {
     var node, calls, callback, args, ev, events = ['all', eventName];
     if (!(calls = this._callbacks)) {
       return this;
@@ -150,7 +151,7 @@
   };
 
   // Used to build event objects accross the application.
-  Miso.Events._buildEvent = function(delta) {
-    return new Miso.Event(delta);
+  Dataset.Events._buildEvent = function(delta, dataset) {
+    return new Dataset.Event(delta, dataset);
   };
 }(this, _));

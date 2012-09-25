@@ -1,15 +1,15 @@
 (function(global, _) {
 
-  var Miso = (global.Miso || (global.Miso = {}));
+  var Dataset = global.Miso.Dataset;
 
   /**
   * Base Miso.Parser class.
   */
-  Miso.Parsers = function( options ) {
+  Dataset.Parsers = function( options ) {
     this.options = options || {};
   };
 
-  _.extend(Miso.Parsers.prototype, {
+  _.extend(Dataset.Parsers.prototype, {
 
     //this is the main function for the parser,
     //it must return an object with the columns names

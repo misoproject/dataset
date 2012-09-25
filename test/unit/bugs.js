@@ -2,6 +2,7 @@
 
   var Util  = global.Util;
   var Miso    = global.Miso || {};
+  var Dataset = global.Miso.Dataset;
 
   module("Bugs");
 
@@ -15,7 +16,7 @@
       { a : null, b : 5,    c : null,   d : true  }
     ];
 
-    var ds = new Miso.Dataset({
+    var ds = new Dataset({
       data : data,
       columns : [
         { name : "c", type : "time", format: "YYYY" }
@@ -37,9 +38,9 @@
     var key = "0Asnl0xYK7V16dFpFVmZUUy1taXdFbUJGdGtVdFBXbFE",
     worksheet = "1";
 
-    var ds = new Miso.Dataset({
-      importer: Miso.Importers.GoogleSpreadsheet,
-      parser : Miso.Parsers.GoogleSpreadsheet,
+    var ds = new Dataset({
+      importer: Dataset.Importers.GoogleSpreadsheet,
+      parser : Dataset.Parsers.GoogleSpreadsheet,
       key : key,
       worksheet: worksheet
     });
@@ -55,9 +56,9 @@
   });
 
   test("#133 - Google spreadsheet column duplicate name check (Regular)",1,  function() {
-    var ds = new Miso.Dataset({
-      parser: Miso.Parsers.GoogleSpreadsheet,
-      importer : Miso.Importers.GoogleSpreadsheet,
+    var ds = new Dataset({
+      parser: Dataset.Parsers.GoogleSpreadsheet,
+      importer : Dataset.Importers.GoogleSpreadsheet,
       key : "0Al5UYaVoRpW3dHYxcEEwVXBvQkNmNjZOQ3dhSm53TGc",
       worksheet : "1"
     });
@@ -72,9 +73,9 @@
   });
 
   test("#133 - Google spreadsheet column duplicate name check (Fast)",1,  function() {
-    var ds = new Miso.Dataset({
-      parser: Miso.Parsers.GoogleSpreadsheet,
-      importer : Miso.Importers.GoogleSpreadsheet,
+    var ds = new Dataset({
+      parser: Dataset.Parsers.GoogleSpreadsheet,
+      importer : Dataset.Importers.GoogleSpreadsheet,
       key : "0Al5UYaVoRpW3dHYxcEEwVXBvQkNmNjZOQ3dhSm53TGc",
       sheetName : "Sheet1",
       fast : true
@@ -91,7 +92,7 @@
 
   test("#133 - Strict mode column name duplicates",2,  function() {
 
-    var ds = new Miso.Dataset({
+    var ds = new Dataset({
       data: { columns : [ 
         { name : "one",   data : [1, 2, 3] },
         { name : "two",   data : [4, 5, 6] },
@@ -106,7 +107,7 @@
     }, Error, "You have more than one column named \"one\"");
 
 
-    ds = new Miso.Dataset({
+    ds = new Dataset({
       data: { columns : [ 
         { name : "one",   data : [1, 2, 3] },
         { name : "two",   data : [4, 5, 6] },
@@ -128,7 +129,7 @@
     var data = "A,B,C,B\n" +
     "1,2,3,4\n" +
     "5,6,7,8";
-    var ds = new Miso.Dataset({
+    var ds = new Dataset({
       data : data,
       delimiter : ","
     });
@@ -146,7 +147,7 @@
     var data = "A,A,B,B,,\n" +
     "1,2,3,4,2,2\n" +
     "5,6,7,8,2,2";
-    var ds = new Miso.Dataset({
+    var ds = new Dataset({
       data : data,
       delimiter : ","
     });
@@ -167,7 +168,7 @@
     var data = "A,\"\",\"\",B\n" +
     "1,2,3,4\n" +
     "5,6,7,8";
-    var ds = new Miso.Dataset({
+    var ds = new Dataset({
       data : data,
       delimiter : ","
     });
@@ -186,7 +187,7 @@
     "Germany	29	25	28	29\n" +
     "France	29	28	28	30\n" +
     "Greece	35	33	33	33\n";
-    var ds = new Miso.Dataset({
+    var ds = new Dataset({
       data : data,
       delimiter : '\t'
     });
@@ -204,7 +205,7 @@
     "Germany	29	25	28	29	99\n" +
     "France	29	28	28	30	32\n" +
     "Greece	35	33	33	33	2\n";
-    var ds = new Miso.Dataset({
+    var ds = new Dataset({
       data : data,
       delimiter : '\t'
     });
@@ -221,7 +222,7 @@
     var data = "F,,,G\n" +
     "1,2,3,4\n" +
     "5,6,7,8";
-    var ds = new Miso.Dataset({
+    var ds = new Dataset({
       data : data,
       delimiter : ","
     });
@@ -236,7 +237,7 @@
 
 
   test("#125 - Update in a string column with a string number shouldn't fail", function() {
-    var ds = new Miso.Dataset({
+    var ds = new Dataset({
       data : [
         { a: "g" , b : 1 },
         { a: "sd" , b : 10 },
@@ -270,7 +271,7 @@
 
   test("Zero vals convert to null csv delimited", 3, function() {
     stop();
-    var ds = new Miso.Dataset({
+    var ds = new Dataset({
       url : "data/withzeros.csv",
       delimiter : ","
     });
@@ -292,7 +293,7 @@
       { a : 1, b : 0, c: 1}
     ];
 
-    var ds = new Miso.Dataset({
+    var ds = new Dataset({
       data : data 
     });
 
@@ -311,7 +312,7 @@
       { a : 1, b : 0, c: 1}
     ];
 
-    var ds = new Miso.Dataset({
+    var ds = new Dataset({
       data : data 
     });
 
@@ -327,7 +328,7 @@
       { seq : 0, q : 2, e : 1, x : 2 } 
     ];
 
-    var ds = new Miso.Dataset({
+    var ds = new Dataset({
       data : data,
       sync : true
     });
@@ -363,7 +364,7 @@
     "5,3,4\n" + 
     "";
 
-    var ds = new Miso.Dataset({
+    var ds = new Dataset({
       data : data,
       delimiter : ","
     });

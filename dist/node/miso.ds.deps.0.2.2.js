@@ -112,7 +112,7 @@ var request = require("request");
 
 // Include Miso Dataset lib
 /**
-* Miso.Dataset - v0.2.1 - 6/29/2012
+* Miso.Dataset - v0.2.2 - 9/3/2012
 * http://github.com/misoproject/dataset
 * Copyright (c) 2012 Alex Graul, Irene Ros;
 * Dual Licensed: MIT, GPL
@@ -122,8 +122,7 @@ var request = require("request");
 
 (function(global, _) {
 
-  /* @exports namespace */
-  var Miso = global.Miso = {};
+  var Miso = global.Miso || (global.Miso = {});
 
   Miso.typeOf = function(value, options) {
     var types = _.keys(Miso.types),
@@ -147,29 +146,37 @@ var request = require("request");
     mixed : {
       name : 'mixed',
       coerce : function(v) {
+        if (_.isNull(v) || typeof v === "undefined" || _.isNaN(v)) {
+          return null;
+        }
         return v;
       },
       test : function(v) {
         return true;
       },
       compare : function(s1, s2) {
-        if (s1 < s2) { return -1; }
-        if (s1 > s2) { return 1;  }
-        return 0;
+        if ( _.isEqual(s1, s2) ) { return 0; }
+        if (s1 < s2)  { return -1;}
+        if (s1 > s2)  { return 1; }
       },
       numeric : function(v) {
-        return _.isNaN( Number(v) ) ? null : Number(v);
+        return v === null || _.isNaN(+v) ? null : +v;
       }
     },
 
     string : {
       name : "string",
       coerce : function(v) {
-        return v == null ? null : v.toString();
+        if (_.isNaN(v) || v === null || typeof v === "undefined") {
+          return null;
+        }
+        return v.toString();
       },
+
       test : function(v) {
         return (v === null || typeof v === "undefined" || typeof v === 'string');
       },
+
       compare : function(s1, s2) {
         if (s1 == null && s2 != null) { return -1; }
         if (s1 != null && s2 == null) { return 1; }
@@ -193,6 +200,9 @@ var request = require("request");
       name : "boolean",
       regexp : /^(true|false)$/,
       coerce : function(v) {
+        if (_.isNaN(v) || v === null || typeof v === "undefined") {
+          return null;
+        }
         if (v === 'false') { return false; }
         return Boolean(v);
       },
@@ -211,7 +221,7 @@ var request = require("request");
         return (n1 < n2 ? -1 : 1);
       },
       numeric : function(value) {
-        if (_.isNaN(value)) {
+        if (value === null || _.isNaN(value)) {
           return null;
         } else {
           return (value) ? 1 : 0;  
@@ -221,12 +231,13 @@ var request = require("request");
 
     number : {  
       name : "number",
-      regexp : /^[\-\.]?[0-9]+([\.][0-9]+)?$/,
+      regexp : /^\s*[\-\.]?[0-9]+([\.][0-9]+)?\s*$/,
       coerce : function(v) {
-        if (_.isNull(v)) {
+        var cv = +v;
+        if (_.isNull(v) || typeof v === "undefined" || _.isNaN(cv)) {
           return null;
         }
-        return _.isNaN(v) ? null : +v;
+        return cv;
       },
       test : function(v) {
         if (v === null || typeof v === "undefined" || typeof v === 'number' || this.regexp.test( v ) ) {
@@ -243,6 +254,9 @@ var request = require("request");
         return (n1 < n2 ? -1 : 1);
       },
       numeric : function(value) {
+        if (_.isNaN(value) || value === null) {
+          return null;
+        }
         return value;
       }
     },
@@ -292,6 +306,11 @@ var request = require("request");
 
       coerce : function(v, options) {
         options = options || {};
+
+        if (_.isNull(v) || typeof v === "undefined" || _.isNaN(v)) {
+          return null;
+        }
+
         // if string, then parse as a time
         if (_.isString(v)) {
           var format = options.format || this.format;
@@ -324,6 +343,9 @@ var request = require("request");
         return 0;
       },
       numeric : function( value ) {
+        if (_.isNaN(value) || value === null) {
+          return null;
+        }
         return value.valueOf();
       }
     }
@@ -676,6 +698,35 @@ var request = require("request");
       this.data = _.map(this.data, function(datum) {
         return Miso.types[this.type].coerce(datum, this);
       }, this);
+    },
+
+    /**
+    * If this is a computed column, it calculates the value
+    * for this column and adds it to the data.
+    * Parameters:
+    *   row - the row from which column is computed.
+    *   i - Optional. the index at which this value will get added.
+    * Returns
+    *   val - the computed value
+    */
+    compute : function(row, i) {
+      if (this.func) {
+        var val = this.func(row);
+        if (typeof i !== "undefined") {
+          this.data[i] = val;  
+        } else {
+          this.data.push(val);
+        }
+        
+        return val;
+      }
+    },
+
+    /**
+    * returns true if this is a computed column. False otherwise.
+    */
+    isComputed : function() {
+      return !_.isUndefined(this.func);
     },
 
     _sum : function() {
@@ -1107,6 +1158,11 @@ var request = require("request");
       _.each(row, function(value, key) {
         var column = this.column(key);
 
+        // is this a computed column? if so throw an error
+        if (column.isComputed()) {
+          throw "You're trying to update a computed column. Those get computed!";
+        }
+
         // if we suddenly see values for data that didn't exist before as a column
         // just drop it. First fetch defines the column structure.
         if (typeof column !== "undefined") {
@@ -1126,18 +1182,28 @@ var request = require("request");
           } else {
             throw("incorrect value '" + row[column.name] + 
                   "' of type " + Miso.typeOf(row[column.name], column) +
-                  " passed to column with type " + column.type);  
+                  " passed to column '" + column.name + "' with type " + column.type);  
           
           }
         }
       }, this);
+
+      // do we have any computed columns? If so we need to calculate their values.
+      if (this._computedColumns) {
+        _.each(this._computedColumns, function(column) {
+          var newVal = column.compute(row);
+          row[column.name] = newVal;
+        });
+      }
 
       // if we don't have a comparator, just append them at the end.
       if (_.isUndefined(this.comparator)) {
         
         // add all data
         _.each(this._columns, function(column) {
-          column.data.push(!_.isUndefined(row[column.name]) && !_.isNull(row[column.name]) ? row[column.name] : null);
+          if (!column.isComputed()) {
+            column.data.push(!_.isUndefined(row[column.name]) && !_.isNull(row[column.name]) ? row[column.name] : null);
+          }
         });
 
         this.length++;
@@ -1584,6 +1650,7 @@ Version 0.0.1.2
     
     this._columns = [];
     this._columnPositionByName = {};
+    this._computedColumns = [];
     
     if (typeof options !== "undefined") {
       options = options || {};
@@ -1675,8 +1742,6 @@ Version 0.0.1.2
       if (options.uniqueAgainst) {
         this.uniqueAgainst = options.uniqueAgainst;
       }
-
-      
 
       // if there is no data and no url set, we must be building
       // the dataset from scratch, so create an id column.
@@ -1784,43 +1849,33 @@ Version 0.0.1.2
       againstColumn : function(data) {
         
         var rows = [],
-
             colNames = _.keys(data),   
             row,
-            // get against unique col
-            uniqCol = this.column(this.uniqueAgainst),
-            len = data[this._columns[1].name].length,
-            dataLength = _.max(_.map(colNames, function(name) {
-              return data[name].length;
-            }, this));
+            uniqName = this.uniqueAgainst,
+            uniqCol = this.column(uniqName),
+            toAdd = [],
+            toUpdate = [],
+            toRemove = [];
 
-        var posToRemove = [], i;
-        for(i = 0; i < len; i++) {
+        _.each(data[uniqName], function(key, dataIndex) { 
+          var rowIndex = uniqCol.data.indexOf( Miso.types[uniqCol.type].coerce(key) );
 
-          var datum = data[this.uniqueAgainst][i];
-          // this is a non unique row, remove it from all the data
-          // arrays
-          if (uniqCol.data.indexOf(datum) !== -1) {
-            posToRemove.push(i);
+          var row = {};
+          _.each(data, function(col, name) {
+            row[name] = col[dataIndex];
+          });
+
+          if (rowIndex === -1) {
+            toAdd.push( row );
+          } else {
+            toUpdate.push( row );
+            var oldRow = this.rowById(this.column('_id').data[rowIndex])._id;
+            this.update(oldRow, row);
           }
+        }, this);
+        if (toAdd.length > 0) {
+          this.add(toAdd);
         }
-
-        // sort and reverse the removal ids, this way we won't
-        // lose position by removing an early id that will shift
-        // array and throw all other ids off.
-        posToRemove.sort().reverse();
-
-        for(i = 0; i < dataLength; i++) {
-          if (posToRemove.indexOf(i) === -1) {
-            row = {};
-            for(var j = 0; j < colNames.length; j++) {
-              row[colNames[j]] = data[colNames[j]][i];
-            }
-            rows.push(row);
-          }
-        }
-
-        this.add(rows);
       },
 
       //Always blindly add new rows
@@ -1901,6 +1956,46 @@ Version 0.0.1.2
       _.each(columns, function( column ) {
         this.addColumn( column );
       }, this);
+    },
+
+    /**
+    * Allows adding of a computed column. A computed column is
+    * a column that is somehow based on the other existing columns.
+    * Parameters:
+    *   name : name of new column
+    *   type : The type of the column based on existing types.
+    *   func : The way that the column is derived. It takes a row as a parameter.
+    */
+    addComputedColumn : function(name, type, func) {
+      // check if we already ahve a column by this name.
+      if ( !_.isUndefined(this.column(name)) ) { 
+        throw "There is already a column by this name.";
+      } else {
+
+        // check that this is a known type.
+        if (typeof Miso.types[type] === "undefined") {
+          throw "The type " + type + " doesn't exist";
+        }
+
+        var column = new Miso.Column({
+          name : name,
+          type : type,
+          func : _.bind(func, this)
+        });
+
+        this._columns.push(column);
+        this._computedColumns.push(column);
+        this._columnPositionByName[column.name] = this._columns.length - 1;
+
+        // do we already have data? if so compute the values for this column.
+        if (this.length > 0) {
+          this.each(function(row, i) {
+            column.compute(row, i);
+          }, this);
+        }
+
+        return column;
+      }
     },
 
     /** 
@@ -2066,7 +2161,14 @@ Version 0.0.1.2
         newKeys = _.keys(props);
 
         _.each(newKeys, function(columnName) {
+
           c = this.column(columnName);
+
+          // check if we're trying to update a computed column. If so
+          // fail.
+          if (c.isComputed()) {
+            throw "You're trying to update a computed column. Those get computed!";
+          }
 
           // test if the value passes the type test
           var Type = Miso.types[c.type];
@@ -2084,11 +2186,28 @@ Version 0.0.1.2
             } else {
               throw("incorrect value '" + props[c.name] + 
                     "' of type " + Miso.typeOf(props[c.name], c) +
-                    " passed to column with type " + c.type);  
+                    " passed to column '" + c.name + "' with type " + c.type);  
             }
           }
           c.data[rowIndex] = props[c.name];
         }, this);
+        
+        // do we have any computed columns? if so we need to update
+        // the row.
+        if (typeof this._computedColumns !== "undefined") {
+          _.each(this._computedColumns, function(column) {
+
+            // compute the complete row:
+            var newrow = _.extend({}, row, props);
+            
+            var oldValue = newrow[column.name];
+            var newValue = column.compute(newrow, rowIndex);
+            // if this is actually a new value, then add it to the delta.
+            if (oldValue !== newValue) {
+              props[column.name] = newValue;
+            }
+          });
+        }
 
         deltas.push( { _id : row._id, old : row, changed : props } );
       }, this);
@@ -2577,7 +2696,7 @@ Version 0.0.1.2
     type      : "GET",
     async     : true,
     xhr : function() {
-      return new global.XMLHttpRequest();
+      return global.ActiveXObject ? new global.ActiveXObject("Microsoft.XMLHTTP") : new global.XMLHttpRequest();
     }
   }, rparams = /\?/;
 

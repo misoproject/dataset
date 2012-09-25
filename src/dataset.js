@@ -7,57 +7,13 @@ Version 0.0.1.2
 
 (function(global, _, moment) {
 
-  var Miso = global.Miso;
-
-  /**
-  * Instantiates a new dataset.
-  * Parameters:
-  * options - optional parameters. 
-  *   data : "Object - an actual javascript object that already contains the data",  
-  *   url : "String - url to fetch data from",
-  *   sync : Set to true to be able to bind to dataset changes. False by default.
-  *   jsonp : "boolean - true if this is a jsonp request",
-  *   delimiter : "String - a delimiter string that is used in a tabular datafile",
-  *   strict : "Whether to expect the json in our format or whether to interpret as raw array of objects, default false",
-  *   extract : "function to apply to JSON before internal interpretation, optional"
-  *   ready : the callback function to act on once the data is fetched. Isn't reuired for local imports
-  *           but is required for remote url fetching.
-  *   columns: A way to manually override column type detection. Expects an array of 
-  *            objects of the following structure: 
-  *           { name : 'columnname', type: 'columntype', 
-  *             ... (additional params required for type here.) }
-  *   comparator : function (optional) - takes two rows and returns 1, 0, or -1  if row1 is
-  *     before, equal or after row2. 
-  *   deferred : by default we use underscore.deferred, but if you want to pass your own (like jquery's) just
-  *              pass it here.
-  *   importer : The classname of any importer (passes through auto detection based on parameters. 
-  *              For example: <code>Miso.Importers.Polling</code>.
-  *   parser   : The classname of any parser (passes through auto detection based on parameters. 
-  *              For example: <code>Miso.Parsers.Delimited</code>.
-  *   resetOnFetch : set to true if any subsequent fetches after first one should overwrite the
-  *                  current data.
-  *   uniqueAgainst : Set to a column name to check for duplication on subsequent fetches.
-  *   interval : Polling interval. Set to any value in milliseconds to enable polling on a url.
-  }
-  */
-  Miso.Dataset = function(options) {
-    this.length = 0;
-    
-    this._columns = [];
-    this._columnPositionByName = {};
-    this._computedColumns = [];
-    
-    if (typeof options !== "undefined") {
-      options = options || {};
-      this._initialize(options);
-    }
-  };
+  var Dataset = global.Miso.Dataset;
 
   // take on miso dataview's prototype
-  Miso.Dataset.prototype = new Miso.DataView();
+  Dataset.prototype = new Dataset.DataView();
 
   // add dataset methods to dataview.
-  _.extend(Miso.Dataset.prototype, {
+  _.extend(Dataset.prototype, {
 
     /**
     * @private
@@ -69,23 +25,25 @@ Version 0.0.1.2
       // is this a syncable dataset? if so, pull
       // required methods and mark this as a syncable dataset.
       if (options.sync === true) {
-        _.extend(this, Miso.Events);
+        _.extend(this, Dataset.Events);
         this.syncable = true;
       }
+
+      this.idAttribute = options.idAttribute || '_id';
 
       // initialize importer from options or just create a blank
       // one for now, we'll detect it later.
       this.importer = options.importer || null;
 
       // default parser is object parser, unless otherwise specified.
-      this.parser  = options.parser || Miso.Parsers.Obj;
+      this.parser  = options.parser || Dataset.Parsers.Obj;
 
       // figure out out if we need another parser.
       if (_.isUndefined(options.parser)) {
         if (options.strict) {
-          this.parser = Miso.Parsers.Strict;
+          this.parser = Dataset.Parsers.Strict;
         } else if (options.delimiter) {
-          this.parser = Miso.Parsers.Delimited;
+          this.parser = Dataset.Parsers.Delimited;
         } 
       }
 
@@ -94,21 +52,21 @@ Version 0.0.1.2
         if (options.url) {
 
           if (!options.interval) {
-            this.importer = Miso.Importers.Remote;  
+            this.importer = Dataset.Importers.Remote;  
           } else {
-            this.importer = Miso.Importers.Polling;
+            this.importer = Dataset.Importers.Polling;
             this.interval = options.interval;
           }
           
         } else {
-          this.importer = Miso.Importers.Local;
+          this.importer = Dataset.Importers.Local;
         }
       }
 
       // initialize importer and parser
       this.parser = new this.parser(options);
 
-      if (this.parser instanceof Miso.Parsers.Delimited) {
+      if (this.parser instanceof Dataset.Parsers.Delimited) {
         options.dataType = "text";
       }
 
@@ -253,7 +211,7 @@ Version 0.0.1.2
             toRemove = [];
 
         _.each(data[uniqName], function(key, dataIndex) { 
-          var rowIndex = uniqCol.data.indexOf( Miso.types[uniqCol.type].coerce(key) );
+          var rowIndex = uniqCol.data.indexOf( Dataset.types[uniqCol.type].coerce(key) );
 
           var row = {};
           _.each(data, function(col, name) {
@@ -264,7 +222,7 @@ Version 0.0.1.2
             toAdd.push( row );
           } else {
             toUpdate.push( row );
-            var oldRow = this.rowById(this.column('_id').data[rowIndex])._id;
+            var oldRow = this.rowById(this.column(this.idAttribute).data[rowIndex])[this.idAttribute];
             this.update(oldRow, row);
           }
         }, this);
@@ -312,7 +270,7 @@ Version 0.0.1.2
         );
         
         // detect column types, add all rows blindly and cache them.
-        Miso.Builder.detectColumnTypes(this, parsed.data);
+        Dataset.Builder.detectColumnTypes(this, parsed.data);
         this._applications.blind.call( this, parsed.data );
         
         this.fetched = true;
@@ -341,7 +299,7 @@ Version 0.0.1.2
         this._applications.blind.call( this, parsed.data );
       }
 
-      Miso.Builder.cacheRows(this);
+      Dataset.Builder.cacheRows(this);
     },
 
     /**
@@ -368,11 +326,11 @@ Version 0.0.1.2
       } else {
 
         // check that this is a known type.
-        if (typeof Miso.types[type] === "undefined") {
+        if (typeof Dataset.types[type] === "undefined") {
           throw "The type " + type + " doesn't exist";
         }
 
-        var column = new Miso.Column({
+        var column = new Dataset.Column({
           name : name,
           type : type,
           func : _.bind(func, this)
@@ -406,7 +364,7 @@ Version 0.0.1.2
         return false; 
       }
 
-      column = new Miso.Column( column );
+      column = new Dataset.Column( column );
 
       this._columns.push( column );
       this._columnPositionByName[column.name] = this._columns.length - 1;
@@ -423,7 +381,7 @@ Version 0.0.1.2
     _addIdColumn : function( count ) {
       // if we have any data, generate actual ids.
 
-      if (!_.isUndefined(this.column("_id"))) {
+      if (!_.isUndefined(this.column(this.idAttribute))) {
         return;
       }
 
@@ -435,23 +393,27 @@ Version 0.0.1.2
       }
 
       // add the id column
-      this.addColumn({ name: "_id", type : "number", data : ids });
+      var idCol = this.addColumn({ name: this.idAttribute, data : ids });
+      // is this the default _id? if so set numeric type. Otherwise,
+      // detect data
+      if (this.idAttribute === "_id") {
+        idCol.type = "number";
+      }
 
       // did we accidentally add it to the wrong place? (it should always be first.)
-      if (this._columnPositionByName._id !== 0) {
+      if (this._columnPositionByName[this.idAttribute] !== 0) {
 
         // we need to move it to the beginning and unshift all the other
         // columns
-        var idCol = this._columns[this._columnPositionByName._id],
-            oldIdColPos = this._columnPositionByName._id;
+        var oldIdColPos = this._columnPositionByName[this.idAttribute];
 
         // move col back 
         this._columns.splice(oldIdColPos, 1);
         this._columns.unshift(idCol);
         
-        this._columnPositionByName._id = 0;
+        this._columnPositionByName[this.idAttribute] = 0;
         _.each(this._columnPositionByName, function(pos, colName) {
-          if (colName !== "_id" && this._columnPositionByName[colName] < oldIdColPos) {
+          if (colName !== this.idAttribute && this._columnPositionByName[colName] < oldIdColPos) {
             this._columnPositionByName[colName]++;
           }
         }, this);
@@ -478,8 +440,8 @@ Version 0.0.1.2
       var deltas = [];
 
       _.each(rows, function(row) {
-        if (!row._id) {
-          row._id = _.uniqueId();
+        if (!row[this.idAttribute]) {
+          row[this.idAttribute] = _.uniqueId();
         }
 
         this._add(row, options);
@@ -492,7 +454,7 @@ Version 0.0.1.2
       }, this);
       
       if (this.syncable && !options.silent) {
-        var e = this._buildEvent(deltas);
+        var e = this._buildEvent(deltas, this);
         this.trigger('add', e );
         this.trigger('change', e );
       }
@@ -513,7 +475,7 @@ Version 0.0.1.2
 
       this.each(function(row, rowIndex) {
         if (filter(row)) {
-          rowsToRemove.push(row._id);
+          rowsToRemove.push(row[this.idAttribute]);
           deltas.push( { old: row } );
         }
       });
@@ -526,7 +488,7 @@ Version 0.0.1.2
       }, this);
       
       if (this.syncable && (!options || !options.silent)) {
-        var ev = this._buildEvent( deltas );
+        var ev = this._buildEvent( deltas, this );
         this.trigger('remove', ev );
         this.trigger('change', ev );
       }
@@ -557,6 +519,11 @@ Version 0.0.1.2
 
         _.each(newKeys, function(columnName) {
 
+          // check that we aren't trying to update the id column
+          if (columnName === this.idAttribute) {
+            throw "You can't update the id column";
+          }
+          
           c = this.column(columnName);
 
           // check if we're trying to update a computed column. If so
@@ -566,7 +533,7 @@ Version 0.0.1.2
           }
 
           // test if the value passes the type test
-          var Type = Miso.types[c.type];
+          var Type = Dataset.types[c.type];
           
           if (Type) {
             if (Type.test(props[c.name], c)) {
@@ -580,7 +547,7 @@ Version 0.0.1.2
               props[c.name] = Type.coerce(props[c.name], c);
             } else {
               throw("incorrect value '" + props[c.name] + 
-                    "' of type " + Miso.typeOf(props[c.name], c) +
+                    "' of type " + Dataset.typeOf(props[c.name], c) +
                     " passed to column '" + c.name + "' with type " + c.type);  
             }
           }
@@ -604,7 +571,9 @@ Version 0.0.1.2
           });
         }
 
-        deltas.push( { _id : row._id, old : row, changed : props } );
+        var delta = { old : row, changed : props };
+        delta[this.idAttribute] = row[this.idAttribute];
+        deltas.push(delta);
       }, this);
 
       // do we just have a single id? array it up.
@@ -634,7 +603,7 @@ Version 0.0.1.2
       }
 
       if (this.syncable && (!options || !options.silent)) {
-        var ev = this._buildEvent( deltas );
+        var ev = this._buildEvent( deltas, this );
         this.trigger('update', ev );
         this.trigger('change', ev );
       }
@@ -659,5 +628,6 @@ Version 0.0.1.2
     }
 
   });
+  
 }(this, _, moment));
 
