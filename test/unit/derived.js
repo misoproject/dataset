@@ -427,8 +427,14 @@
     _.when(ds.fetch()).then(function(){
       var groupedData = ds.groupBy("state", ["count", "anothercount"]);
       var rowid = ds._columns[0].data[0];
+      console.log(groupedData._columns[3].data);
+      console.log(groupedData._columns[4].data);
+      console.log(ds.rowById(rowid));
+      console.log('----');
       ds.remove(rowid);
-
+      console.log(groupedData._columns[2].data);
+      console.log(groupedData._columns[3].data);
+      console.log(groupedData._columns[4].data);
       ok(_.isEqual(groupedData._columns[2].data, ["AZ", "MA"]), groupedData._columns[2].data);
       ok(_.isEqual(groupedData._columns[3].data, [5,15]),      groupedData._columns[3].data);
       ok(_.isEqual(groupedData._columns[4].data, [50,150]),     groupedData._columns[4].data);

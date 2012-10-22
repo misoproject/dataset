@@ -21,6 +21,9 @@ Version 0.0.1.2
     * @param {object} options - Optional options  
     */
     _initialize: function(options) {
+      this._rowIdByPosition = [];
+      this._rowPositionById = {};
+      this._rowCache = {};
 
       // is this a syncable dataset? if so, pull
       // required methods and mark this as a syncable dataset.
@@ -344,6 +347,7 @@ Version 0.0.1.2
         if (this.length > 0) {
           this.each(function(row, i) {
             column.compute(row, i);
+            delete this._rowCache[row[this.idAttribute]];
           }, this);
         }
 
@@ -571,6 +575,8 @@ Version 0.0.1.2
           });
         }
 
+        delete this._rowCache[row[this.idAttribute]];
+        this._row(rowIndex); //force recache
         var delta = { old : row, changed : props };
         delta[this.idAttribute] = row[this.idAttribute];
         deltas.push(delta);

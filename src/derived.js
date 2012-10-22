@@ -249,6 +249,7 @@
       // will get called with all the arguments passed to this
       // host function
       var computeGroupBy = function() {
+        console.log('compute!', this.parent );
 
         var self = this;
 

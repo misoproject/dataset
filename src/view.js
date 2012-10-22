@@ -143,6 +143,9 @@
   Dataset.DataView = function(options) {
     if (typeof options !== "undefined") {
       options = options || (options = {});
+      this._rowIdByPosition = [];
+      this._rowPositionById = {};
+      this._rowCache = {};
 
       if (_.isUndefined(options.parent)) {
         throw new Error("A view must have a parent specified.");
@@ -164,7 +167,6 @@
       }
 
       this.idAttribute = this.parent.idAttribute;
-
       // save filter
       this.filter = { };
       this.filter.columns = _.bind(this._columnFilter(options.filter.columns || undefined), this);
@@ -490,12 +492,22 @@
     },
 
     _row : function(pos) {
-      var row = {};
-      _.each(this._columns, function(column) {
-        row[column.name] = column.data[pos];
-      });
+      var id = this._column(this.idAttribute).data[pos];
+      if (!this._rowCache) { 
+        this._rowCache = {};
+      }
+      var row = this._rowCache[id];
+      if (!row) {
+        row = {};
+        _.each(this._columns, function(column) {
+          row[column.name] = column.data[pos];
+        });
+        this._rowCache[id] = row;
+      }
+
       return row;   
     },
+
     _remove : function(rowId) {
       var rowPos = this._rowPositionById[rowId];
 
@@ -505,10 +517,10 @@
       });
       
       // update caches
+      delete this._rowCache[rowId];
       delete this._rowPositionById[rowId];
       this._rowIdByPosition.splice(rowPos, 1);
       this.length--;
-
       return this;
     },
 
@@ -568,17 +580,15 @@
 
         this.length++;
 
-        // add row indeces to the cache
-        this._rowIdByPosition = this._rowIdByPosition || (this._rowIdByPosition = []);
-        this._rowPositionById = this._rowPositionById || (this._rowPositionById = {});
-
         // if this row already exists, throw an error
         if (typeof this._rowPositionById[row[this.idAttribute]] !== "undefined") {
           throw "The id " + row[this.idAttribute] + " is not unique. The " + this.idAttribute + " column must be unique";
         }
 
-        this._rowPositionById[row[this.idAttribute]] = this._rowIdByPosition.length;
+        var position = this._rowIdByPosition.length;
+        this._rowPositionById[row[this.idAttribute]] = position;
         this._rowIdByPosition.push(row[this.idAttribute]);
+        this._row(position); //force the row to be cached
       
       // otherwise insert them in the right place. This is a somewhat
       // expensive operation.    
@@ -597,7 +607,6 @@
             _.each(this._columns, function(column) {
               insertAt(i, (row[column.name] ? row[column.name] : null), column.data);
             });
-            
             break;
           }
         }
@@ -606,6 +615,7 @@
         // we could splice it in but its safer this way.
         this._rowIdByPosition = [];
         this._rowPositionById = {};
+        this._rowCache = {};
         this.each(function(row, i) {
           this._rowIdByPosition.push(row[this.idAttribute]);
           this._rowPositionById[row[this.idAttribute]] = i;
@@ -674,6 +684,8 @@
           this._columns[colPosition].data.splice(from, 1, value);
           this._columns[colPosition].data.splice(to, 1, value2);
         }, this);
+        delete this._rowCache[to[this.idAttribute]];
+        delete this._rowCache[from[this.idAttribute]];
       }, this);
 
       var siftDown = _.bind(function(start, end) {

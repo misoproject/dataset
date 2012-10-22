@@ -685,12 +685,12 @@ module("Views :: Syncing");
       ] },
       strict: true
     });
-    
+
     ds.comparator = function(r1, r2) {
       if (r1.one > r2.one) {return 1;}
       if (r1.one < r2.one) {return -1;}
       return 0;
-    };
+    }
 
     _.when(ds.fetch()).then(function(){
       ds.sort();

@@ -101,6 +101,7 @@
     *   dataset - Miso.Dataset instance.
     */
     clearRowCache : function(dataset) {
+      dataset._rowCache = {};
       dataset._rowPositionById = {};
       dataset._rowIdByPosition = [];
     },

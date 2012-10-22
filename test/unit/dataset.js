@@ -29,6 +29,9 @@
       strictEqual(ds._columns[i].data[3], null, "null added to column "+ds._columns[i].name);
     });
 
+    console.log('row', ds.rowById(100));
+    console.log('cache', ds._rowCache);
+    console.log('pos', ds._rowPositionById);
     ok(_.isEqual(ds.rowById(100), { one : 100, two : null, three : null }));
   });
 
