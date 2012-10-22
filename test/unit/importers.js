@@ -663,221 +663,221 @@
     });
   });
 
-  // test("Polling with unique constraint for updates", function() {
-    // stop();
+  test("Polling with unique constraint for updates", function() {
+    stop();
 
-    // var counter,
-        // baseCounter,
-        // requests = 3, 
-        // madereqs = 1, 
-        // expectedSize = 3,
-        // events = [],
-        // addEvents = [];
+    var counter,
+        baseCounter,
+        requests = 3, 
+        madereqs = 1, 
+        expectedSize = 3,
+        events = [],
+        addEvents = [];
 
-    // var ds = new Dataset({
-      // url : "/poller/updated.json",
-      // interval : 100,
-      // uniqueAgainst : "name",
-      // sync: true
-    // });
+    var ds = new Dataset({
+      url : "/poller/updated.json",
+      interval : 100,
+      uniqueAgainst : "name",
+      sync: true
+    });
 
-    // //verify the update events came through correctly
-    // function verifyEvents() {
-      // counter = baseCounter+1; //offset for the first request
-      // equals(addEvents.length, 1);
-      // equals(events.length / 3, requests-1, 'one less set of update events than reqs');
-      // _(requests).times(function(i) {
-        // var row = events[i][0].changed;
-        // if (row.name === 'alpha') {
-          // equals(row.a, counter);
-          // equals(row.b, counter * 2);
-        // }
-        // if (row.name === 'beta') {
-          // equals(row.a, counter + 1, 'beta +1 1');
-          // equals(row.b, counter - 1, 'beta +1 1');
-        // }
-        // if (row.name === 'delta') {
-          // equals(row.a, counter + 2, 'delta +- 2');
-          // equals(row.b, counter - 2, 'delta +- 2');
-        // }
-        // if (i % 3 === 2) { 
-          // counter += 1;
-        // }
-      // });
-    // }
+    //verify the update events came through correctly
+    function verifyEvents() {
+      counter = baseCounter+1; //offset for the first request
+      equals(addEvents.length, 1);
+      equals(events.length / 3, requests-1, 'one less set of update events than reqs');
+      _(requests).times(function(i) {
+        var row = events[i][0].changed;
+        if (row.name === 'alpha') {
+          equals(row.a, counter);
+          equals(row.b, counter * 2);
+        }
+        if (row.name === 'beta') {
+          equals(row.a, counter + 1, 'beta +1 1');
+          equals(row.b, counter - 1, 'beta +1 1');
+        }
+        if (row.name === 'delta') {
+          equals(row.a, counter + 2, 'delta +- 2');
+          equals(row.b, counter - 2, 'delta +- 2');
+        }
+        if (i % 3 === 2) { 
+          counter += 1;
+        }
+      });
+    }
 
-    // ds.bind('update', function(event) {
-      // events.push(event.deltas);
-    // });
+    ds.bind('update', function(event) {
+      events.push(event.deltas);
+    });
 
-    // ds.bind('add', function(event) {
-      // addEvents.push(event.deltas);
-    // });
+    ds.bind('add', function(event) {
+      addEvents.push(event.deltas);
+    });
 
-    // ds.fetch({ 
-      // success : function() {  
+    ds.fetch({ 
+      success : function() {  
 
-        // // check dataset length
-        // equals(ds.length, expectedSize);
-        // ds.eachColumn(function(cn, c) {
-          // equals(c.data.length, 3);
-        // });
+        // check dataset length
+        equals(ds.length, expectedSize);
+        ds.eachColumn(function(cn, c) {
+          equals(c.data.length, 3);
+        });
 
-        // //set the counter on the first req to 
-        // //sync req count with server
-        // if (!counter) {
-          // counter = ds.rowByPosition(0).a;
-          // baseCounter = counter;
-        // }
+        //set the counter on the first req to 
+        //sync req count with server
+        if (!counter) {
+          counter = ds.rowByPosition(0).a;
+          baseCounter = counter;
+        }
 
-        // var row0 = ds.rowByPosition(0);
-        // equals(row0.a, counter);
-        // equals(row0.b, counter * 2);
+        var row0 = ds.rowByPosition(0);
+        equals(row0.a, counter);
+        equals(row0.b, counter * 2);
 
-        // var row1 = ds.rowByPosition(1);
-        // equals(row1.a, counter + 1);
-        // equals(row1.b, counter - 1);
+        var row1 = ds.rowByPosition(1);
+        equals(row1.a, counter + 1);
+        equals(row1.b, counter - 1);
 
-        // var row2 = ds.rowByPosition(2);
-        // equals(row2.a, counter + 2);
-        // equals(row2.b, counter - 2);
+        var row2 = ds.rowByPosition(2);
+        equals(row2.a, counter + 2);
+        equals(row2.b, counter - 2);
         
-        // // done
-        // if (madereqs === requests) {
-          // ds.importer.stop();
+        // done
+        if (madereqs === requests) {
+          ds.importer.stop();
           // verifyEvents();
-          // start();
-        // }
-        // madereqs++;
-        // counter += 1;
-      // }, 
-      // error : function(r) { 
-        // console.log('ERROR', arguments); 
-      // }
-    // });
-  // });
+          start();
+        }
+        madereqs++;
+        counter += 1;
+      }, 
+      error : function(r) { 
+        console.log('ERROR', arguments); 
+      }
+    });
+  });
 
-  // test("Polling with unique constraint", function() {
-    // stop();
-    // expect(11);
+  test("Polling with unique constraint", function() {
+    stop();
+    expect(11);
 
-    // var startId = Math.floor(Math.random() * 100);
-    // var reqs = 6, madereqs = 1, expectedSize = 10 + ((reqs-2) * 5);
+    var startId = Math.floor(Math.random() * 100);
+    var reqs = 6, madereqs = 1, expectedSize = 10 + ((reqs-2) * 5);
 
-    // var ds = new Dataset({
-      // url : "/poller/overlapping/" + startId + "/5.json",
-      // interval : 100,
-      // uniqueAgainst : "key"
-    // });
+    var ds = new Dataset({
+      url : "/poller/overlapping/" + startId + "/5.json",
+      interval : 100,
+      uniqueAgainst : "key"
+    });
 
-    // ds.fetch({ 
-      // success : function() {  
+    ds.fetch({ 
+      success : function() {  
 
-        // // done
-        // if (madereqs === reqs) {
-          // ds.importer.stop();
+        // done
+        if (madereqs === reqs) {
+          ds.importer.stop();
           
-          // // check dataset length
-          // equals(ds.length, expectedSize);
-          // ds.eachColumn(function(cn, c) {
-            // equals(c.data.length, expectedSize);
-          // });
+          // check dataset length
+          equals(ds.length, expectedSize);
+          ds.eachColumn(function(cn, c) {
+            equals(c.data.length, expectedSize);
+          });
 
-          // // check the actual data content
-          // var keycol = [], valcol = [], idscol = [];
-          // for(var i = 0; i < expectedSize; i++) {
-            // idscol.push(startId + i);
-            // keycol.push((startId + i) + "_key");
-            // valcol.push((startId + i) + "_value");
-          // }
-          // ok(_.isEqual(idscol, this.column("id").data));
-          // ok(_.isEqual(keycol, this.column("key").data));
-          // ok(_.isEqual(valcol, this.column("value").data));
+          // check the actual data content
+          var keycol = [], valcol = [], idscol = [];
+          for(var i = 0; i < expectedSize; i++) {
+            idscol.push(startId + i);
+            keycol.push((startId + i) + "_key");
+            valcol.push((startId + i) + "_value");
+          }
+          ok(_.isEqual(idscol, this.column("id").data));
+          ok(_.isEqual(keycol, this.column("key").data));
+          ok(_.isEqual(valcol, this.column("value").data));
           
-           // // check cache sizes
-          // var cachedRowids = _.map(
-            // _.keys(ds._rowPositionById), 
-            // function(i) { 
-              // return +i;
-            // }
-          // );
+           // check cache sizes
+          var cachedRowids = _.map(
+            _.keys(ds._rowPositionById), 
+            function(i) { 
+              return +i;
+            }
+          );
 
-          // ok(_.isEqual(ds._columnPositionByName, { _id : 0, id : 3 , key : 1, value : 2 }));
-          // equals(ds._rowIdByPosition.length, expectedSize);
+          ok(_.isEqual(ds._columnPositionByName, { _id : 0, id : 3 , key : 1, value : 2 }));
+          equals(ds._rowIdByPosition.length, expectedSize);
           
-          // ok(_.isEqual(_.values(ds._rowIdByPosition), cachedRowids));
-          // ok(_.isEqual(cachedRowids, ds._columns[0].data));
+          ok(_.isEqual(_.values(ds._rowIdByPosition), cachedRowids));
+          ok(_.isEqual(cachedRowids, ds._columns[0].data));
 
-          // start();
-        // } else {
-          // madereqs++;
-        // }
+          start();
+        } else {
+          madereqs++;
+        }
       
-      // }, 
-      // error : function(r) { 
-        // console.log(r); 
-      // }
-    // });
-  // });
+      }, 
+      error : function(r) { 
+        console.log(r); 
+      }
+    });
+  });
 
-  // test("Polling with reset on Fetch", function() {
-    // stop();
+  test("Polling with reset on Fetch", function() {
+    stop();
     
 
-    // var startId = Math.floor(Math.random() * 100);
-    // var reqs = 6, madereqs = 1, expectedSize = 10;
+    var startId = Math.floor(Math.random() * 100);
+    var reqs = 6, madereqs = 1, expectedSize = 10;
 
-    // var ds = new Dataset({
-      // url : "/poller/overlapping/" + startId + "/5.json",
-      // interval : 100,
-      // resetOnFetch : true
-    // });
+    var ds = new Dataset({
+      url : "/poller/overlapping/" + startId + "/5.json",
+      interval : 100,
+      resetOnFetch : true
+    });
 
-    // ds.fetch({
-      // success: function() {
+    ds.fetch({
+      success: function() {
 
-        // // done
-        // if (madereqs === reqs) {
-          // ds.importer.stop();
-          // // check dataset length
-          // equals(ds.length, expectedSize);
-          // ds.eachColumn(function(cn, c) {
-            // equals(c.data.length, expectedSize);
-          // });
+        // done
+        if (madereqs === reqs) {
+          ds.importer.stop();
+          // check dataset length
+          equals(ds.length, expectedSize);
+          ds.eachColumn(function(cn, c) {
+            equals(c.data.length, expectedSize);
+          });
 
-          // // check the actual data content
-          // var keycol = [], valcol = [], idscol = [];
-          // for(var i = 0; i < expectedSize; i++) {
-            // var _i = startId + ((reqs - 4) * 10) + i;
-            // idscol.push(_i);
-            // keycol.push(_i + "_key");
-            // valcol.push(_i + "_value");
-          // }
+          // check the actual data content
+          var keycol = [], valcol = [], idscol = [];
+          for(var i = 0; i < expectedSize; i++) {
+            var _i = startId + ((reqs - 4) * 10) + i;
+            idscol.push(_i);
+            keycol.push(_i + "_key");
+            valcol.push(_i + "_value");
+          }
           
-          // ok(_.isEqual(idscol, this.column("id").data));
-          // ok(_.isEqual(keycol, this.column("key").data));
-          // ok(_.isEqual(valcol, this.column("value").data));
+          ok(_.isEqual(idscol, this.column("id").data));
+          ok(_.isEqual(keycol, this.column("key").data));
+          ok(_.isEqual(valcol, this.column("value").data));
           
-           // // check cache sizes
-          // var cachedRowids = _.map(
-            // _.keys(ds._rowPositionById), 
-            // function(i) { 
-              // return +i;
-            // }
-          // );
+           // check cache sizes
+          var cachedRowids = _.map(
+            _.keys(ds._rowPositionById), 
+            function(i) { 
+              return +i;
+            }
+          );
 
-          // ok(_.isEqual(ds._columnPositionByName, { _id : 0, id : 3 , key : 1, value : 2 }));
-          // equals(ds._rowIdByPosition.length, expectedSize);
+          ok(_.isEqual(ds._columnPositionByName, { _id : 0, id : 3 , key : 1, value : 2 }));
+          equals(ds._rowIdByPosition.length, expectedSize);
           
-          // ok(_.isEqual(_.values(ds._rowIdByPosition), cachedRowids));
-          // ok(_.isEqual(cachedRowids, ds._columns[0].data));
-          // start();
-        // } else {
-          // madereqs++;
-        // }
-      // }
-    // });
-  // });
+          ok(_.isEqual(_.values(ds._rowIdByPosition), cachedRowids));
+          ok(_.isEqual(cachedRowids, ds._columns[0].data));
+          start();
+        } else {
+          madereqs++;
+        }
+      }
+    });
+  });
 
 }(this));
 

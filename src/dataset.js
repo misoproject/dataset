@@ -222,7 +222,7 @@ Version 0.0.1.2
           } else {
             toUpdate.push( row );
             row[this.idAttribute] = this.rowById(this.column(this.idAttribute).data[rowIndex])[this.idAttribute];
-            this.update(oldRow, row);
+            this.update(row);
           }
         }, this);
         if (toAdd.length > 0) {
@@ -503,14 +503,14 @@ Version 0.0.1.2
         var pos = this._rowPositionById[newRow[this.idAttribute]];
         _.each(newRow, function(value, prop) {
           var column = this._columns[this._columnPositionByName[prop]];
-          var type = Miso.Dataset.types[column.type];
+          var type = Dataset.types[column.type];
 
           if ((column.name === this.idAttribute) && (column.data[pos] !== value)) {
             throw "You can't update the id column";
           }
 
           if (typeof column === "undefined") { 
-            throw "column " + prop + " not found!" 
+            throw "column " + prop + " not found!"; 
           }
 
           //Ensure value passes the type test
