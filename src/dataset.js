@@ -493,13 +493,12 @@ Version 0.0.1.2
       }
     },
 
-   
     _arrayUpdate : function(rows) {
       var deltas = [];
       _.each(rows, function(newRow) {
         var delta = { old : {}, changed : {} };
         delta[this.idAttribute] = newRow[this.idAttribute];
-        
+
         var pos = this._rowPositionById[newRow[this.idAttribute]];
         _.each(newRow, function(value, prop) {
           var column = this._columns[this._columnPositionByName[prop]];
@@ -515,7 +514,12 @@ Version 0.0.1.2
 
           //Ensure value passes the type test
           if (!type.test(value, column)) {
-            throw "You're trying to update a computed column. Those get computed!";
+            throw "Value is incorrect type";
+          }
+
+          //skip if computed column
+          if (this._computedColumns[column.name]) {
+            return;
           }
 
           value = type.coerce(value, column);
@@ -531,21 +535,25 @@ Version 0.0.1.2
             delta.changed[prop] = value;
           }
 
+
+        }, this);
+
           // Update any computed columns
           if (typeof this._computedColumns !== "undefined") {
             _.each(this._computedColumns, function(column) {
-              var temprow = _.extend({}, this._row(pos), newRow),
+              var temprow = _.extend({}, this._row(pos)),
                   oldValue = temprow[column.name],
                   newValue = column.compute(temprow, pos);
               if (oldValue !== newValue) {
                 delta.old[column.name] = oldValue;
+                column.data[pos] = newValue;
                 delta.changed[column.name] = newValue;
               }
             }, this);
           }
-
-        }, this);
-        deltas.push(delta);
+        if ( _.keys(delta.changed).length > 0 ) {
+          deltas.push(delta);
+        }
       }, this);
       return deltas;
     },
