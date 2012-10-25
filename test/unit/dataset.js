@@ -442,7 +442,6 @@
 
       stop();
       ds.bind("change", function(event) {
-        console.log('ev', event.deltas[0]);
         ok(event.deltas[0].changed.three === 110);
         start();
       });

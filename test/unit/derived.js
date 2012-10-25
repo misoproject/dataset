@@ -367,7 +367,6 @@
         state : "MN"
       });
 
-      console.log(groupedData.column("_oids").data);
       // TODO: the count column get overwritten since these are new rows... so it really
       // is no longer a count column. It's just an id column. Not sure what to do about it
       // at this point. Should it just go back to being an _id column? I think maybe?

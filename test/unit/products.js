@@ -310,9 +310,7 @@
       var meantime = ds.mean("t");
       equals(meantime.val().format("YYYYMMDD"), moment("2010/01/15").format("YYYYMMDD"));
 
-      console.log('mtold', meantime.val());
       meantime.bind("change", function() {
-        console.log('mt', meantime.val());
         equals(meantime.val().format("YYYYMMDD"), moment("2010/01/10").format("YYYYMMDD"));        
       });
 
