@@ -663,7 +663,7 @@
     });
   });
 
-  test("Polling with unique constraint for updates", function() {
+  test("Polling with unique constraint for updates", 32, function() {
     stop();
 
     var counter,
@@ -745,7 +745,7 @@
         // done
         if (madereqs === requests) {
           ds.importer.stop();
-          // verifyEvents();
+          verifyEvents();
           start();
         }
         madereqs++;
