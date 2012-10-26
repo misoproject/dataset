@@ -561,7 +561,10 @@ Version 0.0.1.2
     _functionUpdate : function(func) {
       var rows = [];
       for(var i = 0; i < this.length; i++) {
-        rows.push( func(this.rowByPosition(i)) );
+        var newRow = func(this.rowByPosition(i));
+        if (newRow !== false) {
+          rows.push( newRow );
+        }
       }
       return this._arrayUpdate(rows);
     },

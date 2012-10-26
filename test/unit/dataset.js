@@ -145,6 +145,26 @@
     ok(_.isEqual(ds.column("three").data, [0,100,0]));
   });
 
+   test("#105 - updating a row with a function skips a row when false is returned", function() {
+    var ds = Util.baseSample();
+    ds.update(function(row) {
+      if (row.one === 1) {
+        return false;
+      }
+      return {
+        one : row.one % 2 === 0 ? 100 : 0,
+        two : row.two % 2 === 0 ? 100 : 0,
+        three : row.three % 2 === 0 ? 100 : 0,
+        _id : row._id
+      };
+    });
+
+    ok(_.isEqual(ds.column("one").data, [1,100,0]));
+    ok(_.isEqual(ds.column("two").data, [4,0,100]));
+    ok(_.isEqual(ds.column("three").data, [7,100,0]));
+  });
+
+
   module("Computed Columns");
   test("Add computed column to empty dataset", function() {
     var ds = new Miso.Dataset({
