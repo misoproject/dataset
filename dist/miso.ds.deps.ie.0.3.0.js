@@ -1,5 +1,5 @@
 /**
-* Miso.Dataset - v0.2.2 - 9/3/2012
+* Miso.Dataset - v0.3.0 - 10/26/2012
 * http://github.com/misoproject/dataset
 * Copyright (c) 2012 Alex Graul, Irene Ros;
 * Dual Licensed: MIT, GPL
@@ -8,19 +8,19 @@
 */
 
 // moment.js
-// version : 1.7.0
+// version : 1.7.2
 // author : Tim Wood
 // license : MIT
 // momentjs.com
 
-(function (Date, undefined) {
+(function (undefined) {
 
     /************************************
         Constants
     ************************************/
 
     var moment,
-        VERSION = "1.7.0",
+        VERSION = "1.7.2",
         round = Math.round, i,
         // internal storage for language config files
         languages = {},
@@ -39,9 +39,8 @@
         aspNetJsonRegex = /^\/?Date\((\-?\d+)/i,
 
         // format tokens
-        formattingTokens = /(\[[^\[]*\])|(\\)?(Mo|MM?M?M?|Do|DDDo|DD?D?D?|ddd?d?|do?|w[o|w]?|YYYY|YY|a|A|hh?|HH?|mm?|ss?|SS?S?|zz?|ZZ?)/g,
-        localFormattingTokens = /(LT|LL?L?L?)/g,
-        formattingRemoveEscapes = /(^\[)|(\\)|\]$/g,
+        formattingTokens = /(\[[^\[]*\])|(\\)?(Mo|MM?M?M?|Do|DDDo|DD?D?D?|ddd?d?|do?|w[o|w]?|YYYY|YY|a|A|hh?|HH?|mm?|ss?|SS?S?|zz?|ZZ?|.)/g,
+        localFormattingTokens = /(\[[^\[]*\])|(\\)?(LT|LL?L?L?)/g,
 
         // parsing tokens
         parseMultipleFormatChunker = /([0-9a-zA-Z\u00A0-\uD7FF\uF900-\uFDCF\uFDF0-\uFFEF]+)/gi,
@@ -55,7 +54,7 @@
         parseTokenTimezone = /Z|[\+\-]\d\d:?\d\d/i, // +00:00 -00:00 +0000 -0000 or Z
         parseTokenT = /T/i, // T (ISO seperator)
 
-        // preliminary iso regex 
+        // preliminary iso regex
         // 0000-00-00 + T + 00 or 00:00 or 00:00:00 or 00:00:00.000 + +00:00 or +0000
         isoRegex = /^\s*\d{4}-\d\d-\d\d(T(\d\d(:\d\d(:\d\d(\.\d\d?\d?)?)?)?)?([\+\-]\d\d:?\d\d)?)?/,
         isoFormat = 'YYYY-MM-DDTHH:mm:ssZ',
@@ -86,6 +85,10 @@
         // format function strings
         formatFunctions = {},
 
+        // tokens to ordinalize and pad
+        ordinalizeTokens = 'DDD w M D d'.split(' '),
+        paddedTokens = 'M D H h m s w'.split(' '),
+
         /*
          * moment.fn.format uses new Function() to create an inlined formatting function.
          * Results are a 3x speed boost
@@ -93,7 +96,7 @@
          *
          * These strings are appended into a function using replaceFormatTokens and makeFormatFunction
          */
-        formatFunctionStrings = {
+        formatTokenFunctions = {
             // a = placeholder
             // b = placeholder
             // t = the current moment being formatted
@@ -101,43 +104,119 @@
             // o = language.ordinal function
             // p = leftZeroFill function
             // m = language.meridiem value or function
-            M    : '(a=t.month()+1)',
-            MMM  : 'v("monthsShort",t.month())',
-            MMMM : 'v("months",t.month())',
-            D    : '(a=t.date())',
-            DDD  : '(a=new Date(t.year(),t.month(),t.date()),b=new Date(t.year(),0,1),a=~~(((a-b)/864e5)+1.5))',
-            d    : '(a=t.day())',
-            dd   : 'v("weekdaysMin",t.day())',
-            ddd  : 'v("weekdaysShort",t.day())',
-            dddd : 'v("weekdays",t.day())',
-            w    : '(a=new Date(t.year(),t.month(),t.date()-t.day()+5),b=new Date(a.getFullYear(),0,4),a=~~((a-b)/864e5/7+1.5))',
-            YY   : 'p(t.year()%100,2)',
-            YYYY : 'p(t.year(),4)',
-            a    : 'm(t.hours(),t.minutes(),!0)',
-            A    : 'm(t.hours(),t.minutes(),!1)',
-            H    : 't.hours()',
-            h    : 't.hours()%12||12',
-            m    : 't.minutes()',
-            s    : 't.seconds()',
-            S    : '~~(t.milliseconds()/100)',
-            SS   : 'p(~~(t.milliseconds()/10),2)',
-            SSS  : 'p(t.milliseconds(),3)',
-            Z    : '((a=-t.zone())<0?((a=-a),"-"):"+")+p(~~(a/60),2)+":"+p(~~a%60,2)',
-            ZZ   : '((a=-t.zone())<0?((a=-a),"-"):"+")+p(~~(10*a/6),4)'
-        },
+            M    : function () {
+                return this.month() + 1;
+            },
+            MMM  : function (format) {
+                return getValueFromArray("monthsShort", this.month(), this, format);
+            },
+            MMMM : function (format) {
+                return getValueFromArray("months", this.month(), this, format);
+            },
+            D    : function () {
+                return this.date();
+            },
+            DDD  : function () {
+                var a = new Date(this.year(), this.month(), this.date()),
+                    b = new Date(this.year(), 0, 1);
+                return ~~(((a - b) / 864e5) + 1.5);
+            },
+            d    : function () {
+                return this.day();
+            },
+            dd   : function (format) {
+                return getValueFromArray("weekdaysMin", this.day(), this, format);
+            },
+            ddd  : function (format) {
+                return getValueFromArray("weekdaysShort", this.day(), this, format);
+            },
+            dddd : function (format) {
+                return getValueFromArray("weekdays", this.day(), this, format);
+            },
+            w    : function () {
+                var a = new Date(this.year(), this.month(), this.date() - this.day() + 5),
+                    b = new Date(a.getFullYear(), 0, 4);
+                return ~~((a - b) / 864e5 / 7 + 1.5);
+            },
+            YY   : function () {
+                return leftZeroFill(this.year() % 100, 2);
+            },
+            YYYY : function () {
+                return leftZeroFill(this.year(), 4);
+            },
+            a    : function () {
+                return this.lang().meridiem(this.hours(), this.minutes(), true);
+            },
+            A    : function () {
+                return this.lang().meridiem(this.hours(), this.minutes(), false);
+            },
+            H    : function () {
+                return this.hours();
+            },
+            h    : function () {
+                return this.hours() % 12 || 12;
+            },
+            m    : function () {
+                return this.minutes();
+            },
+            s    : function () {
+                return this.seconds();
+            },
+            S    : function () {
+                return ~~(this.milliseconds() / 100);
+            },
+            SS   : function () {
+                return leftZeroFill(~~(this.milliseconds() / 10), 2);
+            },
+            SSS  : function () {
+                return leftZeroFill(this.milliseconds(), 3);
+            },
+            Z    : function () {
+                var a = -this.zone(),
+                    b = "+";
+                if (a < 0) {
+                    a = -a;
+                    b = "-";
+                }
+                return b + leftZeroFill(~~(a / 60), 2) + ":" + leftZeroFill(~~a % 60, 2);
+            },
+            ZZ   : function () {
+                var a = -this.zone(),
+                    b = "+";
+                if (a < 0) {
+                    a = -a;
+                    b = "-";
+                }
+                return b + leftZeroFill(~~(10 * a / 6), 4);
+            }
+        };
 
-        ordinalizeTokens = 'DDD w M D d'.split(' '),
-        paddedTokens = 'M D H h m s w'.split(' ');
+    function getValueFromArray(key, index, m, format) {
+        var lang = m.lang();
+        return lang[key].call ? lang[key](m, format) : lang[key][index];
+    }
+
+    function padToken(func, count) {
+        return function (a) {
+            return leftZeroFill(func.call(this, a), count);
+        };
+    }
+    function ordinalizeToken(func) {
+        return function (a) {
+            var b = func.call(this, a);
+            return b + this.lang().ordinal(b);
+        };
+    }
 
     while (ordinalizeTokens.length) {
         i = ordinalizeTokens.pop();
-        formatFunctionStrings[i + 'o'] = formatFunctionStrings[i] + '+o(a)';
+        formatTokenFunctions[i + 'o'] = ordinalizeToken(formatTokenFunctions[i]);
     }
     while (paddedTokens.length) {
         i = paddedTokens.pop();
-        formatFunctionStrings[i + i] = 'p(' + formatFunctionStrings[i] + ',2)';
+        formatTokenFunctions[i + i] = padToken(formatTokenFunctions[i], 2);
     }
-    formatFunctionStrings.DDDD = 'p(' + formatFunctionStrings.DDD + ',3)';
+    formatTokenFunctions.DDDD = padToken(formatTokenFunctions.DDD, 3);
 
 
     /************************************
@@ -150,7 +229,6 @@
         this._d = date;
         this._isUTC = !!isUTC;
         this._a = date._a || null;
-        date._a = null;
         this._lang = lang || false;
     }
 
@@ -158,7 +236,7 @@
     function Duration(duration) {
         var data = this._data = {},
             years = duration.years || duration.y || 0,
-            months = duration.months || duration.M || 0, 
+            months = duration.months || duration.M || 0,
             weeks = duration.weeks || duration.w || 0,
             days = duration.days || duration.d || 0,
             hours = duration.hours || duration.h || 0,
@@ -180,7 +258,7 @@
         // it separately.
         this._months = months +
             years * 12;
-            
+
         // The following code bubbles up values, see the tests for
         // examples of what that means.
         data.milliseconds = milliseconds % 1000;
@@ -197,7 +275,7 @@
 
         days += weeks * 7;
         data.days = days % 30;
-        
+
         months += absRound(days / 30);
 
         data.months = months % 12;
@@ -276,13 +354,21 @@
     // the array should mirror the parameters below
     // note: all values past the year are optional and will default to the lowest possible value.
     // [year, month, day , hour, minute, second, millisecond]
-    function dateFromArray(input, asUTC) {
-        var i, date;
-        for (i = 1; i < 7; i++) {
-            input[i] = (input[i] == null) ? (i === 2 ? 1 : 0) : input[i];
+    function dateFromArray(input, asUTC, hoursOffset, minutesOffset) {
+        var i, date, forValid = [];
+        for (i = 0; i < 7; i++) {
+            forValid[i] = input[i] = (input[i] == null) ? (i === 2 ? 1 : 0) : input[i];
         }
         // we store whether we used utc or not in the input array
-        input[7] = asUTC;
+        input[7] = forValid[7] = asUTC;
+        // if the parser flagged the input as invalid, we pass the value along
+        if (input[8] != null) {
+            forValid[8] = input[8];
+        }
+        // add the offsets to the time to be parsed so that we can have a clean array
+        // for checking isValid
+        input[3] += hoursOffset || 0;
+        input[4] += minutesOffset || 0;
         date = new Date(0);
         if (asUTC) {
             date.setUTCFullYear(input[0], input[1], input[2]);
@@ -291,7 +377,7 @@
             date.setFullYear(input[0], input[1], input[2]);
             date.setHours(input[3], input[4], input[5], input[6]);
         }
-        date._a = input;
+        date._a = forValid;
         return date;
     }
 
@@ -306,7 +392,7 @@
         if (!values && hasModule) {
             values = require('./lang/' + key);
         }
-        
+
         for (i = 0; i < langConfigProperties.length; i++) {
             // If a language definition does not provide a value, inherit
             // from English
@@ -316,13 +402,13 @@
 
         for (i = 0; i < 12; i++) {
             m = moment([2000, i]);
-            parse[i] = new RegExp('^' + (values.months[i] || values.months(m, '')) + 
+            parse[i] = new RegExp('^' + (values.months[i] || values.months(m, '')) +
                 '|^' + (values.monthsShort[i] || values.monthsShort(m, '')).replace('.', ''), 'i');
         }
         values.monthsParse = values.monthsParse || parse;
 
         languages[key] = values;
-        
+
         return values;
     }
 
@@ -348,46 +434,42 @@
     ************************************/
 
 
-    // helper for building inline formatting functions
-    function replaceFormatTokens(token) {
-        return formatFunctionStrings[token] ? 
-            ("'+(" + formatFunctionStrings[token] + ")+'") :
-            token.replace(formattingRemoveEscapes, "").replace(/\\?'/g, "\\'");
-    }
-
-    // helper for recursing long date formatting tokens
-    function replaceLongDateFormatTokens(input) {
-        return getLangDefinition().longDateFormat[input] || input;
+    function removeFormattingTokens(input) {
+        if (input.match(/\[.*\]/)) {
+            return input.replace(/^\[|\]$/g, "");
+        }
+        return input.replace(/\\/g, "");
     }
 
     function makeFormatFunction(format) {
-        var output = "var a,b;return '" +
-            format.replace(formattingTokens, replaceFormatTokens) + "';",
-            Fn = Function; // get around jshint
-        // t = the current moment being formatted
-        // v = getValueAtKey function
-        // o = language.ordinal function
-        // p = leftZeroFill function
-        // m = language.meridiem value or function
-        return new Fn('t', 'v', 'o', 'p', 'm', output);
-    }
+        var array = format.match(formattingTokens), i, length;
 
-    function makeOrGetFormatFunction(format) {
-        if (!formatFunctions[format]) {
-            formatFunctions[format] = makeFormatFunction(format);
+        for (i = 0, length = array.length; i < length; i++) {
+            if (formatTokenFunctions[array[i]]) {
+                array[i] = formatTokenFunctions[array[i]];
+            } else {
+                array[i] = removeFormattingTokens(array[i]);
+            }
         }
-        return formatFunctions[format];
+
+        return function (mom) {
+            var output = "";
+            for (i = 0; i < length; i++) {
+                output += typeof array[i].call === 'function' ? array[i].call(mom, format) : array[i];
+            }
+            return output;
+        };
     }
 
     // format date using native date object
     function formatMoment(m, format) {
-        var lang = getLangDefinition(m);
+        var i = 5;
 
-        function getValueFromArray(key, index) {
-            return lang[key].call ? lang[key](m, format) : lang[key][index];
+        function replaceLongDateFormatTokens(input) {
+            return m.lang().longDateFormat[input] || input;
         }
 
-        while (localFormattingTokens.test(format)) {
+        while (i-- && localFormattingTokens.test(format)) {
             format = format.replace(localFormattingTokens, replaceLongDateFormatTokens);
         }
 
@@ -395,7 +477,7 @@
             formatFunctions[format] = makeFormatFunction(format);
         }
 
-        return formatFunctions[format](m, getValueFromArray, lang.ordinal, leftZeroFill, lang.meridiem);
+        return formatFunctions[format](m);
     }
 
 
@@ -451,8 +533,8 @@
 
     // function to convert string input to date
     function addTimeToArrayFromToken(token, input, datePartArray, config) {
-        var a;
-        //console.log('addTime', format, input);
+        var a, b;
+
         switch (token) {
         // MONTH
         case 'M' : // fall through to MM
@@ -464,8 +546,13 @@
             for (a = 0; a < 12; a++) {
                 if (getLangDefinition().monthsParse[a].test(input)) {
                     datePartArray[1] = a;
+                    b = true;
                     break;
                 }
+            }
+            // if we didn't find a month name, mark the date as invalid.
+            if (!b) {
+                datePartArray[8] = false;
             }
             break;
         // DAY OF MONTH
@@ -479,8 +566,7 @@
             break;
         // YEAR
         case 'YY' :
-            input = ~~input;
-            datePartArray[0] = input + (input > 70 ? 1900 : 2000);
+            datePartArray[0] = ~~input + (~~input > 70 ? 1900 : 2000);
             break;
         case 'YYYY' :
             datePartArray[0] = ~~Math.abs(input);
@@ -531,10 +617,19 @@
             }
             break;
         }
+
+        // if the input is null, the date is not valid
+        if (input == null) {
+            datePartArray[8] = false;
+        }
     }
 
     // date from string and format string
     function makeDateFromStringAndFormat(string, format) {
+        // This array is used to make a Date, either with `new Date` or `Date.UTC`
+        // We store some additional data on the array for validation
+        // datePartArray[7] is true if the Date was created with `Date.UTC` and false if created with `new Date`
+        // datePartArray[8] is false if the Date is invalid, and undefined if the validity is unknown.
         var datePartArray = [0, 0, 1, 0, 0, 0, 0],
             config = {
                 tzh : 0, // timezone hour offset
@@ -545,8 +640,13 @@
 
         for (i = 0; i < tokens.length; i++) {
             parsedInput = (getParseRegexForToken(tokens[i]).exec(string) || [])[0];
-            string = string.replace(getParseRegexForToken(tokens[i]), '');
-            addTimeToArrayFromToken(tokens[i], parsedInput, datePartArray, config);
+            if (parsedInput) {
+                string = string.slice(string.indexOf(parsedInput) + parsedInput.length);
+            }
+            // don't parse if its not a known token
+            if (formatTokenFunctions[tokens[i]]) {
+                addTimeToArrayFromToken(tokens[i], parsedInput, datePartArray, config);
+            }
         }
         // handle am pm
         if (config.isPm && datePartArray[3] < 12) {
@@ -556,11 +656,8 @@
         if (config.isPm === false && datePartArray[3] === 12) {
             datePartArray[3] = 0;
         }
-        // handle timezone
-        datePartArray[3] += config.tzh;
-        datePartArray[4] += config.tzm;
         // return
-        return dateFromArray(datePartArray, config.isUTC);
+        return dateFromArray(datePartArray, config.isUTC, config.tzh, config.tzm);
     }
 
     // date from string and array of format strings
@@ -595,7 +692,7 @@
                     break;
                 }
             }
-            return parseTokenTimezone.exec(string) ? 
+            return parseTokenTimezone.exec(string) ?
                 makeDateFromStringAndFormat(string, format + ' Z') :
                 makeDateFromStringAndFormat(string, format);
         }
@@ -864,7 +961,12 @@
 
         isValid : function () {
             if (this._a) {
-                return !compareArrays(this._a, (this._a[7] ? moment.utc(this) : this).toArray());
+                // if the parser finds that the input is invalid, it sets
+                // the eighth item in the input array to false.
+                if (this._a[8] != null) {
+                    return !!this._a[8];
+                }
+                return !compareArrays(this._a, (this._a[7] ? moment.utc(this._a) : moment(this._a)).toArray());
             }
             return !isNaN(this._d.getTime());
         },
@@ -945,7 +1047,7 @@
         },
 
         isDST : function () {
-            return (this.zone() < moment([this.year()]).zone() || 
+            return (this.zone() < moment([this.year()]).zone() ||
                 this.zone() < moment([this.year(), 5]).zone());
         },
 
@@ -984,7 +1086,7 @@
         endOf: function (val) {
             return this.startOf(val).add(val.replace(/s?$/, 's'), 1).subtract('ms', 1);
         },
-        
+
         sod: function () {
             return this.clone().startOf('day');
         },
@@ -1056,10 +1158,15 @@
         humanize : function (withSuffix) {
             var difference = +this,
                 rel = this.lang().relativeTime,
-                output = relativeTime(difference, !withSuffix, this.lang());
+                output = relativeTime(difference, !withSuffix, this.lang()),
+                fromNow = difference <= 0 ? rel.past : rel.future;
 
             if (withSuffix) {
-                output = (difference <= 0 ? rel.past : rel.future).replace(/%s/i, output);
+                if (typeof fromNow === 'function') {
+                    output = fromNow(output);
+                } else {
+                    output = fromNow.replace(/%s/i, output);
+                }
             }
 
             return output;
@@ -1112,55 +1219,34 @@
             return moment;
         });
     }
-}).call(this, Date);
+}).call(this);
 /*!
- * Lo-Dash v0.6.1 <http://lodash.com>
- * Copyright 2012 John-David Dalton <http://allyoucanleet.com/>
- * Based on Underscore.js 1.3.3, copyright 2009-2012 Jeremy Ashkenas, DocumentCloud Inc.
- * <http://documentcloud.github.com/underscore>
+ * Lo-Dash v0.9.0 <http://lodash.com>
+ * (c) 2012 John-David Dalton <http://allyoucanleet.com/>
+ * Based on Underscore.js 1.4.2 <http://underscorejs.org>
+ * (c) 2009-2012 Jeremy Ashkenas, DocumentCloud Inc.
  * Available under MIT license <http://lodash.com/license>
  */
 ;(function(window, undefined) {
-  'use strict';
-
-  /**
-   * Used to cache the last `_.templateSettings.evaluate` delimiter to avoid
-   * unnecessarily assigning `reEvaluateDelimiter` a new generated regexp.
-   * Assigned in `_.template`.
-   */
-  var lastEvaluateDelimiter;
-
-  /**
-   * Used to cache the last template `options.variable` to avoid unnecessarily
-   * assigning `reDoubleVariable` a new generated regexp. Assigned in `_.template`.
-   */
-  var lastVariable;
-
-  /**
-   * Used to match potentially incorrect data object references, like `obj.obj`,
-   * in compiled templates. Assigned in `_.template`.
-   */
-  var reDoubleVariable;
-
-  /**
-   * Used to match "evaluate" delimiters, including internal delimiters,
-   * in template text. Assigned in `_.template`.
-   */
-  var reEvaluateDelimiter;
 
   /** Detect free variable `exports` */
-  var freeExports = typeof exports == 'object' && exports &&
-    (typeof global == 'object' && global && global == global.global && (window = global), exports);
+  var freeExports = typeof exports == 'object' && exports;
 
-  /** Native prototype shortcuts */
-  var ArrayProto = Array.prototype,
-      BoolProto = Boolean.prototype,
-      ObjectProto = Object.prototype,
-      NumberProto = Number.prototype,
-      StringProto = String.prototype;
+  /** Detect free variable `global` and use it as `window` */
+  var freeGlobal = typeof global == 'object' && global;
+  if (freeGlobal.global === freeGlobal) {
+    window = freeGlobal;
+  }
+
+  /** Used for array and object method references */
+  var arrayRef = [],
+      objectRef = {};
 
   /** Used to generate unique IDs */
   var idCounter = 0;
+
+  /** Used internally to indicate various things */
+  var indicatorObject = {};
 
   /** Used by `cachedContains` as the default size when optimizations are enabled for large arrays */
   var largeArraySize = 30;
@@ -1169,7 +1255,7 @@
   var oldDash = window._;
 
   /** Used to detect delimiter values that should be processed by `tokenizeEvaluate` */
-  var reComplexDelimiter = /[-+=!~*%&^<>|{(\/]|\[\D|\b(?:delete|in|instanceof|new|typeof|void)\b/;
+  var reComplexDelimiter = /[-?+=!~*%&^<>|{(\/]|\[\D|\b(?:delete|in|instanceof|new|typeof|void)\b/;
 
   /** Used to match HTML entities */
   var reEscapedHtml = /&(?:amp|lt|gt|quot|#x27);/g;
@@ -1187,13 +1273,13 @@
 
   /** Used to detect if a method is native */
   var reNative = RegExp('^' +
-    (ObjectProto.valueOf + '')
+    (objectRef.valueOf + '')
       .replace(/[.*+?^=!:${}()|[\]\/\\]/g, '\\$&')
       .replace(/valueOf|for [^\]]+/g, '.+?') + '$'
   );
 
-  /** Used to match internally used tokens in template text */
-  var reToken = /__token__(\d+)/g;
+  /** Used to ensure capturing order and avoid matches for undefined delimiters */
+  var reNoMatch = /($^)/;
 
   /** Used to match HTML characters */
   var reUnescapedHtml = /[&<>"']/g;
@@ -1210,25 +1296,25 @@
   /** Used to make template sourceURLs easier to identify */
   var templateCounter = 0;
 
-  /** Used to replace template delimiters */
-  var token = '__token__';
-
-  /** Used to store tokenized template text snippets */
-  var tokenized = [];
-
   /** Native method shortcuts */
-  var concat = ArrayProto.concat,
-      hasOwnProperty = ObjectProto.hasOwnProperty,
-      push = ArrayProto.push,
-      propertyIsEnumerable = ObjectProto.propertyIsEnumerable,
-      slice = ArrayProto.slice,
-      toString = ObjectProto.toString;
+  var ceil = Math.ceil,
+      concat = arrayRef.concat,
+      floor = Math.floor,
+      getPrototypeOf = reNative.test(getPrototypeOf = Object.getPrototypeOf) && getPrototypeOf,
+      hasOwnProperty = objectRef.hasOwnProperty,
+      push = arrayRef.push,
+      propertyIsEnumerable = objectRef.propertyIsEnumerable,
+      slice = arrayRef.slice,
+      toString = objectRef.toString;
 
   /* Native method shortcuts for methods with the same name as other `lodash` methods */
   var nativeBind = reNative.test(nativeBind = slice.bind) && nativeBind,
       nativeIsArray = reNative.test(nativeIsArray = Array.isArray) && nativeIsArray,
       nativeIsFinite = window.isFinite,
-      nativeKeys = reNative.test(nativeKeys = Object.keys) && nativeKeys;
+      nativeKeys = reNative.test(nativeKeys = Object.keys) && nativeKeys,
+      nativeMax = Math.max,
+      nativeMin = Math.min,
+      nativeRandom = Math.random;
 
   /** `Object#toString` result shortcuts */
   var argsClass = '[object Arguments]',
@@ -1241,10 +1327,6 @@
       regexpClass = '[object RegExp]',
       stringClass = '[object String]';
 
-  /** Timer shortcuts */
-  var clearTimeout = window.clearTimeout,
-      setTimeout = window.setTimeout;
-
   /**
    * Detect the JScript [[DontEnum]] bug:
    *
@@ -1252,6 +1334,9 @@
    * made non-enumerable as well.
    */
   var hasDontEnumBug;
+
+  /** Detect if own properties are iterated after inherited properties (IE < 9) */
+  var iteratesOwnLast;
 
   /**
    * Detect if `Array#shift` and `Array#splice` augment array-like objects
@@ -1263,26 +1348,21 @@
    * The `shift()` method is buggy in IE 8 compatibility mode, while `splice()`
    * is buggy regardless of mode in IE < 9 and buggy in compatibility mode in IE 9.
    */
-  var hasObjectSpliceBug;
-
-  /** Detect if own properties are iterated after inherited properties (IE < 9) */
-  var iteratesOwnLast;
+  var hasObjectSpliceBug = (hasObjectSpliceBug = { '0': 1, 'length': 1 },
+    arrayRef.splice.call(hasObjectSpliceBug, 0, 1), hasObjectSpliceBug[0]);
 
   /** Detect if an `arguments` object's indexes are non-enumerable (IE < 9) */
   var noArgsEnum = true;
 
   (function() {
-    var object = { '0': 1, 'length': 1 },
-        props = [];
-
+    var props = [];
     function ctor() { this.x = 1; }
     ctor.prototype = { 'valueOf': 1, 'y': 1 };
     for (var prop in new ctor) { props.push(prop); }
     for (prop in arguments) { noArgsEnum = !prop; }
 
-    hasDontEnumBug = (props + '').length < 4;
+    hasDontEnumBug = !/valueOf/.test(props);
     iteratesOwnLast = props[0] != 'x';
-    hasObjectSpliceBug = (props.splice.call(object, 0, 1), object[0]);
   }(1));
 
   /** Detect if an `arguments` object's [[Class]] is unresolvable (Firefox < 4, IE < 9) */
@@ -1314,9 +1394,6 @@
   /* Detect if `Object.keys` exists and is inferred to be fast (IE, Opera, V8) */
   var isKeysFast = nativeKeys && /^.+$|true/.test(nativeKeys + !!window.attachEvent);
 
-  /* Detect if strict mode, "use strict", is inferred to be fast (V8) */
-  var isStrictFast = !isBindFast;
-
   /**
    * Detect if sourceURL syntax is usable without erroring:
    *
@@ -1332,13 +1409,7 @@
    */
   try {
     var useSourceURL = (Function('//@')(), !window.attachEvent);
-  } catch(e){ }
-
-  /** Used to identify object classifications that are array-like */
-  var arrayLikeClasses = {};
-  arrayLikeClasses[boolClass] = arrayLikeClasses[dateClass] = arrayLikeClasses[funcClass] =
-  arrayLikeClasses[numberClass] = arrayLikeClasses[objectClass] = arrayLikeClasses[regexpClass] = false;
-  arrayLikeClasses[argsClass] = arrayLikeClasses[arrayClass] = arrayLikeClasses[stringClass] = true;
+  } catch(e) { }
 
   /** Used to identify object classifications that `_.clone` supports */
   var cloneableClasses = {};
@@ -1347,31 +1418,6 @@
   cloneableClasses[numberClass] = cloneableClasses[objectClass] = cloneableClasses[regexpClass] =
   cloneableClasses[stringClass] = true;
 
-  /**
-   * Used to convert characters to HTML entities:
-   *
-   * Though the `>` character is escaped for symmetry, characters like `>` and `/`
-   * don't require escaping in HTML and have no special meaning unless they're part
-   * of a tag or an unquoted attribute value.
-   * http://mathiasbynens.be/notes/ambiguous-ampersands (under "semi-related fun fact")
-   */
-  var htmlEscapes = {
-    '&': '&amp;',
-    '<': '&lt;',
-    '>': '&gt;',
-    '"': '&quot;',
-    "'": '&#x27;'
-  };
-
-  /** Used to convert HTML entities to characters */
-  var htmlUnescapes = {
-    '&amp;': '&',
-    '&lt;': '<',
-    '&gt;': '>',
-    '&quot;': '"',
-    '&#x27;': "'"
-  };
-
   /** Used to determine if values are of the language type Object */
   var objectTypes = {
     'boolean': false,
@@ -1379,8 +1425,7 @@
     'object': true,
     'number': false,
     'string': false,
-    'undefined': false,
-    'unknown': true
+    'undefined': false
   };
 
   /** Used to escape characters for inclusion in compiled string literals */
@@ -1401,27 +1446,20 @@
    *
    * @name _
    * @constructor
-   * @param {Mixed} value The value to wrap in a `LoDash` instance.
-   * @returns {Object} Returns a `LoDash` instance.
+   * @category Chaining
+   * @param {Mixed} value The value to wrap in a `lodash` instance.
+   * @returns {Object} Returns a `lodash` instance.
    */
   function lodash(value) {
-    // allow invoking `lodash` without the `new` operator
-    return new LoDash(value);
-  }
-
-  /**
-   * Creates a `LoDash` instance that wraps a value to allow chaining.
-   *
-   * @private
-   * @constructor
-   * @param {Mixed} value The value to wrap.
-   */
-  function LoDash(value) {
     // exit early if already wrapped
-    if (value && value._wrapped) {
+    if (value && value.__wrapped__) {
       return value;
     }
-    this._wrapped = value;
+    // allow invoking `lodash` without the `new` operator
+    if (!(this instanceof lodash)) {
+      return new lodash(value);
+    }
+    this.__wrapped__ = value;
   }
 
   /**
@@ -1483,21 +1521,21 @@
    */
   var iteratorTemplate = template(
     // conditional strict mode
-    '<% if (useStrict) { %>\'use strict\';\n<% } %>' +
+    '<% if (obj.useStrict) { %>\'use strict\';\n<% } %>' +
 
     // the `iteratee` may be reassigned by the `top` snippet
     'var index, value, iteratee = <%= firstArg %>, ' +
     // assign the `result` variable an initial value
-    'result<% if (init) { %> = <%= init %><% } %>;\n' +
-    // add code to exit early or do so if the first argument is falsey
-    '<%= exit %>;\n' +
-    // add code after the exit snippet but before the iteration branches
+    'result = <%= firstArg %>;\n' +
+    // exit early if the first argument is falsey
+    'if (!<%= firstArg %>) return result;\n' +
+    // add code before the iteration branches
     '<%= top %>;\n' +
 
-    // the following branch is for iterating arrays and array-like objects
-    '<% if (arrayBranch) { %>' +
-    'var length = iteratee.length; index = -1;' +
-    '  <% if (objectBranch) { %>\nif (length > -1 && length === length >>> 0) {<% } %>' +
+    // array-like iteration:
+    '<% if (arrayLoop) { %>' +
+    'var length = iteratee.length; index = -1;\n' +
+    'if (typeof length == \'number\') {' +
 
     // add support for accessing string characters by index if needed
     '  <% if (noCharByIndex) { %>\n' +
@@ -1506,25 +1544,22 @@
     '  }' +
     '  <% } %>\n' +
 
-    '  <%= arrayBranch.beforeLoop %>;\n' +
+    // iterate over the array-like value
     '  while (++index < length) {\n' +
     '    value = iteratee[index];\n' +
-    '    <%= arrayBranch.inLoop %>\n' +
-    '  }' +
-    '  <% if (objectBranch) { %>\n}<% } %>' +
-    '<% } %>' +
+    '    <%= arrayLoop %>\n' +
+    '  }\n' +
+    '}\n' +
+    'else {' +
 
-    // the following branch is for iterating an object's own/inherited properties
-    '<% if (objectBranch) { %>' +
-    '  <% if (arrayBranch) { %>\nelse {' +
-
+    // object iteration:
     // add support for iterating over `arguments` objects if needed
     '  <%  } else if (noArgsEnum) { %>\n' +
     '  var length = iteratee.length; index = -1;\n' +
     '  if (length && isArguments(iteratee)) {\n' +
     '    while (++index < length) {\n' +
     '      value = iteratee[index += \'\'];\n' +
-    '      <%= objectBranch.inLoop %>\n' +
+    '      <%= objectLoop %>\n' +
     '    }\n' +
     '  } else {' +
     '  <% } %>' +
@@ -1545,28 +1580,26 @@
     '  var ownIndex = -1,\n' +
     '      ownProps = objectTypes[typeof iteratee] ? nativeKeys(iteratee) : [],\n' +
     '      length = ownProps.length;\n\n' +
-    '  <%= objectBranch.beforeLoop %>;\n' +
     '  while (++ownIndex < length) {\n' +
     '    index = ownProps[ownIndex];\n' +
     '    <% if (!hasDontEnumBug) { %>if (!(skipProto && index == \'prototype\')) {\n  <% } %>' +
     '    value = iteratee[index];\n' +
-    '    <%= objectBranch.inLoop %>\n' +
+    '    <%= objectLoop %>\n' +
     '    <% if (!hasDontEnumBug) { %>}\n<% } %>' +
     '  }' +
 
     // else using a for-in loop
     '  <% } else { %>\n' +
-    '  <%= objectBranch.beforeLoop %>;\n' +
-    '  for (index in iteratee) {' +
-    '    <% if (!hasDontEnumBug || useHas) { %>\n    if (<%' +
+    '  for (index in iteratee) {<%' +
+    '    if (!hasDontEnumBug || useHas) { %>\n    if (<%' +
     '      if (!hasDontEnumBug) { %>!(skipProto && index == \'prototype\')<% }' +
     '      if (!hasDontEnumBug && useHas) { %> && <% }' +
     '      if (useHas) { %>hasOwnProperty.call(iteratee, index)<% }' +
     '    %>) {' +
     '    <% } %>\n' +
     '    value = iteratee[index];\n' +
-    '    <%= objectBranch.inLoop %>;\n' +
-    '    <% if (!hasDontEnumBug || useHas) { %>}\n<% } %>' +
+    '    <%= objectLoop %>;' +
+    '    <% if (!hasDontEnumBug || useHas) { %>\n    }<% } %>\n' +
     '  }' +
     '  <% } %>' +
 
@@ -1583,12 +1616,11 @@
     '        %>!(ctor && ctor.prototype === iteratee) && <%' +
     '      } %>hasOwnProperty.call(iteratee, index)) {\n' +
     '    value = iteratee[index];\n' +
-    '    <%= objectBranch.inLoop %>\n' +
+    '    <%= objectLoop %>\n' +
     '  }' +
     '    <% } %>' +
     '  <% } %>' +
-    '  <% if (arrayBranch || noArgsEnum) { %>\n}<% } %>' +
-    '<% } %>\n' +
+    '  <% if (arrayLoop || noArgsEnum) { %>\n}<% } %>\n' +
 
     // add code to the bottom of the iteration function
     '<%= bottom %>;\n' +
@@ -1597,114 +1629,35 @@
   );
 
   /**
-   * Reusable iterator options shared by
-   * `every`, `filter`, `find`, `forEach`, `forIn`, `forOwn`, `groupBy`, `map`,
-   * `reject`, `some`, and `sortBy`.
+   * Reusable iterator options shared by `forEach`, `forIn`, and `forOwn`.
    */
-  var baseIteratorOptions = {
+  var forEachIteratorOptions = {
     'args': 'collection, callback, thisArg',
-    'init': 'collection',
-    'top':
-      'if (!callback) {\n' +
-      '  callback = identity\n' +
-      '}\n' +
-      'else if (thisArg) {\n' +
-      '  callback = iteratorBind(callback, thisArg)\n' +
-      '}',
-    'inLoop': 'if (callback(value, index, collection) === false) return result'
+    'top': 'callback = createCallback(callback, thisArg)',
+    'arrayLoop': 'if (callback(value, index, collection) === false) return result',
+    'objectLoop': 'if (callback(value, index, collection) === false) return result'
   };
 
-  /** Reusable iterator options for `countBy`, `groupBy`, and `sortBy` */
-  var countByIteratorOptions = {
-    'init': '{}',
-    'top':
-      'var prop;\n' +
-      'if (typeof callback != \'function\') {\n' +
-      '  var valueProp = callback;\n' +
-      '  callback = function(value) { return value[valueProp] }\n' +
-      '}\n' +
-      'else if (thisArg) {\n' +
-      '  callback = iteratorBind(callback, thisArg)\n' +
-      '}',
-    'inLoop':
-      'prop = callback(value, index, collection);\n' +
-      '(hasOwnProperty.call(result, prop) ? result[prop]++ : result[prop] = 1)'
-  };
-
-  /** Reusable iterator options for `drop` and `pick` */
-  var dropIteratorOptions = {
-    'useHas': false,
-    'args': 'object, callback, thisArg',
-    'init': '{}',
-    'top':
-      'var isFunc = typeof callback == \'function\';\n' +
-      'if (!isFunc) {\n' +
-      '  var props = concat.apply(ArrayProto, arguments)\n' +
-      '} else if (thisArg) {\n' +
-      '  callback = iteratorBind(callback, thisArg)\n' +
-      '}',
-    'inLoop':
-      'if (isFunc\n' +
-      '  ? !callback(value, index, object)\n' +
-      '  : indexOf(props, index) < 0\n' +
-      ') result[index] = value'
-  };
-
-  /** Reusable iterator options for `every` and `some` */
-  var everyIteratorOptions = {
-    'init': 'true',
-    'inLoop': 'if (!callback(value, index, collection)) return !result'
-  };
-
-  /** Reusable iterator options for `defaults` and `extend` */
+  /** Reusable iterator options for `defaults`, and `extend` */
   var extendIteratorOptions = {
     'useHas': false,
-    'useStrict': false,
     'args': 'object',
-    'init': 'object',
     'top':
       'for (var argsIndex = 1, argsLength = arguments.length; argsIndex < argsLength; argsIndex++) {\n' +
       '  if (iteratee = arguments[argsIndex]) {',
-    'inLoop': 'result[index] = value',
+    'objectLoop': 'result[index] = value',
     'bottom': '  }\n}'
-  };
-
-  /** Reusable iterator options for `filter`, `reject`, and `where` */
-  var filterIteratorOptions = {
-    'init': '[]',
-    'inLoop': 'callback(value, index, collection) && result.push(value)'
-  };
-
-  /** Reusable iterator options for `find`, `forEach`, `forIn`, and `forOwn` */
-  var forEachIteratorOptions = {
-    'top': 'if (thisArg) callback = iteratorBind(callback, thisArg)'
   };
 
   /** Reusable iterator options for `forIn` and `forOwn` */
   var forOwnIteratorOptions = {
-    'inLoop': {
-      'object': baseIteratorOptions.inLoop
-    }
-  };
-
-  /** Reusable iterator options for `invoke`, `map`, `pluck`, and `sortBy` */
-  var mapIteratorOptions = {
-    'init': '',
-    'exit': 'if (!collection) return []',
-    'beforeLoop': {
-      'array':  'result = Array(length)',
-      'object': 'result = ' + (isKeysFast ? 'Array(length)' : '[]')
-    },
-    'inLoop': {
-      'array':  'result[index] = callback(value, index, collection)',
-      'object': 'result' + (isKeysFast ? '[ownIndex] = ' : '.push') + '(callback(value, index, collection))'
-    }
+    'arrayLoop': null
   };
 
   /*--------------------------------------------------------------------------*/
 
   /**
-   * Creates a new function optimized for searching large arrays for a given `value`,
+   * Creates a function optimized for searching large arrays for a given `value`,
    * starting at `fromIndex`, using strict equality for comparisons, i.e. `===`.
    *
    * @private
@@ -1723,13 +1676,11 @@
 
     if (isLarge) {
       // init value cache
-      var key,
-          index = fromIndex - 1;
-
+      var index = fromIndex - 1;
       while (++index < length) {
         // manually coerce `value` to string because `hasOwnProperty`, in some
         // older versions of Firefox, coerces objects incorrectly
-        key = array[index] + '';
+        var key = array[index] + '';
         (hasOwnProperty.call(cache, key) ? cache[key] : (cache[key] = [])).push(array[index]);
       }
     }
@@ -1740,115 +1691,6 @@
       }
       return indexOf(cache, value, fromIndex) > -1;
     }
-  }
-
-  /**
-   * Creates compiled iteration functions. The iteration function will be created
-   * to iterate over only objects if the first argument of `options.args` is
-   * "object" or `options.inLoop.array` is falsey.
-   *
-   * @private
-   * @param {Object} [options1, options2, ...] The compile options objects.
-   *
-   *  useHas - A boolean to specify whether or not to use `hasOwnProperty` checks
-   *   in the object loop.
-   *
-   *  useStrict - A boolean to specify whether or not to include the ES5
-   *   "use strict" directive.
-   *
-   *  args - A string of comma separated arguments the iteration function will
-   *   accept.
-   *
-   *  init - A string to specify the initial value of the `result` variable.
-   *
-   *  exit - A string of code to use in place of the default exit-early check
-   *   of `if (!arguments[0]) return result`.
-   *
-   *  top - A string of code to execute after the exit-early check but before
-   *   the iteration branches.
-   *
-   *  beforeLoop - A string or object containing an "array" or "object" property
-   *   of code to execute before the array or object loops.
-   *
-   *  inLoop - A string or object containing an "array" or "object" property
-   *   of code to execute in the array or object loops.
-   *
-   *  bottom - A string of code to execute after the iteration branches but
-   *   before the `result` is returned.
-   *
-   * @returns {Function} Returns the compiled function.
-   */
-  function createIterator() {
-    var object,
-        prop,
-        value,
-        index = -1,
-        length = arguments.length;
-
-    // merge options into a template data object
-    var data = {
-      'bottom': '',
-      'exit': '',
-      'init': '',
-      'top': '',
-      'arrayBranch': { 'beforeLoop': '' },
-      'objectBranch': { 'beforeLoop': '' }
-    };
-
-    while (++index < length) {
-      object = arguments[index];
-      for (prop in object) {
-        value = (value = object[prop]) == null ? '' : value;
-        // keep this regexp explicit for the build pre-process
-        if (/beforeLoop|inLoop/.test(prop)) {
-          if (typeof value == 'string') {
-            value = { 'array': value, 'object': value };
-          }
-          data.arrayBranch[prop] = value.array || '';
-          data.objectBranch[prop] = value.object || '';
-        } else {
-          data[prop] = value;
-        }
-      }
-    }
-    // set additional template `data` values
-    var args = data.args,
-        firstArg = /^[^,]+/.exec(args)[0],
-        useStrict = data.useStrict;
-
-    data.firstArg = firstArg;
-    data.hasDontEnumBug = hasDontEnumBug;
-    data.isKeysFast = isKeysFast;
-    data.noArgsEnum = noArgsEnum;
-    data.shadowed = shadowed;
-    data.useHas = data.useHas !== false;
-    data.useStrict = useStrict == null ? isStrictFast : useStrict;
-
-    if (data.noCharByIndex == null) {
-      data.noCharByIndex = noCharByIndex;
-    }
-    if (!data.exit) {
-      data.exit = 'if (!' + firstArg + ') return result';
-    }
-    if (firstArg != 'collection' || !data.arrayBranch.inLoop) {
-      data.arrayBranch = null;
-    }
-    // create the function factory
-    var factory = Function(
-        'arrayLikeClasses, ArrayProto, bind, compareAscending, concat, forIn, ' +
-        'hasOwnProperty, identity, indexOf, isArguments, isArray, isFunction, ' +
-        'isPlainObject, iteratorBind, objectClass, objectTypes, nativeKeys, ' +
-        'propertyIsEnumerable, slice, stringClass, toString',
-      'var callee = function(' + args + ') {\n' + iteratorTemplate(data) + '\n};\n' +
-      'return callee'
-    );
-    // return the compiled function
-    return factory(
-      arrayLikeClasses, ArrayProto, bind, compareAscending, concat, forIn,
-      hasOwnProperty, identity, indexOf, isArguments, isArray, isFunction,
-      isPlainObject, iteratorBind, objectClass, objectTypes, nativeKeys,
-      propertyIsEnumerable, slice, stringClass, toString
-    );
   }
 
   /**
@@ -1867,27 +1709,146 @@
     a = a.criteria;
     b = b.criteria;
 
-    if (a === undefined) {
-      return 1;
-    }
-    if (b === undefined) {
-      return -1;
-    }
     // ensure a stable sort in V8 and other engines
     // http://code.google.com/p/v8/issues/detail?id=90
-    return a < b ? -1 : a > b ? 1 : ai < bi ? -1 : 1;
+    if (a !== b) {
+      if (a > b || a === undefined) {
+        return 1;
+      }
+      if (a < b || b === undefined) {
+        return -1;
+      }
+    }
+    return ai < bi ? -1 : 1;
   }
 
   /**
-   * Used by `template` to replace tokens with their corresponding code snippets.
+   * Creates a function that, when called, invokes `func` with the `this`
+   * binding of `thisArg` and prepends any `partailArgs` to the arguments passed
+   * to the bound function.
    *
    * @private
-   * @param {String} match The matched token.
-   * @param {String} index The `tokenized` index of the code snippet.
-   * @returns {String} Returns the code snippet.
+   * @param {Function|String} func The function to bind or the method name.
+   * @param {Mixed} [thisArg] The `this` binding of `func`.
+   * @param {Array} partialArgs An array of arguments to be partially applied.
+   * @returns {Function} Returns the new bound function.
    */
-  function detokenize(match, index) {
-    return tokenized[index];
+  function createBound(func, thisArg, partialArgs) {
+    var isFunc = isFunction(func),
+        isPartial = !partialArgs,
+        methodName = func;
+
+    // juggle arguments
+    if (isPartial) {
+      partialArgs = thisArg;
+    }
+
+    function bound() {
+      // `Function#bind` spec
+      // http://es5.github.com/#x15.3.4.5
+      var args = arguments,
+          thisBinding = isPartial ? this : thisArg;
+
+      if (!isFunc) {
+        func = thisArg[methodName];
+      }
+      if (partialArgs.length) {
+        args = args.length
+          ? partialArgs.concat(slice.call(args))
+          : partialArgs;
+      }
+      if (this instanceof bound) {
+        // get `func` instance if `bound` is invoked in a `new` expression
+        noop.prototype = func.prototype;
+        thisBinding = new noop;
+
+        // mimic the constructor's `return` behavior
+        // http://es5.github.com/#x13.2.2
+        var result = func.apply(thisBinding, args);
+        return result && objectTypes[typeof result]
+          ? result
+          : thisBinding
+      }
+      return func.apply(thisBinding, args);
+    }
+    return bound;
+  }
+
+  /**
+   * Produces an iteration callback bound to an optional `thisArg`. If `func` is
+   * a property name, the callback will return the property value for a given element.
+   *
+   * @private
+   * @param {Function|String} [func=identity|property] The function called per
+   * iteration or property name to query.
+   * @param {Mixed} [thisArg] The `this` binding of `callback`.
+   * @returns {Function} Returns a callback function.
+   */
+  function createCallback(func, thisArg) {
+    if (!func) {
+      return identity;
+    }
+    if (typeof func != 'function') {
+      return function(object) {
+        return object[func];
+      };
+    }
+    if (thisArg !== undefined) {
+      return function(value, index, object) {
+        return func.call(thisArg, value, index, object);
+      };
+    }
+    return func;
+  }
+
+  /**
+   * Creates compiled iteration functions.
+   *
+   * @private
+   * @param {Object} [options1, options2, ...] The compile options object(s).
+   *  useHas - A boolean to specify using `hasOwnProperty` checks in the object loop.
+   *  args - A string of comma separated arguments the iteration function will accept.
+   *  top - A string of code to execute before the iteration branches.
+   *  arrayLoop - A string of code to execute in the array loop.
+   *  objectLoop - A string of code to execute in the object loop.
+   *  bottom - A string of code to execute after the iteration branches.
+   *
+   * @returns {Function} Returns the compiled function.
+   */
+  function createIterator() {
+    var data = {
+      'arrayLoop': '',
+      'bottom': '',
+      'hasDontEnumBug': hasDontEnumBug,
+      'isKeysFast': isKeysFast,
+      'objectLoop': '',
+      'noArgsEnum': noArgsEnum,
+      'noCharByIndex': noCharByIndex,
+      'shadowed': shadowed,
+      'top': '',
+      'useHas': true
+    };
+
+    // merge options into a template data object
+    for (var object, index = 0; object = arguments[index]; index++) {
+      for (var key in object) {
+        data[key] = object[key];
+      }
+    }
+    var args = data.args;
+    data.firstArg = /^[^,]+/.exec(args)[0];
+
+    // create the function factory
+    var factory = Function(
+        'createCallback, hasOwnProperty, isArguments, objectTypes, nativeKeys, ' +
+        'propertyIsEnumerable, stringClass, toString',
+      'return function(' + args + ') {\n' + iteratorTemplate(data) + '\n}'
+    );
+    // return the compiled function
+    return factory(
+      createCallback, hasOwnProperty, isArguments, objectTypes, nativeKeys,
+      propertyIsEnumerable, stringClass, toString
+    );
   }
 
   /**
@@ -1914,83 +1875,12 @@
   }
 
   /**
-   * Creates a new function that, when called, invokes `func` with the `this`
-   * binding of `thisArg` and the arguments (value, index, object).
-   *
-   * @private
-   * @param {Function} func The function to bind.
-   * @param {Mixed} [thisArg] The `this` binding of `func`.
-   * @returns {Function} Returns the new bound function.
-   */
-  function iteratorBind(func, thisArg) {
-    return function(value, index, object) {
-      return func.call(thisArg, value, index, object);
-    };
-  }
-
-  /**
    * A no-operation function.
    *
    * @private
    */
   function noop() {
     // no operation performed
-  }
-
-  /**
-   * Used by `template` to replace "escape" template delimiters with tokens.
-   *
-   * @private
-   * @param {String} match The matched template delimiter.
-   * @param {String} value The delimiter value.
-   * @returns {String} Returns a token.
-   */
-  function tokenizeEscape(match, value) {
-    if (match && reComplexDelimiter.test(value)) {
-      return '<e%-' + value + '%>';
-    }
-    var index = tokenized.length;
-    tokenized[index] = "' +\n__e(" + value + ") +\n'";
-    return token + index;
-  }
-
-  /**
-   * Used by `template` to replace "evaluate" template delimiters, or complex
-   * "escape" and "interpolate" delimiters, with tokens.
-   *
-   * @private
-   * @param {String} match The matched template delimiter.
-   * @param {String} escapeValue The complex "escape" delimiter value.
-   * @param {String} interpolateValue The complex "interpolate" delimiter value.
-   * @param {String} [evaluateValue] The "evaluate" delimiter value.
-   * @returns {String} Returns a token.
-   */
-  function tokenizeEvaluate(match, escapeValue, interpolateValue, evaluateValue) {
-    if (evaluateValue) {
-      var index = tokenized.length;
-      tokenized[index] = "';\n" + evaluateValue + ";\n__p += '";
-      return token + index;
-    }
-    return escapeValue
-      ? tokenizeEscape(null, escapeValue)
-      : tokenizeInterpolate(null, interpolateValue);
-  }
-
-  /**
-   * Used by `template` to replace "interpolate" template delimiters with tokens.
-   *
-   * @private
-   * @param {String} match The matched template delimiter.
-   * @param {String} value The delimiter value.
-   * @returns {String} Returns a token.
-   */
-  function tokenizeInterpolate(match, value) {
-    if (match && reComplexDelimiter.test(value)) {
-      return '<e%=' + value + '%>';
-    }
-    var index = tokenized.length;
-    tokenized[index] = "' +\n((__t = (" + value + ")) == null ? '' : __t) +\n'";
-    return token + index;
   }
 
   /**
@@ -2028,140 +1918,160 @@
   // fallback for browsers that can't detect `arguments` objects by [[Class]]
   if (noArgsClass) {
     isArguments = function(value) {
-      return !!(value && hasOwnProperty.call(value, 'callee'));
+      return value ? hasOwnProperty.call(value, 'callee') : false;
     };
   }
 
   /**
-   * Checks if `value` is an array.
+   * Iterates over `object`'s own and inherited enumerable properties, executing
+   * the `callback` for each property. The `callback` is bound to `thisArg` and
+   * invoked with three arguments; (value, key, object). Callbacks may exit iteration
+   * early by explicitly returning `false`.
    *
    * @static
    * @memberOf _
    * @category Objects
-   * @param {Mixed} value The value to check.
-   * @returns {Boolean} Returns `true` if the `value` is an array, else `false`.
+   * @param {Object} object The object to iterate over.
+   * @param {Function} callback The function called per iteration.
+   * @param {Mixed} [thisArg] The `this` binding of `callback`.
+   * @returns {Object} Returns `object`.
    * @example
    *
-   * (function() { return _.isArray(arguments); })();
-   * // => false
+   * function Dog(name) {
+   *   this.name = name;
+   * }
    *
-   * _.isArray([1, 2, 3]);
-   * // => true
+   * Dog.prototype.bark = function() {
+   *   alert('Woof, woof!');
+   * };
+   *
+   * _.forIn(new Dog('Dagny'), function(value, key) {
+   *   alert(key);
+   * });
+   * // => alerts 'name' and 'bark' (order is not guaranteed)
    */
-  var isArray = nativeIsArray || function(value) {
-    return toString.call(value) == arrayClass;
-  };
+  var forIn = createIterator(forEachIteratorOptions, forOwnIteratorOptions, {
+    'useHas': false
+  });
 
   /**
-   * Checks if `value` is a function.
+   * Iterates over `object`'s own enumerable properties, executing the `callback`
+   * for each property. The `callback` is bound to `thisArg` and invoked with three
+   * arguments; (value, key, object). Callbacks may exit iteration early by explicitly
+   * returning `false`.
    *
    * @static
    * @memberOf _
    * @category Objects
-   * @param {Mixed} value The value to check.
-   * @returns {Boolean} Returns `true` if the `value` is a function, else `false`.
+   * @param {Object} object The object to iterate over.
+   * @param {Function} callback The function called per iteration.
+   * @param {Mixed} [thisArg] The `this` binding of `callback`.
+   * @returns {Object} Returns `object`.
    * @example
    *
-   * _.isFunction(''.concat);
-   * // => true
+   * _.forOwn({ '0': 'zero', '1': 'one', 'length': 2 }, function(num, key) {
+   *   alert(key);
+   * });
+   * // => alerts '0', '1', and 'length' (order is not guaranteed)
    */
-  function isFunction(value) {
-    return typeof value == 'function';
-  }
-  // fallback for older versions of Chrome and Safari
-  if (isFunction(/x/)) {
-    isFunction = function(value) {
-      return toString.call(value) == funcClass;
-    };
-  }
+  var forOwn = createIterator(forEachIteratorOptions, forOwnIteratorOptions);
 
   /**
-   * Checks if a given `value` is an object created by the `Object` constructor
-   * assuming objects created by the `Object` constructor have no inherited
-   * enumerable properties and that there are no `Object.prototype` extensions.
+   * A fallback implementation of `isPlainObject` that checks if a given `value`
+   * is an object created by the `Object` constructor, assuming objects created
+   * by the `Object` constructor have no inherited enumerable properties and that
+   * there are no `Object.prototype` extensions.
    *
    * @private
    * @param {Mixed} value The value to check.
-   * @param {Boolean} [skipArgsCheck=false] Internally used to skip checks for
-   *  `arguments` objects.
-   * @returns {Boolean} Returns `true` if the `value` is a plain `Object` object,
-   *  else `false`.
+   * @returns {Boolean} Returns `true` if `value` is a plain object, else `false`.
    */
-  function isPlainObject(value, skipArgsCheck) {
-    return value
-      ? value == ObjectProto || (value.__proto__ == ObjectProto && (skipArgsCheck || !isArguments(value)))
-      : false;
-  }
-  // fallback for IE
-  if (!isPlainObject(objectTypes)) {
-    isPlainObject = function(value, skipArgsCheck) {
-      // avoid non-objects and false positives for `arguments` objects
-      var result = false;
-      if (!(value && typeof value == 'object') || (!skipArgsCheck && isArguments(value))) {
-        return result;
-      }
-      // IE < 9 presents DOM nodes as `Object` objects except they have `toString`
-      // methods that are `typeof` "string" and still can coerce nodes to strings.
-      // Also check that the constructor is `Object` (i.e. `Object instanceof Object`)
-      var ctor = value.constructor;
-      if ((!noNodeClass || !(typeof value.toString != 'function' && typeof (value + '') == 'string')) &&
-          (!isFunction(ctor) || ctor instanceof ctor)) {
-        // IE < 9 iterates inherited properties before own properties. If the first
-        // iterated property is an object's own property then there are no inherited
-        // enumerable properties.
-        if (iteratesOwnLast) {
-          forIn(value, function(objValue, objKey) {
-            result = !hasOwnProperty.call(value, objKey);
-            return false;
-          });
-          return result === false;
-        }
-        // In most environments an object's own properties are iterated before
-        // its inherited properties. If the last iterated property is an object's
-        // own property then there are no inherited enumerable properties.
-        forIn(value, function(objValue, objKey) {
-          result = objKey;
-        });
-        return result === false || hasOwnProperty.call(value, result);
-      }
+  function shimIsPlainObject(value) {
+    // avoid non-objects and false positives for `arguments` objects
+    var result = false;
+    if (!(value && typeof value == 'object') || isArguments(value)) {
       return result;
-    };
+    }
+    // IE < 9 presents DOM nodes as `Object` objects except they have `toString`
+    // methods that are `typeof` "string" and still can coerce nodes to strings.
+    // Also check that the constructor is `Object` (i.e. `Object instanceof Object`)
+    var ctor = value.constructor;
+    if ((!noNodeClass || !(typeof value.toString != 'function' && typeof (value + '') == 'string')) &&
+        (!isFunction(ctor) || ctor instanceof ctor)) {
+      // IE < 9 iterates inherited properties before own properties. If the first
+      // iterated property is an object's own property then there are no inherited
+      // enumerable properties.
+      if (iteratesOwnLast) {
+        forIn(value, function(value, key, object) {
+          result = !hasOwnProperty.call(object, key);
+          return false;
+        });
+        return result === false;
+      }
+      // In most environments an object's own properties are iterated before
+      // its inherited properties. If the last iterated property is an object's
+      // own property then there are no inherited enumerable properties.
+      forIn(value, function(value, key) {
+        result = key;
+      });
+      return result === false || hasOwnProperty.call(value, result);
+    }
+    return result;
   }
 
   /**
-   * A shim implementation of `Object.keys` that produces an array of the given
-   * object's own enumerable property names.
+   * A fallback implementation of `Object.keys` that produces an array of the
+   * given object's own enumerable property names.
    *
    * @private
    * @param {Object} object The object to inspect.
    * @returns {Array} Returns a new array of property names.
    */
-  var shimKeys = createIterator({
-    'args': 'object',
-    'init': '[]',
-    'inLoop': 'result.push(index)'
-  });
+  function shimKeys(object) {
+    var result = [];
+    forOwn(object, function(value, key) {
+      result.push(key);
+    });
+    return result;
+  }
+
+  /**
+   * Used to convert characters to HTML entities:
+   *
+   * Though the `>` character is escaped for symmetry, characters like `>` and `/`
+   * don't require escaping in HTML and have no special meaning unless they're part
+   * of a tag or an unquoted attribute value.
+   * http://mathiasbynens.be/notes/ambiguous-ampersands (under "semi-related fun fact")
+   */
+  var htmlEscapes = {
+    '&': '&amp;',
+    '<': '&lt;',
+    '>': '&gt;',
+    '"': '&quot;',
+    "'": '&#x27;'
+  };
+
+  /** Used to convert HTML entities to characters */
+  var htmlUnescapes = invert(htmlEscapes);
 
   /*--------------------------------------------------------------------------*/
 
   /**
    * Creates a clone of `value`. If `deep` is `true`, all nested objects will
-   * also be cloned otherwise they will be assigned by reference. If a value has
-   * a `clone` method it will be used to perform the clone. Functions, DOM nodes,
-   * `arguments` objects, and objects created by constructors other than `Object`
-   * are **not** cloned unless they have a custom `clone` method.
+   * also be cloned otherwise they will be assigned by reference. Functions, DOM
+   * nodes, `arguments` objects, and objects created by constructors other than
+   * `Object` are **not** cloned.
    *
    * @static
    * @memberOf _
    * @category Objects
    * @param {Mixed} value The value to clone.
    * @param {Boolean} deep A flag to indicate a deep clone.
-   * @param {Object} [guard] Internally used to allow this method to work with
+   * @param- {Object} [guard] Internally used to allow this method to work with
    *  others like `_.map` without using their callback `index` argument for `deep`.
-   * @param {Array} [stack=[]] Internally used to keep track of traversed objects
-   *  to avoid circular references.
-   * @param {Object} thorough Internally used to indicate whether or not to perform
-   *  a more thorough clone of non-object values.
+   * @param- {Array} [stackA=[]] Internally used to track traversed source objects.
+   * @param- {Array} [stackB=[]] Internally used to associate clones with their
+   *  source counterparts.
    * @returns {Mixed} Returns the cloned `value`.
    * @example
    *
@@ -2182,26 +2092,15 @@
    * shallow[0] === stooges[0];
    * // => false
    */
-  function clone(value, deep, guard, stack, thorough) {
+  function clone(value, deep, guard, stackA, stackB) {
     if (value == null) {
       return value;
     }
     if (guard) {
       deep = false;
     }
-    // avoid slower checks on primitives
-    thorough || (thorough = { 'value': null });
-    if (thorough.value == null) {
-      // primitives passed from iframes use the primary document's native prototypes
-      thorough.value = !!(BoolProto.clone || NumberProto.clone || StringProto.clone);
-    }
-    // use custom `clone` method if available
-    var isObj = objectTypes[typeof value];
-    if ((isObj || thorough.value) && value.clone && isFunction(value.clone)) {
-      thorough.value = null;
-      return value.clone(deep);
-    }
     // inspect [[Class]]
+    var isObj = objectTypes[typeof value];
     if (isObj) {
       // don't clone `arguments` objects, functions, or non-object Objects
       var className = toString.call(value);
@@ -2209,7 +2108,7 @@
         return value;
       }
       var isArr = className == arrayClass;
-      isObj = isArr || (className == objectClass ? isPlainObject(value, true) : isObj);
+      isObj = isArr || (className == objectClass ? isPlainObject(value) : isObj);
     }
     // shallow clone
     if (!isObj || !deep) {
@@ -2222,8 +2121,6 @@
     var ctor = value.constructor;
     switch (className) {
       case boolClass:
-        return new ctor(value == true);
-
       case dateClass:
         return new ctor(+value);
 
@@ -2234,34 +2131,29 @@
       case regexpClass:
         return ctor(value.source, reFlags.exec(value));
     }
-
     // check for circular references and return corresponding clone
-    stack || (stack = []);
-    var length = stack.length;
+    stackA || (stackA = []);
+    stackB || (stackB = []);
+
+    var length = stackA.length;
     while (length--) {
-      if (stack[length].source == value) {
-        return stack[length].value;
+      if (stackA[length] == value) {
+        return stackB[length];
       }
     }
-
     // init cloned object
-    length = value.length;
-    var result = isArr ? ctor(length) : {};
+    var result = isArr ? ctor(value.length) : {};
 
-    // add current clone and original source value to the stack of traversed objects
-    stack.push({ 'value': result, 'source': value });
+    // add the source value to the stack of traversed objects
+    // and associate it with its clone
+    stackA.push(value);
+    stackB.push(result);
 
     // recursively populate clone (susceptible to call stack limits)
-    if (isArr) {
-      var index = -1;
-      while (++index < length) {
-        result[index] = clone(value[index], deep, null, stack, thorough);
-      }
-    } else {
-      forOwn(value, function(objValue, key) {
-        result[key] = clone(objValue, deep, null, stack, thorough);
-      });
-    }
+    (isArr ? forEach : forOwn)(value, function(objValue, key) {
+      result[key] = clone(objValue, deep, null, stackA, stackB);
+    });
+
     return result;
   }
 
@@ -2284,36 +2176,8 @@
    * // => { 'flavor': 'chocolate', 'sprinkles': 'rainbow' }
    */
   var defaults = createIterator(extendIteratorOptions, {
-    'inLoop': 'if (result[index] == null) ' + extendIteratorOptions.inLoop
+    'objectLoop': 'if (result[index] == null) ' + extendIteratorOptions.objectLoop
   });
-
-  /**
-   * Creates a shallow clone of `object` excluding the specified properties.
-   * Property names may be specified as individual arguments or as arrays of
-   * property names. If `callback` is passed, it will be executed for each property
-   * in the `object`, dropping the properties `callback` returns truthy for. The
-   * `callback` is bound to `thisArg` and invoked with 3 arguments; (value, key, object).
-   *
-   * @static
-   * @memberOf _
-   * @alias omit
-   * @category Objects
-   * @param {Object} object The source object.
-   * @param {Function|String} callback|[prop1, prop2, ...] The properties to drop
-   *  or the function called per iteration.
-   * @param {Mixed} [thisArg] The `this` binding for the callback.
-   * @returns {Object} Returns an object without the dropped properties.
-   * @example
-   *
-   * _.drop({ 'name': 'moe', 'age': 40, 'userid': 'moe1' }, 'userid');
-   * // => { 'name': 'moe', 'age': 40 }
-   *
-   * _.drop({ 'name': 'moe', '_hint': 'knucklehead', '_seed': '96c4eb' }, function(value, key) {
-   *   return key.charAt(0) == '_';
-   * });
-   * // => { 'name': 'moe' }
-   */
-  var drop = createIterator(dropIteratorOptions);
 
   /**
    * Assigns enumerable properties of the source object(s) to the `destination`
@@ -2334,60 +2198,6 @@
   var extend = createIterator(extendIteratorOptions);
 
   /**
-   * Iterates over `object`'s own and inherited enumerable properties, executing
-   * the `callback` for each property. The `callback` is bound to `thisArg` and
-   * invoked with 3 arguments; (value, key, object). Callbacks may exit iteration
-   * early by explicitly returning `false`.
-   *
-   * @static
-   * @memberOf _
-   * @category Objects
-   * @param {Object} object The object to iterate over.
-   * @param {Function} callback The function called per iteration.
-   * @param {Mixed} [thisArg] The `this` binding for the callback.
-   * @returns {Object} Returns `object`.
-   * @example
-   *
-   * function Dog(name) {
-   *   this.name = name;
-   * }
-   *
-   * Dog.prototype.bark = function() {
-   *   alert('Woof, woof!');
-   * };
-   *
-   * _.forIn(new Dog('Dagny'), function(value, key) {
-   *   alert(key);
-   * });
-   * // => alerts 'name' and 'bark' (order is not guaranteed)
-   */
-  var forIn = createIterator(baseIteratorOptions, forEachIteratorOptions, forOwnIteratorOptions, {
-    'useHas': false
-  });
-
-  /**
-   * Iterates over `object`'s own enumerable properties, executing the `callback`
-   * for each property. The `callback` is bound to `thisArg` and invoked with 3
-   * arguments; (value, key, object). Callbacks may exit iteration early by
-   * explicitly returning `false`.
-   *
-   * @static
-   * @memberOf _
-   * @category Objects
-   * @param {Object} object The object to iterate over.
-   * @param {Function} callback The function called per iteration.
-   * @param {Mixed} [thisArg] The `this` binding for the callback.
-   * @returns {Object} Returns `object`.
-   * @example
-   *
-   * _.forOwn({ '0': 'zero', '1': 'one', 'length': 2 }, function(num, key) {
-   *   alert(key);
-   * });
-   * // => alerts '0', '1', and 'length' (order is not guaranteed)
-   */
-  var forOwn = createIterator(baseIteratorOptions, forEachIteratorOptions, forOwnIteratorOptions);
-
-  /**
    * Creates a sorted array of all enumerable properties, own and inherited,
    * of `object` that have function values.
    *
@@ -2402,13 +2212,15 @@
    * _.functions(_);
    * // => ['all', 'any', 'bind', 'bindAll', 'clone', 'compact', 'compose', ...]
    */
-  var functions = createIterator({
-    'useHas': false,
-    'args': 'object',
-    'init': '[]',
-    'inLoop': 'if (isFunction(value)) result.push(index)',
-    'bottom': 'result.sort()'
-  });
+  function functions(object) {
+    var result = [];
+    forIn(object, function(value, key) {
+      if (isFunction(value)) {
+        result.push(key);
+      }
+    });
+    return result.sort();
+  }
 
   /**
    * Checks if the specified object `property` exists and is a direct property,
@@ -2428,6 +2240,47 @@
   function has(object, property) {
     return object ? hasOwnProperty.call(object, property) : false;
   }
+
+  /**
+   * Creates an object composed of the inverted keys and values of the given `object`.
+   *
+   * @static
+   * @memberOf _
+   * @category Objects
+   * @param {Object} object The object to invert.
+   * @returns {Object} Returns the created inverted object.
+   * @example
+   *
+   *  _.invert({ 'first': 'Moe', 'second': 'Larry', 'third': 'Curly' });
+   * // => { 'Moe': 'first', 'Larry': 'second', 'Curly': 'third' } (order is not guaranteed)
+   */
+  function invert(object) {
+    var result = {};
+    forOwn(object, function(value, key) {
+      result[value] = key;
+    });
+    return result;
+  }
+
+  /**
+   * Checks if `value` is an array.
+   *
+   * @static
+   * @memberOf _
+   * @category Objects
+   * @param {Mixed} value The value to check.
+   * @returns {Boolean} Returns `true` if the `value` is an array, else `false`.
+   * @example
+   *
+   * (function() { return _.isArray(arguments); })();
+   * // => false
+   *
+   * _.isArray([1, 2, 3]);
+   * // => true
+   */
+  var isArray = nativeIsArray || function(value) {
+    return toString.call(value) == arrayClass;
+  };
 
   /**
    * Checks if `value` is a boolean (`true` or `false`) value.
@@ -2501,36 +2354,36 @@
    * _.isEmpty('');
    * // => true
    */
-  var isEmpty = createIterator({
-    'args': 'value',
-    'init': 'true',
-    'top':
-      'var className = toString.call(value),\n' +
-      '    length = value.length;\n' +
-      'if (arrayLikeClasses[className]' +
-      (noArgsClass ? ' || isArguments(value)' : '') + ' ||\n' +
-      '  (className == objectClass && length > -1 && length === length >>> 0 &&\n' +
-      '  isFunction(value.splice))' +
-      ') return !length',
-    'inLoop': {
-      'object': 'return false'
+  function isEmpty(value) {
+    var result = true;
+    if (!value) {
+      return result;
     }
-  });
+    var className = toString.call(value),
+        length = value.length;
+
+    if ((className == arrayClass || className == stringClass ||
+        className == argsClass || (noArgsClass && isArguments(value))) ||
+        (className == objectClass && typeof length == 'number' && isFunction(value.splice))) {
+      return !length;
+    }
+    forOwn(value, function() {
+      return (result = false);
+    });
+    return result;
+  }
 
   /**
    * Performs a deep comparison between two values to determine if they are
-   * equivalent to each other. If a value has an `isEqual` method it will be
-   * used to perform the comparison.
+   * equivalent to each other.
    *
    * @static
    * @memberOf _
    * @category Objects
    * @param {Mixed} a The value to compare.
    * @param {Mixed} b The other value to compare.
-   * @param {Array} [stack=[]] Internally used to keep track of traversed objects
-   *  to avoid circular references.
-   * @param {Object} thorough Internally used to indicate whether or not to perform
-   *  a more thorough comparison of non-object values.
+   * @param- {Object} [stackA=[]] Internally used track traversed `a` objects.
+   * @param- {Object} [stackB=[]] Internally used track traversed `b` objects.
    * @returns {Boolean} Returns `true` if the values are equvalent, else `false`.
    * @example
    *
@@ -2543,39 +2396,15 @@
    * _.isEqual(moe, clone);
    * // => true
    */
-  function isEqual(a, b, stack, thorough) {
-    // a strict comparison is necessary because `null == undefined`
-    if (a == null || b == null) {
-      return a === b;
-    }
-    // avoid slower checks on non-objects
-    thorough || (thorough = { 'value': null });
-    if (thorough.value == null) {
-      // primitives passed from iframes use the primary document's native prototypes
-      thorough.value = !!(BoolProto.isEqual || NumberProto.isEqual || StringProto.isEqual);
-    }
-    if (objectTypes[typeof a] || objectTypes[typeof b] || thorough.value) {
-      // unwrap any LoDash wrapped values
-      if (a._chain) {
-        a = a._wrapped;
-      }
-      if (b._chain) {
-        b = b._wrapped;
-      }
-      // use custom `isEqual` method if available
-      if (a.isEqual && isFunction(a.isEqual)) {
-        thorough.value = null;
-        return a.isEqual(b);
-      }
-      if (b.isEqual && isFunction(b.isEqual)) {
-        thorough.value = null;
-        return b.isEqual(a);
-      }
-    }
+  function isEqual(a, b, stackA, stackB) {
     // exit early for identical values
     if (a === b) {
       // treat `+0` vs. `-0` as not equal
       return a !== 0 || (1 / a == 1 / b);
+    }
+    // a strict comparison is necessary because `null == undefined`
+    if (a == null || b == null) {
+      return a === b;
     }
     // compare [[Class]] names
     var className = toString.call(a);
@@ -2603,25 +2432,42 @@
         return a == b + '';
     }
     // exit early, in older browsers, if `a` is array-like but not `b`
-    var isArr = arrayLikeClasses[className];
+    var isArr = className == arrayClass || className == argsClass;
     if (noArgsClass && !isArr && (isArr = isArguments(a)) && !isArguments(b)) {
       return false;
     }
-    // exit for functions and DOM nodes
-    if (!isArr && (className != objectClass || (noNodeClass && (
-        (typeof a.toString != 'function' && typeof (a + '') == 'string') ||
-        (typeof b.toString != 'function' && typeof (b + '') == 'string'))))) {
-      return false;
-    }
+    if (!isArr) {
+      // unwrap any `lodash` wrapped values
+      if (a.__wrapped__ || b.__wrapped__) {
+        return isEqual(a.__wrapped__ || a, b.__wrapped__ || b);
+      }
+      // exit for functions and DOM nodes
+      if (className != objectClass || (noNodeClass && (
+          (typeof a.toString != 'function' && typeof (a + '') == 'string') ||
+          (typeof b.toString != 'function' && typeof (b + '') == 'string')))) {
+        return false;
+      }
+      var ctorA = a.constructor,
+          ctorB = b.constructor;
 
+      // non `Object` object instances with different constructors are not equal
+      if (ctorA != ctorB && !(
+            isFunction(ctorA) && ctorA instanceof ctorA &&
+            isFunction(ctorB) && ctorB instanceof ctorB
+          )) {
+        return false;
+      }
+    }
     // assume cyclic structures are equal
     // the algorithm for detecting cyclic structures is adapted from ES 5.1
     // section 15.12.3, abstract operation `JO` (http://es5.github.com/#x15.12.3)
-    stack || (stack = []);
-    var length = stack.length;
+    stackA || (stackA = []);
+    stackB || (stackB = []);
+
+    var length = stackA.length;
     while (length--) {
-      if (stack[length] == a) {
-        return true;
+      if (stackA[length] == a) {
+        return stackB[length] == b;
       }
     }
 
@@ -2629,8 +2475,9 @@
         result = true,
         size = 0;
 
-    // add `a` to the stack of traversed objects
-    stack.push(a);
+    // add `a` and `b` to the stack of traversed objects
+    stackA.push(a);
+    stackB.push(b);
 
     // recursively compare objects and arrays (susceptible to call stack limits)
     if (isArr) {
@@ -2641,41 +2488,30 @@
       if (result) {
         // deep compare the contents, ignoring non-numeric properties
         while (size--) {
-          if (!(result = isEqual(a[size], b[size], stack, thorough))) {
+          if (!(result = isEqual(a[size], b[size], stackA, stackB))) {
             break;
           }
         }
       }
       return result;
     }
-
-    var ctorA = a.constructor,
-        ctorB = b.constructor;
-
-    // non `Object` object instances with different constructors are not equal
-    if (ctorA != ctorB && !(
-          isFunction(ctorA) && ctorA instanceof ctorA &&
-          isFunction(ctorB) && ctorB instanceof ctorB
-        )) {
-      return false;
-    }
     // deep compare objects
-    for (var prop in a) {
-      if (hasOwnProperty.call(a, prop)) {
+    for (var key in a) {
+      if (hasOwnProperty.call(a, key)) {
         // count the number of properties.
         size++;
         // deep compare each property value.
-        if (!(hasOwnProperty.call(b, prop) && isEqual(a[prop], b[prop], stack, thorough))) {
+        if (!(hasOwnProperty.call(b, key) && isEqual(a[key], b[key], stackA, stackB))) {
           return false;
         }
       }
     }
     // ensure both objects have the same number of properties
-    for (prop in b) {
+    for (key in b) {
       // The JS engine in Adobe products, like InDesign, has a bug that causes
       // `!size--` to throw an error so it must be wrapped in parentheses.
       // https://github.com/documentcloud/underscore/issues/355
-      if (hasOwnProperty.call(b, prop) && !(size--)) {
+      if (hasOwnProperty.call(b, key) && !(size--)) {
         // `size` will be `-1` if `b` has more properties than `a`
         return false;
       }
@@ -2683,9 +2519,9 @@
     // handle JScript [[DontEnum]] bug
     if (hasDontEnumBug) {
       while (++index < 7) {
-        prop = shadowed[index];
-        if (hasOwnProperty.call(a, prop) &&
-            !(hasOwnProperty.call(b, prop) && isEqual(a[prop], b[prop], stack, thorough))) {
+        key = shadowed[index];
+        if (hasOwnProperty.call(a, key) &&
+            !(hasOwnProperty.call(b, key) && isEqual(a[key], b[key], stackA, stackB))) {
           return false;
         }
       }
@@ -2694,10 +2530,10 @@
   }
 
   /**
-   * Checks if `value` is a finite number.
+   * Checks if `value` is, or can be coerced to, a finite number.
    *
    * Note: This is not the same as native `isFinite`, which will return true for
-   * booleans and other values. See http://es5.github.com/#x15.1.2.5.
+   * booleans and empty strings. See http://es5.github.com/#x15.1.2.5.
    *
    * @deprecated
    * @static
@@ -2711,13 +2547,42 @@
    * // => true
    *
    * _.isFinite('10');
+   * // => true
+   *
+   * _.isFinite(true);
+   * // => false
+   *
+   * _.isFinite('');
    * // => false
    *
    * _.isFinite(Infinity);
    * // => false
    */
   function isFinite(value) {
-    return nativeIsFinite(value) && toString.call(value) == numberClass;
+    return nativeIsFinite(value ? +value : parseFloat(value));
+  }
+
+  /**
+   * Checks if `value` is a function.
+   *
+   * @static
+   * @memberOf _
+   * @category Objects
+   * @param {Mixed} value The value to check.
+   * @returns {Boolean} Returns `true` if the `value` is a function, else `false`.
+   * @example
+   *
+   * _.isFunction(_);
+   * // => true
+   */
+  function isFunction(value) {
+    return typeof value == 'function';
+  }
+  // fallback for older versions of Chrome and Safari
+  if (isFunction(/x/)) {
+    isFunction = function(value) {
+      return toString.call(value) == funcClass;
+    };
   }
 
   /**
@@ -2732,6 +2597,9 @@
    * @example
    *
    * _.isObject({});
+   * // => true
+   *
+   * _.isObject([1, 2, 3]);
    * // => true
    *
    * _.isObject(1);
@@ -2808,12 +2676,48 @@
    * @returns {Boolean} Returns `true` if the `value` is a number, else `false`.
    * @example
    *
-   * _.isNumber(8.4 * 5;
+   * _.isNumber(8.4 * 5);
    * // => true
    */
   function isNumber(value) {
     return toString.call(value) == numberClass;
   }
+
+  /**
+   * Checks if a given `value` is an object created by the `Object` constructor.
+   *
+   * @static
+   * @memberOf _
+   * @category Objects
+   * @param {Mixed} value The value to check.
+   * @returns {Boolean} Returns `true` if `value` is a plain object, else `false`.
+   * @example
+   *
+   * function Stooge(name, age) {
+   *   this.name = name;
+   *   this.age = age;
+   * }
+   *
+   * _.isPlainObject(new Stooge('moe', 40));
+   * // => false
+   *
+   * _.isPlainObject([1, 2, 3]);
+   * // => false
+   *
+   * _.isPlainObject({ 'name': 'moe', 'age': 40 });
+   * // => true
+   */
+  var isPlainObject = !getPrototypeOf ? shimIsPlainObject : function(value) {
+    if (!(value && typeof value == 'object')) {
+      return false;
+    }
+    var valueOf = value.valueOf,
+        objProto = typeof valueOf == 'function' && (objProto = getPrototypeOf(valueOf)) && getPrototypeOf(objProto);
+
+    return objProto
+      ? value == objProto || (getPrototypeOf(value) == objProto && !isArguments(value))
+      : shimIsPlainObject(value);
+  };
 
   /**
    * Checks if `value` is a regular expression.
@@ -2902,10 +2806,11 @@
    * @category Objects
    * @param {Object} object The destination object.
    * @param {Object} [source1, source2, ...] The source objects.
-   * @param {Object} [indicator] Internally used to indicate that the `stack`
+   * @param- {Object} [indicator] Internally used to indicate that the `stack`
    *  argument is an array of traversed objects instead of another source object.
-   * @param {Array} [stack=[]] Internally used to keep track of traversed objects
-   *  to avoid circular references.
+   * @param- {Array} [stackA=[]] Internally used to track traversed source objects.
+   * @param- {Array} [stackB=[]] Internally used to associate values with their
+   *  source counterparts.
    * @returns {Object} Returns the destination object.
    * @example
    *
@@ -2922,39 +2827,124 @@
    * _.merge(stooges, ages);
    * // => [{ 'name': 'moe', 'age': 40 }, { 'name': 'larry', 'age': 50 }]
    */
-  var merge = createIterator(extendIteratorOptions, {
-    'args': 'object, source, indicator, stack',
-    'top':
-      'var destValue, found, isArr, stackLength, recursive = indicator == isPlainObject;\n' +
-      'if (!recursive) stack = [];\n' +
-      'for (var argsIndex = 1, argsLength = recursive ? 2 : arguments.length; argsIndex < argsLength; argsIndex++) {\n' +
-      '  if (iteratee = arguments[argsIndex]) {',
-    'inLoop':
-      'if (value && ((isArr = isArray(value)) || isPlainObject(value))) {\n' +
-      '  found = false; stackLength = stack.length;\n' +
-      '  while (stackLength--) {\n' +
-      '    if (found = stack[stackLength].source == value) break\n' +
-      '  }\n' +
-      '  if (found) {\n' +
-      '    result[index] = stack[stackLength].value\n' +
-      '  } else {\n' +
-      '    destValue = (destValue = result[index]) && isArr\n' +
-      '      ? (isArray(destValue) ? destValue : [])\n' +
-      '      : (isPlainObject(destValue) ? destValue : {});\n' +
-      '    stack.push({ value: destValue, source: value });\n' +
-      '    result[index] = callee(destValue, value, isPlainObject, stack)\n' +
-      '  }\n' +
-      '} else if (value != null) {\n' +
-      '  result[index] = value\n' +
-      '}'
-  });
+  function merge(object, source, indicator) {
+    var args = arguments,
+        index = 0,
+        length = 2,
+        stackA = args[3],
+        stackB = args[4];
+
+    if (indicator !== indicatorObject) {
+      stackA = [];
+      stackB = [];
+      length = args.length;
+    }
+    while (++index < length) {
+      forOwn(args[index], function(source, key) {
+        var found, isArr, value;
+        if (source && ((isArr = isArray(source)) || isPlainObject(source))) {
+          // avoid merging previously merged cyclic sources
+          var stackLength = stackA.length;
+          while (stackLength--) {
+            found = stackA[stackLength] == source;
+            if (found) {
+              break;
+            }
+          }
+          if (found) {
+            object[key] = stackB[stackLength];
+          }
+          else {
+            // add `source` and associated `value` to the stack of traversed objects
+            stackA.push(source);
+            stackB.push(value = (value = object[key], isArr)
+              ? (isArray(value) ? value : [])
+              : (isPlainObject(value) ? value : {})
+            );
+            // recursively merge objects and arrays (susceptible to call stack limits)
+            object[key] = merge(value, source, indicatorObject, stackA, stackB);
+          }
+        } else if (source != null) {
+          object[key] = source;
+        }
+      });
+    }
+    return object;
+  }
+
+  /**
+   * Creates a shallow clone of `object` excluding the specified properties.
+   * Property names may be specified as individual arguments or as arrays of
+   * property names. If `callback` is passed, it will be executed for each property
+   * in the `object`, omitting the properties `callback` returns truthy for. The
+   * `callback` is bound to `thisArg` and invoked with three arguments; (value, key, object).
+   *
+   * @static
+   * @memberOf _
+   * @category Objects
+   * @param {Object} object The source object.
+   * @param {Function|String} callback|[prop1, prop2, ...] The properties to omit
+   *  or the function called per iteration.
+   * @param {Mixed} [thisArg] The `this` binding of `callback`.
+   * @returns {Object} Returns an object without the omitted properties.
+   * @example
+   *
+   * _.omit({ 'name': 'moe', 'age': 40, 'userid': 'moe1' }, 'userid');
+   * // => { 'name': 'moe', 'age': 40 }
+   *
+   * _.omit({ 'name': 'moe', '_hint': 'knucklehead', '_seed': '96c4eb' }, function(value, key) {
+   *   return key.charAt(0) == '_';
+   * });
+   * // => { 'name': 'moe' }
+   */
+  function omit(object, callback, thisArg) {
+    var isFunc = typeof callback == 'function',
+        result = {};
+
+    if (isFunc) {
+      callback = createCallback(callback, thisArg);
+    } else {
+      var props = concat.apply(arrayRef, arguments);
+    }
+    forIn(object, function(value, key, object) {
+      if (isFunc
+            ? !callback(value, key, object)
+            : indexOf(props, key, 1) < 0
+          ) {
+        result[key] = value;
+      }
+    });
+    return result;
+  }
+
+  /**
+   * Creates a two dimensional array of the given object's key-value pairs,
+   * i.e. `[[key1, value1], [key2, value2]]`.
+   *
+   * @static
+   * @memberOf _
+   * @category Objects
+   * @param {Object} object The object to inspect.
+   * @returns {Array} Returns new array of key-value pairs.
+   * @example
+   *
+   * _.pairs({ 'moe': 30, 'larry': 40, 'curly': 50 });
+   * // => [['moe', 30], ['larry', 40], ['curly', 50]] (order is not guaranteed)
+   */
+  function pairs(object) {
+    var result = [];
+    forOwn(object, function(value, key) {
+      result.push([key, value]);
+    });
+    return result;
+  }
 
   /**
    * Creates a shallow clone of `object` composed of the specified properties.
    * Property names may be specified as individual arguments or as arrays of
    * property names. If `callback` is passed, it will be executed for each property
    * in the `object`, picking the properties `callback` returns truthy for. The
-   * `callback` is bound to `thisArg` and invoked with 3 arguments; (value, key, object).
+   * `callback` is bound to `thisArg` and invoked with three arguments; (value, key, object).
    *
    * @static
    * @memberOf _
@@ -2962,7 +2952,7 @@
    * @param {Object} object The source object.
    * @param {Function|String} callback|[prop1, prop2, ...] The properties to pick
    *  or the function called per iteration.
-   * @param {Mixed} [thisArg] The `this` binding for the callback.
+   * @param {Mixed} [thisArg] The `this` binding of `callback`.
    * @returns {Object} Returns an object composed of the picked properties.
    * @example
    *
@@ -2974,60 +2964,28 @@
    * });
    * // => { 'name': 'moe' }
    */
-  var pick = createIterator(dropIteratorOptions, {
-    'top':
-      'if (typeof callback != \'function\') {\n' +
-      '  var prop,\n' +
-      '      props = concat.apply(ArrayProto, arguments),\n' +
-      '      length = props.length;\n' +
-      '  for (index = 1; index < length; index++) {\n' +
-      '    prop = props[index];\n' +
-      '    if (prop in object) result[prop] = object[prop]\n' +
-      '  }\n' +
-      '} else {\n' +
-      '  if (thisArg) callback = iteratorBind(callback, thisArg)',
-    'inLoop':
-      'if (callback(value, index, object)) result[index] = value',
-    'bottom': '}'
-  });
+  function pick(object, callback, thisArg) {
+    var result = {};
+    if (typeof callback != 'function') {
+      var index = 0,
+          props = concat.apply(arrayRef, arguments),
+          length = props.length;
 
-  /**
-   * Gets the size of `value` by returning `value.length` if `value` is an
-   * array, string, or `arguments` object. If `value` is an object, size is
-   * determined by returning the number of own enumerable properties it has.
-   *
-   * @static
-   * @memberOf _
-   * @category Objects
-   * @param {Array|Object|String} value The value to inspect.
-   * @returns {Number} Returns `value.length` or number of own enumerable properties.
-   * @example
-   *
-   * _.size([1, 2]);
-   * // => 2
-   *
-   * _.size({ 'one': 1, 'two': 2, 'three': 3 });
-   * // => 3
-   *
-   * _.size('curly');
-   * // => 5
-   */
-  function size(value) {
-    if (!value) {
-      return 0;
+      while (++index < length) {
+        var key = props[index];
+        if (key in object) {
+          result[key] = object[key];
+        }
+      }
+    } else {
+      callback = createCallback(callback, thisArg);
+      forIn(object, function(value, key, object) {
+        if (callback(value, key, object)) {
+          result[key] = value;
+        }
+      });
     }
-    var className = toString.call(value),
-        length = value.length;
-
-    // return `value.length` for `arguments` objects, arrays, strings, and DOM
-    // query collections of libraries like jQuery and MooTools
-    // http://code.google.com/p/fbug/source/browse/branches/firebug1.9/content/firebug/chrome/reps.js?r=12614#653
-    // http://trac.webkit.org/browser/trunk/Source/WebCore/inspector/InjectedScriptSource.js?rev=125186#L609
-    if (arrayLikeClasses[className] || (noArgsClass && isArguments(value)) ||
-        (className == objectClass && length > -1 && length === length >>> 0 && isFunction(value.splice))) {
-      return length;
-    }
-    return keys(value).length;
+    return result;
   }
 
   /**
@@ -3043,11 +3001,13 @@
    * _.values({ 'one': 1, 'two': 2, 'three': 3 });
    * // => [1, 2, 3]
    */
-  var values = createIterator({
-    'args': 'object',
-    'init': '[]',
-    'inLoop': 'result.push(value)'
-  });
+  function values(object) {
+    var result = [];
+    forOwn(object, function(value) {
+      result.push(value);
+    });
+    return result;
+  }
 
   /*--------------------------------------------------------------------------*/
 
@@ -3073,21 +3033,24 @@
    * _.contains('curly', 'ur');
    * // => true
    */
-  var contains = createIterator({
-    'args': 'collection, target',
-    'init': 'false',
-    'noCharByIndex': false,
-    'beforeLoop': {
-      'array': 'if (toString.call(collection) == stringClass) return collection.indexOf(target) > -1'
-    },
-    'inLoop': 'if (value === target) return true'
-  });
+  function contains(collection, target) {
+    var length = collection ? collection.length : 0;
+    if (typeof length == 'number') {
+      return (toString.call(collection) == stringClass
+        ? collection.indexOf(target)
+        : indexOf(collection, target)
+      ) > -1;
+    }
+    return some(collection, function(value) {
+      return value === target;
+    });
+  }
 
   /**
    * Creates an object composed of keys returned from running each element of
    * `collection` through a `callback`. The corresponding value of each key is
    * the number of times the key was returned by `callback`. The `callback` is
-   * bound to `thisArg` and invoked with 3 arguments; (value, index|key, collection).
+   * bound to `thisArg` and invoked with three arguments; (value, index|key, collection).
    * The `callback` argument may also be the name of a property to count by (e.g. 'length').
    *
    * @static
@@ -3096,7 +3059,7 @@
    * @param {Array|Object|String} collection The collection to iterate over.
    * @param {Function|String} callback|property The function called per iteration
    *  or property name to count by.
-   * @param {Mixed} [thisArg] The `this` binding for the callback.
+   * @param {Mixed} [thisArg] The `this` binding of `callback`.
    * @returns {Object} Returns the composed aggregate object.
    * @example
    *
@@ -3109,11 +3072,19 @@
    * _.countBy(['one', 'two', 'three'], 'length');
    * // => { '3': 2, '5': 1 }
    */
-  var countBy = createIterator(baseIteratorOptions, countByIteratorOptions);
+  function countBy(collection, callback, thisArg) {
+    var result = {};
+    callback = createCallback(callback, thisArg);
+    forEach(collection, function(value, key, collection) {
+      key = callback(value, key, collection);
+      (hasOwnProperty.call(result, key) ? result[key]++ : result[key] = 1);
+    });
+    return result;
+  }
 
   /**
    * Checks if the `callback` returns a truthy value for **all** elements of a
-   * `collection`. The `callback` is bound to `thisArg` and invoked with 3
+   * `collection`. The `callback` is bound to `thisArg` and invoked with three
    * arguments; (value, index|key, collection).
    *
    * @static
@@ -3122,19 +3093,27 @@
    * @category Collections
    * @param {Array|Object|String} collection The collection to iterate over.
    * @param {Function} [callback=identity] The function called per iteration.
-   * @param {Mixed} [thisArg] The `this` binding for the callback.
-   * @returns {Boolean} Returns `true` if all elements pass the callback check, else `false`.
+   * @param {Mixed} [thisArg] The `this` binding of `callback`.
+   * @returns {Boolean} Returns `true` if all elements pass the callback check,
+   *  else `false`.
    * @example
    *
    * _.every([true, 1, null, 'yes'], Boolean);
    * // => false
    */
-  var every = createIterator(baseIteratorOptions, everyIteratorOptions);
+  function every(collection, callback, thisArg) {
+    var result = true;
+    callback = createCallback(callback, thisArg);
+    forEach(collection, function(value, index, collection) {
+      return (result = callback(value, index, collection));
+    });
+    return !!result;
+  }
 
   /**
    * Examines each element in a `collection`, returning an array of all elements
    * the `callback` returns truthy for. The `callback` is bound to `thisArg` and
-   * invoked with 3 arguments; (value, index|key, collection).
+   * invoked with three arguments; (value, index|key, collection).
    *
    * @static
    * @memberOf _
@@ -3142,20 +3121,29 @@
    * @category Collections
    * @param {Array|Object|String} collection The collection to iterate over.
    * @param {Function} [callback=identity] The function called per iteration.
-   * @param {Mixed} [thisArg] The `this` binding for the callback.
-   * @returns {Array} Returns a new array of elements that passed callback check.
+   * @param {Mixed} [thisArg] The `this` binding of `callback`.
+   * @returns {Array} Returns a new array of elements that passed the callback check.
    * @example
    *
    * var evens = _.filter([1, 2, 3, 4, 5, 6], function(num) { return num % 2 == 0; });
    * // => [2, 4, 6]
    */
-  var filter = createIterator(baseIteratorOptions, filterIteratorOptions);
+  function filter(collection, callback, thisArg) {
+    var result = [];
+    callback = createCallback(callback, thisArg);
+    forEach(collection, function(value, index, collection) {
+      if (callback(value, index, collection)) {
+        result.push(value);
+      }
+    });
+    return result;
+  }
 
   /**
    * Examines each element in a `collection`, returning the first one the `callback`
    * returns truthy for. The function returns as soon as it finds an acceptable
    * element, and does not iterate over the entire `collection`. The `callback` is
-   * bound to `thisArg` and invoked with 3 arguments; (value, index|key, collection).
+   * bound to `thisArg` and invoked with three arguments; (value, index|key, collection).
    *
    * @static
    * @memberOf _
@@ -3163,23 +3151,28 @@
    * @category Collections
    * @param {Array|Object|String} collection The collection to iterate over.
    * @param {Function} callback The function called per iteration.
-   * @param {Mixed} [thisArg] The `this` binding for the callback.
-   * @returns {Mixed} Returns the element that passed the callback check, else `undefined`.
+   * @param {Mixed} [thisArg] The `this` binding of `callback`.
+   * @returns {Mixed} Returns the element that passed the callback check,
+   *  else `undefined`.
    * @example
    *
    * var even = _.find([1, 2, 3, 4, 5, 6], function(num) { return num % 2 == 0; });
    * // => 2
    */
-  var find = createIterator(baseIteratorOptions, forEachIteratorOptions, {
-    'init': '',
-    'inLoop': 'if (callback(value, index, collection)) return value'
-  });
+  function find(collection, callback, thisArg) {
+    var result;
+    callback = createCallback(callback, thisArg);
+    some(collection, function(value, index, collection) {
+      return callback(value, index, collection) && (result = value, true);
+    });
+    return result;
+  }
 
   /**
    * Iterates over a `collection`, executing the `callback` for each element in
-   * the `collection`. The `callback` is bound to `thisArg` and invoked with 3
-   * arguments; (value, index|key, collection). Callbacks may exit iteration
-   * early by explicitly returning `false`.
+   * the `collection`. The `callback` is bound to `thisArg` and invoked with three
+   * arguments; (value, index|key, collection). Callbacks may exit iteration early
+   * by explicitly returning `false`.
    *
    * @static
    * @memberOf _
@@ -3187,8 +3180,8 @@
    * @category Collections
    * @param {Array|Object|String} collection The collection to iterate over.
    * @param {Function} callback The function called per iteration.
-   * @param {Mixed} [thisArg] The `this` binding for the callback.
-   * @returns {Array|Object} Returns `collection`.
+   * @param {Mixed} [thisArg] The `this` binding of `callback`.
+   * @returns {Array|Object|String} Returns `collection`.
    * @example
    *
    * _([1, 2, 3]).forEach(alert).join(',');
@@ -3197,14 +3190,14 @@
    * _.forEach({ 'one': 1, 'two': 2, 'three': 3 }, alert);
    * // => alerts each number (order is not guaranteed)
    */
-  var forEach = createIterator(baseIteratorOptions, forEachIteratorOptions);
+  var forEach = createIterator(forEachIteratorOptions);
 
   /**
    * Creates an object composed of keys returned from running each element of
    * `collection` through a `callback`. The corresponding value of each key is an
    * array of elements passed to `callback` that returned the key. The `callback`
-   * is bound to `thisArg` and invoked with 3 arguments; (value, index|key, collection).
-   * The `callback` argument may also be the name of a property to count by (e.g. 'length').
+   * is bound to `thisArg` and invoked with three arguments; (value, index|key, collection).
+   * The `callback` argument may also be the name of a property to group by (e.g. 'length').
    *
    * @static
    * @memberOf _
@@ -3212,7 +3205,7 @@
    * @param {Array|Object|String} collection The collection to iterate over.
    * @param {Function|String} callback|property The function called per iteration
    *  or property name to group by.
-   * @param {Mixed} [thisArg] The `this` binding for the callback.
+   * @param {Mixed} [thisArg] The `this` binding of `callback`.
    * @returns {Object} Returns the composed aggregate object.
    * @example
    *
@@ -3225,17 +3218,21 @@
    * _.groupBy(['one', 'two', 'three'], 'length');
    * // => { '3': ['one', 'two'], '5': ['three'] }
    */
-  var groupBy = createIterator(baseIteratorOptions, countByIteratorOptions, {
-    'inLoop':
-      'prop = callback(value, index, collection);\n' +
-      '(hasOwnProperty.call(result, prop) ? result[prop] : result[prop] = []).push(value)'
-  });
+  function groupBy(collection, callback, thisArg) {
+    var result = {};
+    callback = createCallback(callback, thisArg);
+    forEach(collection, function(value, key, collection) {
+      key = callback(value, key, collection);
+      (hasOwnProperty.call(result, key) ? result[key] : result[key] = []).push(value);
+    });
+    return result;
+  }
 
   /**
-   * Invokes the method named by `methodName` on each element in the `collection`.
-   * Additional arguments will be passed to each invoked method. If `methodName`
-   * is a function it will be invoked for, and `this` bound to, each element
-   * in the `collection`.
+   * Invokes the method named by `methodName` on each element in the `collection`,
+   * returning an array of the results of each invoked method. Additional arguments
+   * will be passed to each invoked method. If `methodName` is a function it will
+   * be invoked for, and `this` bound to, each element in the `collection`.
    *
    * @static
    * @memberOf _
@@ -3244,7 +3241,7 @@
    * @param {Function|String} methodName The name of the method to invoke or
    *  the function invoked per iteration.
    * @param {Mixed} [arg1, arg2, ...] Arguments to invoke the method with.
-   * @returns {Array} Returns a new array of values returned from each invoked method.
+   * @returns {Array} Returns a new array of the results of each invoked method.
    * @example
    *
    * _.invoke([[5, 1, 7], [3, 2, 1]], 'sort');
@@ -3253,24 +3250,21 @@
    * _.invoke([123, 456], String.prototype.split, '');
    * // => [['1', '2', '3'], ['4', '5', '6']]
    */
-  var invoke = createIterator(mapIteratorOptions, {
-    'args': 'collection, methodName',
-    'top':
-      'var args = slice.call(arguments, 2),\n' +
-      '    isFunc = typeof methodName == \'function\'',
-    'inLoop': {
-      'array':
-        'result[index] = (isFunc ? methodName : value[methodName]).apply(value, args)',
-      'object':
-        'result' + (isKeysFast ? '[ownIndex] = ' : '.push') +
-        '((isFunc ? methodName : value[methodName]).apply(value, args))'
-    }
-  });
+  function invoke(collection, methodName) {
+    var args = slice.call(arguments, 2),
+        isFunc = typeof methodName == 'function',
+        result = [];
+
+    forEach(collection, function(value) {
+      result.push((isFunc ? methodName : value[methodName]).apply(value, args));
+    });
+    return result;
+  }
 
   /**
-   * Creates a new array of values by running each element in the `collection`
+   * Creates an array of values by running each element in the `collection`
    * through a `callback`. The `callback` is bound to `thisArg` and invoked with
-   * 3 arguments; (value, index|key, collection).
+   * three arguments; (value, index|key, collection).
    *
    * @static
    * @memberOf _
@@ -3278,8 +3272,8 @@
    * @category Collections
    * @param {Array|Object|String} collection The collection to iterate over.
    * @param {Function} [callback=identity] The function called per iteration.
-   * @param {Mixed} [thisArg] The `this` binding for the callback.
-   * @returns {Array} Returns a new array of elements returned by the callback.
+   * @param {Mixed} [thisArg] The `this` binding of `callback`.
+   * @returns {Array} Returns a new array of the results of each `callback` execution.
    * @example
    *
    * _.map([1, 2, 3], function(num) { return num * 3; });
@@ -3288,7 +3282,115 @@
    * _.map({ 'one': 1, 'two': 2, 'three': 3 }, function(num) { return num * 3; });
    * // => [3, 6, 9] (order is not guaranteed)
    */
-  var map = createIterator(baseIteratorOptions, mapIteratorOptions);
+  function map(collection, callback, thisArg) {
+    var index = -1,
+        length = collection ? collection.length : 0,
+        result = Array(typeof length == 'number' ? length : 0);
+
+    callback = createCallback(callback, thisArg);
+    if (isArray(collection)) {
+      while (++index < length) {
+        result[index] = callback(collection[index], index, collection);
+      }
+    } else {
+      forEach(collection, function(value, key, collection) {
+        result[++index] = callback(value, key, collection);
+      });
+    }
+    return result;
+  }
+
+  /**
+   * Retrieves the maximum value of an `array`. If `callback` is passed,
+   * it will be executed for each value in the `array` to generate the
+   * criterion by which the value is ranked. The `callback` is bound to
+   * `thisArg` and invoked with three arguments; (value, index, collection).
+   *
+   * @static
+   * @memberOf _
+   * @category Collections
+   * @param {Array} collection The collection to iterate over.
+   * @param {Function} [callback] The function called per iteration.
+   * @param {Mixed} [thisArg] The `this` binding of `callback`.
+   * @returns {Mixed} Returns the maximum value.
+   * @example
+   *
+   * var stooges = [
+   *   { 'name': 'moe', 'age': 40 },
+   *   { 'name': 'larry', 'age': 50 },
+   *   { 'name': 'curly', 'age': 60 }
+   * ];
+   *
+   * _.max(stooges, function(stooge) { return stooge.age; });
+   * // => { 'name': 'curly', 'age': 60 };
+   */
+  function max(collection, callback, thisArg) {
+    var computed = -Infinity,
+        index = -1,
+        length = collection ? collection.length : 0,
+        result = computed;
+
+    if (callback || typeof length != 'number') {
+      callback = createCallback(callback, thisArg);
+      forEach(collection, function(value, index, collection) {
+        var current = callback(value, index, collection);
+        if (current > computed) {
+          computed = current;
+          result = value;
+        }
+      });
+    } else {
+      while (++index < length) {
+        if (collection[index] > result) {
+          result = collection[index];
+        }
+      }
+    }
+    return result;
+  }
+
+  /**
+   * Retrieves the minimum value of an `array`. If `callback` is passed,
+   * it will be executed for each value in the `array` to generate the
+   * criterion by which the value is ranked. The `callback` is bound to `thisArg`
+   * and invoked with three arguments; (value, index, collection).
+   *
+   * @static
+   * @memberOf _
+   * @category Collections
+   * @param {Array} collection The collection to iterate over.
+   * @param {Function} [callback] The function called per iteration.
+   * @param {Mixed} [thisArg] The `this` binding of `callback`.
+   * @returns {Mixed} Returns the minimum value.
+   * @example
+   *
+   * _.min([10, 5, 100, 2, 1000]);
+   * // => 2
+   */
+  function min(collection, callback, thisArg) {
+    var computed = Infinity,
+        index = -1,
+        length = collection ? collection.length : 0,
+        result = computed;
+
+    if (callback || typeof length != 'number') {
+      callback = createCallback(callback, thisArg);
+      forEach(collection, function(value, index, collection) {
+        var current = callback(value, index, collection);
+        if (current < computed) {
+          computed = current;
+          result = value;
+        }
+      });
+    } else {
+      while (++index < length) {
+        if (collection[index] < result) {
+          result = collection[index];
+        }
+      }
+    }
+    return result;
+  }
 
   /**
    * Retrieves the value of a specified property from all elements in
@@ -3311,13 +3413,13 @@
    * _.pluck(stooges, 'name');
    * // => ['moe', 'larry', 'curly']
    */
-  var pluck = createIterator(mapIteratorOptions, {
-    'args': 'collection, property',
-    'inLoop': {
-      'array':  'result[index] = value[property]',
-      'object': 'result' + (isKeysFast ? '[ownIndex] = ' : '.push') + '(value[property])'
-    }
-  });
+  function pluck(collection, property) {
+    var result = [];
+    forEach(collection, function(value) {
+      result.push(value[property]);
+    });
+    return result;
+  }
 
   /**
    * Boils down a `collection` to a single value. The initial state of the
@@ -3332,31 +3434,23 @@
    * @param {Array|Object|String} collection The collection to iterate over.
    * @param {Function} callback The function called per iteration.
    * @param {Mixed} [accumulator] Initial value of the accumulator.
-   * @param {Mixed} [thisArg] The `this` binding for the callback.
+   * @param {Mixed} [thisArg] The `this` binding of `callback`.
    * @returns {Mixed} Returns the accumulated value.
    * @example
    *
    * var sum = _.reduce([1, 2, 3], function(memo, num) { return memo + num; });
    * // => 6
    */
-  var reduce = createIterator({
-    'args': 'collection, callback, accumulator, thisArg',
-    'init': 'accumulator',
-    'top':
-      'var noaccum = arguments.length < 3;\n' +
-      'if (thisArg) callback = iteratorBind(callback, thisArg)',
-    'beforeLoop': {
-      'array': 'if (noaccum) result = iteratee[++index]'
-    },
-    'inLoop': {
-      'array':
-        'result = callback(result, value, index, collection)',
-      'object':
-        'result = noaccum\n' +
-        '  ? (noaccum = false, value)\n' +
-        '  : callback(result, value, index, collection)'
-    }
-  });
+  function reduce(collection, callback, accumulator, thisArg) {
+    var noaccum = arguments.length < 3;
+    callback = createCallback(callback, thisArg);
+    forEach(collection, function(value, index, collection) {
+      accumulator = noaccum
+        ? (noaccum = false, value)
+        : callback(accumulator, value, index, collection)
+    });
+    return accumulator;
+  }
 
   /**
    * The right-associative version of `_.reduce`.
@@ -3368,7 +3462,7 @@
    * @param {Array|Object|String} collection The collection to iterate over.
    * @param {Function} callback The function called per iteration.
    * @param {Mixed} [accumulator] Initial value of the accumulator.
-   * @param {Mixed} [thisArg] The `this` binding for the callback.
+   * @param {Mixed} [thisArg] The `this` binding of `callback`.
    * @returns {Mixed} Returns the accumulated value.
    * @example
    *
@@ -3377,42 +3471,22 @@
    * // => [4, 5, 2, 3, 0, 1]
    */
   function reduceRight(collection, callback, accumulator, thisArg) {
-    if (!collection) {
-      return accumulator;
-    }
-
-    var length = collection.length,
+    var iteratee = collection,
+        length = collection ? collection.length : 0,
         noaccum = arguments.length < 3;
 
-    if(thisArg) {
-      callback = iteratorBind(callback, thisArg);
+    if (typeof length != 'number') {
+      var props = keys(collection);
+      length = props.length;
+    } else if (noCharByIndex && toString.call(collection) == stringClass) {
+      iteratee = collection.split('');
     }
-    // Opera 10.53-10.60 JITted `length >>> 0` returns the wrong value for negative numbers
-    if (length > -1 && length === length >>> 0) {
-      var iteratee = noCharByIndex && toString.call(collection) == stringClass
-        ? collection.split('')
-        : collection;
-
-      if (length && noaccum) {
-        accumulator = iteratee[--length];
-      }
-      while (length--) {
-        accumulator = callback(accumulator, iteratee[length], length, collection);
-      }
-      return accumulator;
-    }
-
-    var prop,
-        props = keys(collection);
-
-    length = props.length;
-    if (length && noaccum) {
-      accumulator = collection[props[--length]];
-    }
-    while (length--) {
-      prop = props[length];
-      accumulator = callback(accumulator, collection[prop], prop, collection);
-    }
+    forEach(collection, function(value, index, collection) {
+      index = props ? props[--length] : --length;
+      accumulator = noaccum
+        ? (noaccum = false, iteratee[index])
+        : callback.call(thisArg, accumulator, iteratee[index], index, collection);
+    });
     return accumulator;
   }
 
@@ -3425,22 +3499,77 @@
    * @category Collections
    * @param {Array|Object|String} collection The collection to iterate over.
    * @param {Function} [callback=identity] The function called per iteration.
-   * @param {Mixed} [thisArg] The `this` binding for the callback.
-   * @returns {Array} Returns a new array of elements that did **not** pass the callback check.
+   * @param {Mixed} [thisArg] The `this` binding of `callback`.
+   * @returns {Array} Returns a new array of elements that did **not** pass the
+   *  callback check.
    * @example
    *
    * var odds = _.reject([1, 2, 3, 4, 5, 6], function(num) { return num % 2 == 0; });
    * // => [1, 3, 5]
    */
-  var reject = createIterator(baseIteratorOptions, filterIteratorOptions, {
-    'inLoop': '!' + filterIteratorOptions.inLoop
-  });
+  function reject(collection, callback, thisArg) {
+    callback = createCallback(callback, thisArg);
+    return filter(collection, function(value, index, collection) {
+      return !callback(value, index, collection);
+    });
+  }
+
+  /**
+   * Creates an array of shuffled `array` values, using a version of the
+   * Fisher-Yates shuffle. See http://en.wikipedia.org/wiki/Fisher-Yates_shuffle.
+   *
+   * @static
+   * @memberOf _
+   * @category Collections
+   * @param {Array} collection The collection to shuffle.
+   * @returns {Array} Returns a new shuffled collection.
+   * @example
+   *
+   * _.shuffle([1, 2, 3, 4, 5, 6]);
+   * // => [4, 1, 6, 3, 5, 2]
+   */
+  function shuffle(collection) {
+    var index = -1,
+        result = Array(collection ? collection.length : 0);
+
+    forEach(collection, function(value) {
+      var rand = floor(nativeRandom() * (++index + 1));
+      result[index] = result[rand];
+      result[rand] = value;
+    });
+    return result;
+  }
+
+  /**
+   * Gets the size of the `collection` by returning `collection.length` for arrays
+   * and array-like objects or the number of own enumerable properties for objects.
+   *
+   * @static
+   * @memberOf _
+   * @category Collections
+   * @param {Array|Object|String} collection The collection to inspect.
+   * @returns {Number} Returns `collection.length` or number of own enumerable properties.
+   * @example
+   *
+   * _.size([1, 2]);
+   * // => 2
+   *
+   * _.size({ 'one': 1, 'two': 2, 'three': 3 });
+   * // => 3
+   *
+   * _.size('curly');
+   * // => 5
+   */
+  function size(collection) {
+    var length = collection ? collection.length : 0;
+    return typeof length == 'number' ? length : keys(collection).length;
+  }
 
   /**
    * Checks if the `callback` returns a truthy value for **any** element of a
    * `collection`. The function returns as soon as it finds passing value, and
    * does not iterate over the entire `collection`. The `callback` is bound to
-   * `thisArg` and invoked with 3 arguments; (value, index|key, collection).
+   * `thisArg` and invoked with three arguments; (value, index|key, collection).
    *
    * @static
    * @memberOf _
@@ -3448,22 +3577,27 @@
    * @category Collections
    * @param {Array|Object|String} collection The collection to iterate over.
    * @param {Function} [callback=identity] The function called per iteration.
-   * @param {Mixed} [thisArg] The `this` binding for the callback.
-   * @returns {Boolean} Returns `true` if any element passes the callback check, else `false`.
+   * @param {Mixed} [thisArg] The `this` binding of `callback`.
+   * @returns {Boolean} Returns `true` if any element passes the callback check,
+   *  else `false`.
    * @example
    *
    * _.some([null, 0, 'yes', false]);
    * // => true
    */
-  var some = createIterator(baseIteratorOptions, everyIteratorOptions, {
-    'init': 'false',
-    'inLoop': everyIteratorOptions.inLoop.replace('!', '')
-  });
+  function some(collection, callback, thisArg) {
+    var result;
+    callback = createCallback(callback, thisArg);
+    forEach(collection, function(value, index, collection) {
+      return !(result = callback(value, index, collection));
+    });
+    return !!result;
+  }
 
   /**
-   * Creates a new array, stable sorted in ascending order by the results of
+   * Creates an array, stable sorted in ascending order by the results of
    * running each element of `collection` through a `callback`. The `callback`
-   * is bound to `thisArg` and invoked with 3 arguments; (value, index|key, collection).
+   * is bound to `thisArg` and invoked with three arguments; (value, index|key, collection).
    * The `callback` argument may also be the name of a property to sort by (e.g. 'length').
    *
    * @static
@@ -3472,7 +3606,7 @@
    * @param {Array|Object|String} collection The collection to iterate over.
    * @param {Function|String} callback|property The function called per iteration
    *  or property name to sort by.
-   * @param {Mixed} [thisArg] The `this` binding for the callback.
+   * @param {Mixed} [thisArg] The `this` binding of `callback`.
    * @returns {Array} Returns a new array of sorted elements.
    * @example
    *
@@ -3485,32 +3619,27 @@
    * _.sortBy(['larry', 'brendan', 'moe'], 'length');
    * // => ['moe', 'larry', 'brendan']
    */
-  var sortBy = createIterator(baseIteratorOptions, countByIteratorOptions, mapIteratorOptions, {
-    'inLoop': {
-      'array':
-        'result[index] = {\n' +
-        '  criteria: callback(value, index, collection),\n' +
-        '  index: index,\n' +
-        '  value: value\n' +
-        '}',
-      'object':
-        'result' + (isKeysFast ? '[ownIndex] = ' : '.push') + '({\n' +
-        '  criteria: callback(value, index, collection),\n' +
-        '  index: index,\n' +
-        '  value: value\n' +
-        '})'
-    },
-    'bottom':
-      'result.sort(compareAscending);\n' +
-      'length = result.length;\n' +
-      'while (length--) {\n' +
-      '  result[length] = result[length].value\n' +
-      '}'
-  });
+  function sortBy(collection, callback, thisArg) {
+    var result = [];
+    callback = createCallback(callback, thisArg);
+    forEach(collection, function(value, index, collection) {
+      result.push({
+        'criteria': callback(value, index, collection),
+        'index': index,
+        'value': value
+      });
+    });
+
+    var length = result.length;
+    result.sort(compareAscending);
+    while (length--) {
+      result[length] = result[length].value;
+    }
+    return result;
+  }
 
   /**
-   * Converts the `collection`, to an array. Useful for converting the
-   * `arguments` object.
+   * Converts the `collection`, to an array.
    *
    * @static
    * @memberOf _
@@ -3523,14 +3652,7 @@
    * // => [2, 3, 4]
    */
   function toArray(collection) {
-    if (!collection) {
-      return [];
-    }
-    if (collection.toArray && isFunction(collection.toArray)) {
-      return collection.toArray();
-    }
-    var length = collection.length;
-    if (length > -1 && length === length >>> 0) {
+    if (collection && typeof collection.length == 'number') {
       return (noArraySliceOnStrings ? toString.call(collection) == stringClass : typeof collection == 'string')
         ? collection.split('')
         : slice.call(collection);
@@ -3546,7 +3668,7 @@
    * @memberOf _
    * @category Collections
    * @param {Array|Object|String} collection The collection to iterate over.
-   * @param {Object} properties The object of properties/values to filter by.
+   * @param {Object} properties The object of property values to filter by.
    * @returns {Array} Returns a new array of elements that contain the given `properties`.
    * @example
    *
@@ -3559,24 +3681,27 @@
    * _.where(stooges, { 'age': 40 });
    * // => [{ 'name': 'moe', 'age': 40 }]
    */
-  var where = createIterator(filterIteratorOptions, {
-    'args': 'collection, properties',
-    'top':
-      'var props = [];\n' +
-      'forIn(properties, function(value, prop) { props.push(prop) });\n' +
-      'var propsLength = props.length',
-    'inLoop':
-      'for (var prop, pass = true, propIndex = 0; propIndex < propsLength; propIndex++) {\n' +
-      '  prop = props[propIndex];\n' +
-      '  if (!(pass = value[prop] === properties[prop])) break\n' +
-      '}\n' +
-      'pass && result.push(value)'
-  });
+  function where(collection, properties) {
+    var props = [];
+    forIn(properties, function(value, prop) {
+      props.push(prop);
+    });
+    return filter(collection, function(object) {
+      var length = props.length;
+      while (length--) {
+        var result = object[props[length]] === properties[props[length]];
+        if (!result) {
+          break;
+        }
+      }
+      return !!result;
+    });
+  }
 
   /*--------------------------------------------------------------------------*/
 
   /**
-   * Creates a new array with all falsey values of `array` removed. The values
+   * Creates an array with all falsey values of `array` removed. The values
    * `false`, `null`, `0`, `""`, `undefined` and `NaN` are all falsey.
    *
    * @static
@@ -3590,23 +3715,21 @@
    * // => [1, 2, 3]
    */
   function compact(array) {
-    var result = [];
-    if (!array) {
-      return result;
-    }
     var index = -1,
-        length = array.length;
+        length = array ? array.length : 0,
+        result = [];
 
     while (++index < length) {
-      if (array[index]) {
-        result.push(array[index]);
+      var value = array[index];
+      if (value) {
+        result.push(value);
       }
     }
     return result;
   }
 
   /**
-   * Creates a new array of `array` elements not present in the other arrays
+   * Creates an array of `array` elements not present in the other arrays
    * using strict equality for comparisons, i.e. `===`.
    *
    * @static
@@ -3622,18 +3745,16 @@
    * // => [1, 3, 4]
    */
   function difference(array) {
-    var result = [];
-    if (!array) {
-      return result;
-    }
     var index = -1,
-        length = array.length,
-        flattened = concat.apply(result, arguments),
-        contains = cachedContains(flattened, length);
+        length = array ? array.length : 0,
+        flattened = concat.apply(arrayRef, arguments),
+        contains = cachedContains(flattened, length),
+        result = [];
 
     while (++index < length) {
-      if (!contains(array[index])) {
-        result.push(array[index]);
+      var value = array[index];
+      if (!contains(value)) {
+        result.push(value);
       }
     }
     return result;
@@ -3649,7 +3770,7 @@
    * @category Arrays
    * @param {Array} array The array to query.
    * @param {Number} [n] The number of elements to return.
-   * @param {Object} [guard] Internally used to allow this method to work with
+   * @param- {Object} [guard] Internally used to allow this method to work with
    *  others like `_.map` without using their callback `index` argument for `n`.
    * @returns {Mixed} Returns the first element or an array of the first `n`
    *  elements of `array`.
@@ -3683,16 +3804,14 @@
    * // => [1, 2, 3, [[4]]];
    */
   function flatten(array, shallow) {
-    var result = [];
-    if (!array) {
-      return result;
-    }
-    var value,
-        index = -1,
-        length = array.length;
+    var index = -1,
+        length = array ? array.length : 0,
+        result = [];
 
     while (++index < length) {
-      value = array[index];
+      var value = array[index];
+
+      // recursively flatten arrays (susceptible to call stack limits)
       if (isArray(value)) {
         push.apply(result, shallow ? value : flatten(value));
       } else {
@@ -3705,7 +3824,7 @@
   /**
    * Gets the index at which the first occurrence of `value` is found using
    * strict equality for comparisons, i.e. `===`. If the `array` is already
-   * sorted, passing `true` for `isSorted` will run a faster binary search.
+   * sorted, passing `true` for `fromIndex` will run a faster binary search.
    *
    * @static
    * @memberOf _
@@ -3727,19 +3846,14 @@
    * // => 2
    */
   function indexOf(array, value, fromIndex) {
-    if (!array) {
-      return -1;
-    }
     var index = -1,
-        length = array.length;
+        length = array ? array.length : 0;
 
-    if (fromIndex) {
-      if (typeof fromIndex == 'number') {
-        index = (fromIndex < 0 ? Math.max(0, length + fromIndex) : fromIndex) - 1;
-      } else {
-        index = sortedIndex(array, value);
-        return array[index] === value ? index : -1;
-      }
+    if (typeof fromIndex == 'number') {
+      index = (fromIndex < 0 ? nativeMax(0, length + fromIndex) : fromIndex || 0) - 1;
+    } else if (fromIndex) {
+      index = sortedIndex(array, value);
+      return array[index] === value ? index : -1;
     }
     while (++index < length) {
       if (array[index] === value) {
@@ -3758,7 +3872,7 @@
    * @category Arrays
    * @param {Array} array The array to query.
    * @param {Number} [n] The number of elements to return.
-   * @param {Object} [guard] Internally used to allow this method to work with
+   * @param- {Object} [guard] Internally used to allow this method to work with
    *  others like `_.map` without using their callback `index` argument for `n`.
    * @returns {Array} Returns all but the last element or `n` elements of `array`.
    * @example
@@ -3767,10 +3881,9 @@
    * // => [3, 2]
    */
   function initial(array, n, guard) {
-    if (!array) {
-      return [];
-    }
-    return slice.call(array, 0, -((n == null || guard) ? 1 : n));
+    return array
+      ? slice.call(array, 0, -((n == null || guard) ? 1 : n))
+      : [];
   }
 
   /**
@@ -3789,40 +3902,35 @@
    * // => [1, 2]
    */
   function intersection(array) {
-    var result = [];
-    if (!array) {
-      return result;
-    }
-    var value,
-        argsLength = arguments.length,
-        cache = [],
-        index = -1,
-        length = array.length;
+    var args = arguments,
+        argsLength = args.length,
+        cache = {},
+        result = [];
 
-    array: while (++index < length) {
-      value = array[index];
+    forEach(array, function(value) {
       if (indexOf(result, value) < 0) {
-        for (var argsIndex = 1; argsIndex < argsLength; argsIndex++) {
-          if (!(cache[argsIndex] || (cache[argsIndex] = cachedContains(arguments[argsIndex])))(value)) {
-            continue array;
+        var length = argsLength;
+        while (--length) {
+          if (!(cache[length] || (cache[length] = cachedContains(args[length])))(value)) {
+            return;
           }
         }
         result.push(value);
       }
-    }
+    });
     return result;
   }
 
   /**
-   * Gets the last element of the `array`. Pass `n` to return the lasy `n`
-   * elementsvof the `array`.
+   * Gets the last element of the `array`. Pass `n` to return the last `n`
+   * elements of the `array`.
    *
    * @static
    * @memberOf _
    * @category Arrays
    * @param {Array} array The array to query.
    * @param {Number} [n] The number of elements to return.
-   * @param {Object} [guard] Internally used to allow this method to work with
+   * @param- {Object} [guard] Internally used to allow this method to work with
    *  others like `_.map` without using their callback `index` argument for `n`.
    * @returns {Mixed} Returns the last element or an array of the last `n`
    *  elements of `array`.
@@ -3858,12 +3966,9 @@
    * // => 1
    */
   function lastIndexOf(array, value, fromIndex) {
-    if (!array) {
-      return -1;
-    }
-    var index = array.length;
-    if (fromIndex && typeof fromIndex == 'number') {
-      index = (fromIndex < 0 ? Math.max(0, index + fromIndex) : Math.min(fromIndex, index - 1)) + 1;
+    var index = array ? array.length : 0;
+    if (typeof fromIndex == 'number') {
+      index = (fromIndex < 0 ? nativeMax(0, index + fromIndex) : nativeMin(fromIndex, index - 1)) + 1;
     }
     while (index--) {
       if (array[index] === value) {
@@ -3874,106 +3979,33 @@
   }
 
   /**
-   * Retrieves the maximum value of an `array`. If `callback` is passed,
-   * it will be executed for each value in the `array` to generate the
-   * criterion by which the value is ranked. The `callback` is bound to
-   * `thisArg` and invoked with 3 arguments; (value, index, array).
+   * Creates an object composed from arrays of `keys` and `values`. Pass either
+   * a single two dimensional array, i.e. `[[key1, value1], [key2, value2]]`, or
+   * two arrays, one of `keys` and one of corresponding `values`.
    *
    * @static
    * @memberOf _
    * @category Arrays
-   * @param {Array} array The array to iterate over.
-   * @param {Function} [callback] The function called per iteration.
-   * @param {Mixed} [thisArg] The `this` binding for the callback.
-   * @returns {Mixed} Returns the maximum value.
+   * @param {Array} keys The array of keys.
+   * @param {Array} [values=[]] The array of values.
+   * @returns {Object} Returns an object composed of the given keys and
+   *  corresponding values.
    * @example
    *
-   * var stooges = [
-   *   { 'name': 'moe', 'age': 40 },
-   *   { 'name': 'larry', 'age': 50 },
-   *   { 'name': 'curly', 'age': 60 }
-   * ];
-   *
-   * _.max(stooges, function(stooge) { return stooge.age; });
-   * // => { 'name': 'curly', 'age': 60 };
+   * _.object(['moe', 'larry', 'curly'], [30, 40, 50]);
+   * // => { 'moe': 30, 'larry': 40, 'curly': 50 }
    */
-  function max(array, callback, thisArg) {
-    var computed = -Infinity,
-        result = computed;
+  function object(keys, values) {
+    var index = -1,
+        length = keys ? keys.length : 0,
+        result = {};
 
-    if (!array) {
-      return result;
-    }
-    var current,
-        index = -1,
-        length = array.length;
-
-    if (!callback) {
-      while (++index < length) {
-        if (array[index] > result) {
-          result = array[index];
-        }
-      }
-      return result;
-    }
-    if (thisArg) {
-      callback = iteratorBind(callback, thisArg);
-    }
     while (++index < length) {
-      current = callback(array[index], index, array);
-      if (current > computed) {
-        computed = current;
-        result = array[index];
-      }
-    }
-    return result;
-  }
-
-  /**
-   * Retrieves the minimum value of an `array`. If `callback` is passed,
-   * it will be executed for each value in the `array` to generate the
-   * criterion by which the value is ranked. The `callback` is bound to `thisArg`
-   * and invoked with 3 arguments; (value, index, array).
-   *
-   * @static
-   * @memberOf _
-   * @category Arrays
-   * @param {Array} array The array to iterate over.
-   * @param {Function} [callback] The function called per iteration.
-   * @param {Mixed} [thisArg] The `this` binding for the callback.
-   * @returns {Mixed} Returns the minimum value.
-   * @example
-   *
-   * _.min([10, 5, 100, 2, 1000]);
-   * // => 2
-   */
-  function min(array, callback, thisArg) {
-    var computed = Infinity,
-        result = computed;
-
-    if (!array) {
-      return result;
-    }
-    var current,
-        index = -1,
-        length = array.length;
-
-    if (!callback) {
-      while (++index < length) {
-        if (array[index] < result) {
-          result = array[index];
-        }
-      }
-      return result;
-    }
-    if (thisArg) {
-      callback = iteratorBind(callback, thisArg);
-    }
-    while (++index < length) {
-      current = callback(array[index], index, array);
-      if (current < computed) {
-        computed = current;
-        result = array[index];
+      var key = keys[index];
+      if (values) {
+        result[key] = values[index];
+      } else {
+        result[key[0]] = key[1];
       }
     }
     return result;
@@ -4019,7 +4051,7 @@
     // use `Array(length)` so V8 will avoid the slower "dictionary" mode
     // http://www.youtube.com/watch?v=XAqIpGU8ZZk#t=16m27s
     var index = -1,
-        length = Math.max(0, Math.ceil((end - start) / step)),
+        length = nativeMax(0, ceil((end - start) / step)),
         result = Array(length);
 
     while (++index < length) {
@@ -4035,11 +4067,11 @@
    *
    * @static
    * @memberOf _
-   * @alias tail
+   * @alias drop, tail
    * @category Arrays
    * @param {Array} array The array to query.
    * @param {Number} [n] The number of elements to return.
-   * @param {Object} [guard] Internally used to allow this method to work with
+   * @param- {Object} [guard] Internally used to allow this method to work with
    *  others like `_.map` without using their callback `index` argument for `n`.
    * @returns {Array} Returns all but the first value or `n` values of `array`.
    * @example
@@ -4048,41 +4080,9 @@
    * // => [2, 1]
    */
   function rest(array, n, guard) {
-    if (!array) {
-      return [];
-    }
-    return slice.call(array, (n == null || guard) ? 1 : n);
-  }
-
-  /**
-   * Creates a new array of shuffled `array` values, using a version of the
-   * Fisher-Yates shuffle. See http://en.wikipedia.org/wiki/Fisher-Yates_shuffle.
-   *
-   * @static
-   * @memberOf _
-   * @category Arrays
-   * @param {Array} array The array to shuffle.
-   * @returns {Array} Returns a new shuffled array.
-   * @example
-   *
-   * _.shuffle([1, 2, 3, 4, 5, 6]);
-   * // => [4, 1, 6, 3, 5, 2]
-   */
-  function shuffle(array) {
-    if (!array) {
-      return [];
-    }
-    var rand,
-        index = -1,
-        length = array.length,
-        result = Array(length);
-
-    while (++index < length) {
-      rand = Math.floor(Math.random() * (index + 1));
-      result[index] = result[rand];
-      result[rand] = array[index];
-    }
-    return result;
+    return array
+      ? slice.call(array, (n == null || guard) ? 1 : n)
+      : [];
   }
 
   /**
@@ -4090,58 +4090,53 @@
    * should be inserted into `array` in order to maintain the sort order of the
    * sorted `array`. If `callback` is passed, it will be executed for `value` and
    * each element in `array` to compute their sort ranking. The `callback` is
-   * bound to `thisArg` and invoked with 1 argument; (value).
+   * bound to `thisArg` and invoked with one argument; (value). The `callback`
+   * argument may also be the name of a property to order by.
    *
    * @static
    * @memberOf _
    * @category Arrays
    * @param {Array} array The array to iterate over.
    * @param {Mixed} value The value to evaluate.
-   * @param {Function} [callback=identity] The function called per iteration.
-   * @param {Mixed} [thisArg] The `this` binding for the callback.
+   * @param {Function|String} [callback=identity|property] The function called
+   *  per iteration or property name to order by.
+   * @param {Mixed} [thisArg] The `this` binding of `callback`.
    * @returns {Number} Returns the index at which the value should be inserted
    *  into `array`.
    * @example
    *
-   * _.sortedIndex([20, 30, 40], 35);
+   * _.sortedIndex([20, 30, 50], 40);
+   * // => 2
+   *
+   * _.sortedIndex([{ 'x': 20 }, { 'x': 30 }, { 'x': 50 }], { 'x': 40 }, 'x');
    * // => 2
    *
    * var dict = {
-   *   'wordToNumber': { 'twenty': 20, 'thirty': 30, 'thirty-five': 35, 'fourty': 40 }
+   *   'wordToNumber': { 'twenty': 20, 'thirty': 30, 'fourty': 40, 'fifty': 50 }
    * };
    *
-   * _.sortedIndex(['twenty', 'thirty', 'fourty'], 'thirty-five', function(word) {
+   * _.sortedIndex(['twenty', 'thirty', 'fifty'], 'fourty', function(word) {
    *   return dict.wordToNumber[word];
    * });
    * // => 2
    *
-   * _.sortedIndex(['twenty', 'thirty', 'fourty'], 'thirty-five', function(word) {
+   * _.sortedIndex(['twenty', 'thirty', 'fifty'], 'fourty', function(word) {
    *   return this.wordToNumber[word];
    * }, dict);
    * // => 2
    */
   function sortedIndex(array, value, callback, thisArg) {
-    if (!array) {
-      return 0;
-    }
-    var mid,
-        low = 0,
-        high = array.length;
+    var low = 0,
+        high = array ? array.length : low;
 
-    if (callback) {
-      if (thisArg) {
-        callback = bind(callback, thisArg);
-      }
-      value = callback(value);
-      while (low < high) {
-        mid = (low + high) >>> 1;
-        callback(array[mid]) < value ? low = mid + 1 : high = mid;
-      }
-    } else {
-      while (low < high) {
-        mid = (low + high) >>> 1;
-        array[mid] < value ? low = mid + 1 : high = mid;
-      }
+    // explicitly reference `identity` for better engine inlining
+    callback = callback ? createCallback(callback, thisArg) : identity;
+    value = callback(value);
+    while (low < high) {
+      var mid = (low + high) >>> 1;
+      callback(array[mid]) < value
+        ? low = mid + 1
+        : high = mid;
     }
     return low;
   }
@@ -4163,13 +4158,14 @@
    */
   function union() {
     var index = -1,
-        result = [],
-        flattened = concat.apply(result, arguments),
-        length = flattened.length;
+        flattened = concat.apply(arrayRef, arguments),
+        length = flattened.length,
+        result = [];
 
     while (++index < length) {
-      if (indexOf(result, flattened[index]) < 0) {
-        result.push(flattened[index]);
+      var value = flattened[index];
+      if (indexOf(result, value) < 0) {
+        result.push(value);
       }
     }
     return result;
@@ -4180,7 +4176,7 @@
    * for comparisons, i.e. `===`. If the `array` is already sorted, passing `true`
    * for `isSorted` will run a faster algorithm. If `callback` is passed, each
    * element of `array` is passed through a callback` before uniqueness is computed.
-   * The `callback` is bound to `thisArg` and invoked with 3 arguments; (value, index, array).
+   * The `callback` is bound to `thisArg` and invoked with three arguments; (value, index, array).
    *
    * @static
    * @memberOf _
@@ -4189,7 +4185,7 @@
    * @param {Array} array The array to process.
    * @param {Boolean} [isSorted=false] A flag to indicate that the `array` is already sorted.
    * @param {Function} [callback=identity] The function called per iteration.
-   * @param {Mixed} [thisArg] The `this` binding for the callback.
+   * @param {Mixed} [thisArg] The `this` binding of `callback`.
    * @returns {Array} Returns a duplicate-value-free array.
    * @example
    *
@@ -4206,13 +4202,9 @@
    * // => [1, 2, 3]
    */
   function uniq(array, isSorted, callback, thisArg) {
-    var result = [];
-    if (!array) {
-      return result;
-    }
-    var computed,
-        index = -1,
-        length = array.length,
+    var index = -1,
+        length = array ? array.length : 0,
+        result = [],
         seen = [];
 
     // juggle arguments
@@ -4221,13 +4213,9 @@
       callback = isSorted;
       isSorted = false;
     }
-    if (!callback) {
-      callback = identity;
-    } else if (thisArg) {
-      callback = iteratorBind(callback, thisArg);
-    }
+    callback = createCallback(callback, thisArg);
     while (++index < length) {
-      computed = callback(array[index], index, array);
+      var computed = callback(array[index], index, array);
       if (isSorted
             ? !index || seen[seen.length - 1] !== computed
             : indexOf(seen, computed) < 0
@@ -4240,7 +4228,7 @@
   }
 
   /**
-   * Creates a new array with all occurrences of the passed values removed using
+   * Creates an array with all occurrences of the passed values removed using
    * strict equality for comparisons, i.e. `===`.
    *
    * @static
@@ -4255,17 +4243,15 @@
    * // => [2, 3, 4]
    */
   function without(array) {
-    var result = [];
-    if (!array) {
-      return result;
-    }
     var index = -1,
-        length = array.length,
-        contains = cachedContains(arguments, 1, 20);
+        length = array ? array.length : 0,
+        contains = cachedContains(arguments, 1, 20),
+        result = [];
 
     while (++index < length) {
-      if (!contains(array[index])) {
-        result.push(array[index]);
+      var value = array[index];
+      if (!contains(value)) {
+        result.push(value);
       }
     }
     return result;
@@ -4288,11 +4274,8 @@
    * // => [['moe', 30, true], ['larry', 40, false], ['curly', 50, false]]
    */
   function zip(array) {
-    if (!array) {
-      return [];
-    }
     var index = -1,
-        length = max(pluck(arguments, 'length')),
+        length = array ? max(pluck(arguments, 'length')) : 0,
         result = Array(length);
 
     while (++index < length) {
@@ -4301,40 +4284,10 @@
     return result;
   }
 
-  /**
-   * Creates an object composed from an array of `keys` and an array of `values`.
-   *
-   * @static
-   * @memberOf _
-   * @category Arrays
-   * @param {Array} keys The array of keys.
-   * @param {Array} [values=[]] The array of values.
-   * @returns {Object} Returns an object composed of the given keys and
-   *  corresponding values.
-   * @example
-   *
-   * _.zipObject(['moe', 'larry', 'curly'], [30, 40, 50]);
-   * // => { 'moe': 30, 'larry': 40, 'curly': 50 }
-   */
-  function zipObject(keys, values) {
-    if (!keys) {
-      return {};
-    }
-    var index = -1,
-        length = keys.length,
-        result = {};
-
-    values || (values = []);
-    while (++index < length) {
-      result[keys[index]] = values[index];
-    }
-    return result;
-  }
-
   /*--------------------------------------------------------------------------*/
 
   /**
-   * Creates a new function that is restricted to executing only after it is
+   * Creates a function that is restricted to executing only after it is
    * called `n` times.
    *
    * @static
@@ -4364,21 +4317,19 @@
   }
 
   /**
-   * Creates a new function that, when called, invokes `func` with the `this`
+   * Creates a function that, when called, invokes `func` with the `this`
    * binding of `thisArg` and prepends any additional `bind` arguments to those
-   * passed to the bound function. Lazy defined methods may be bound by passing
-   * the object they are bound to as `func` and the method name as `thisArg`.
+   * passed to the bound function.
    *
    * @static
    * @memberOf _
    * @category Functions
-   * @param {Function|Object} func The function to bind or the object the method belongs to.
-   * @param {Mixed} [thisArg] The `this` binding of `func` or the method name.
+   * @param {Function} func The function to bind.
+   * @param {Mixed} [thisArg] The `this` binding of `func`.
    * @param {Mixed} [arg1, arg2, ...] Arguments to be partially applied.
    * @returns {Function} Returns the new bound function.
    * @example
    *
-   * // basic bind
    * var func = function(greeting) {
    *   return greeting + ' ' + this.name;
    * };
@@ -4386,72 +4337,13 @@
    * func = _.bind(func, { 'name': 'moe' }, 'hi');
    * func();
    * // => 'hi moe'
-   *
-   * // lazy bind
-   * var object = {
-   *   'name': 'moe',
-   *   'greet': function(greeting) {
-   *     return greeting + ' ' + this.name;
-   *   }
-   * };
-   *
-   * var func = _.bind(object, 'greet', 'hi');
-   * func();
-   * // => 'hi moe'
-   *
-   * object.greet = function(greeting) {
-   *   return greeting + ', ' + this.name + '!';
-   * };
-   *
-   * func();
-   * // => 'hi, moe!'
    */
   function bind(func, thisArg) {
-    var methodName,
-        isFunc = isFunction(func);
-
-    // juggle arguments
-    if (!isFunc) {
-      methodName = thisArg;
-      thisArg = func;
-    }
     // use `Function#bind` if it exists and is fast
     // (in V8 `Function#bind` is slower except when partially applied)
-    else if (isBindFast || (nativeBind && arguments.length > 2)) {
-      return nativeBind.call.apply(nativeBind, arguments);
-    }
-
-    var partialArgs = slice.call(arguments, 2);
-
-    function bound() {
-      // `Function#bind` spec
-      // http://es5.github.com/#x15.3.4.5
-      var args = arguments,
-          thisBinding = thisArg;
-
-      if (!isFunc) {
-        func = thisArg[methodName];
-      }
-      if (partialArgs.length) {
-        args = args.length
-          ? partialArgs.concat(slice.call(args))
-          : partialArgs;
-      }
-      if (this instanceof bound) {
-        // get `func` instance if `bound` is invoked in a `new` expression
-        noop.prototype = func.prototype;
-        thisBinding = new noop;
-
-        // mimic the constructor's `return` behavior
-        // http://es5.github.com/#x13.2.2
-        var result = func.apply(thisBinding, args);
-        return result && objectTypes[typeof result]
-          ? result
-          : thisBinding
-      }
-      return func.apply(thisBinding, args);
-    }
-    return bound;
+    return isBindFast || (nativeBind && arguments.length > 2)
+      ? nativeBind.call.apply(nativeBind, arguments)
+      : createBound(func, thisArg, slice.call(arguments, 2));
   }
 
   /**
@@ -4476,28 +4368,20 @@
    * jQuery('#lodash_button').on('click', buttonView.onClick);
    * // => When the button is clicked, `this.label` will have the correct value
    */
-  var bindAll = createIterator({
-    'useHas': false,
-    'useStrict': false,
-    'args': 'object',
-    'init': 'object',
-    'top':
-      'var funcs = arguments,\n' +
-      '    length = funcs.length;\n' +
-      'if (length > 1) {\n' +
-      '  for (var index = 1; index < length; index++) {\n' +
-      '    result[funcs[index]] = bind(result[funcs[index]], result)\n' +
-      '  }\n' +
-      '  return result\n' +
-      '}',
-    'inLoop':
-      'if (isFunction(result[index])) {\n' +
-      '  result[index] = bind(result[index], result)\n' +
-      '}'
-  });
+  function bindAll(object) {
+    var funcs = arguments,
+        index = funcs.length > 1 ? 0 : (funcs = functions(object), -1),
+        length = funcs.length;
+
+    while (++index < length) {
+      var key = funcs[index];
+      object[key] = bind(object[key], object);
+    }
+    return object;
+  }
 
   /**
-   * Creates a new function that is the composition of the passed functions,
+   * Creates a function that is the composition of the passed functions,
    * where each function consumes the return value of the function that follows.
    * In math terms, composing the functions `f()`, `g()`, and `h()` produces `f(g(h()))`.
    *
@@ -4528,7 +4412,7 @@
   }
 
   /**
-   * Creates a new function that will delay the execution of `func` until after
+   * Creates a function that will delay the execution of `func` until after
    * `wait` milliseconds have elapsed since the last time it was invoked. Pass
    * `true` for `immediate` to cause debounce to invoke `func` on the leading,
    * instead of the trailing, edge of the `wait` timeout. Subsequent calls to
@@ -4556,10 +4440,9 @@
     function delayed() {
       timeoutId = null;
       if (!immediate) {
-        func.apply(thisArg, args);
+        result = func.apply(thisArg, args);
       }
     }
-
     return function() {
       var isImmediate = immediate && !timeoutId;
       args = arguments;
@@ -4594,7 +4477,7 @@
    */
   function delay(func, wait) {
     var args = slice.call(arguments, 2);
-    return setTimeout(function() { return func.apply(undefined, args); }, wait);
+    return setTimeout(function() { func.apply(undefined, args); }, wait);
   }
 
   /**
@@ -4614,11 +4497,48 @@
    */
   function defer(func) {
     var args = slice.call(arguments, 1);
-    return setTimeout(function() { return func.apply(undefined, args); }, 1);
+    return setTimeout(function() { func.apply(undefined, args); }, 1);
   }
 
   /**
-   * Creates a new function that memoizes the result of `func`. If `resolver` is
+   * Creates a function that, when called, invokes `object[methodName]` and
+   * prepends any additional `lateBind` arguments to those passed to the bound
+   * function. This method differs from `_.bind` by allowing bound functions to
+   * reference methods that will be redefined or don't yet exist.
+   *
+   * @static
+   * @memberOf _
+   * @category Functions
+   * @param {Object} object The object the method belongs to.
+   * @param {String} methodName The method name.
+   * @param {Mixed} [arg1, arg2, ...] Arguments to be partially applied.
+   * @returns {Function} Returns the new bound function.
+   * @example
+   *
+   * var object = {
+   *   'name': 'moe',
+   *   'greet': function(greeting) {
+   *     return greeting + ' ' + this.name;
+   *   }
+   * };
+   *
+   * var func = _.lateBind(object, 'greet', 'hi');
+   * func();
+   * // => 'hi moe'
+   *
+   * object.greet = function(greeting) {
+   *   return greeting + ', ' + this.name + '!';
+   * };
+   *
+   * func();
+   * // => 'hi, moe!'
+   */
+  function lateBind(object, methodName) {
+    return createBound(methodName, object, slice.call(arguments, 2));
+  }
+
+  /**
+   * Creates a function that memoizes the result of `func`. If `resolver` is
    * passed, it will be used to determine the cache key for storing the result
    * based on the arguments passed to the memoized function. By default, the first
    * argument passed to the memoized function is used as the cache key.
@@ -4638,15 +4558,15 @@
   function memoize(func, resolver) {
     var cache = {};
     return function() {
-      var prop = resolver ? resolver.apply(this, arguments) : arguments[0];
-      return hasOwnProperty.call(cache, prop)
-        ? cache[prop]
-        : (cache[prop] = func.apply(this, arguments));
+      var key = resolver ? resolver.apply(this, arguments) : arguments[0];
+      return hasOwnProperty.call(cache, key)
+        ? cache[key]
+        : (cache[key] = func.apply(this, arguments));
     };
   }
 
   /**
-   * Creates a new function that is restricted to one execution. Repeat calls to
+   * Creates a function that is restricted to one execution. Repeat calls to
    * the function will return the value of the first call.
    *
    * @static
@@ -4679,9 +4599,9 @@
   }
 
   /**
-   * Creates a new function that, when called, invokes `func` with any additional
+   * Creates a function that, when called, invokes `func` with any additional
    * `partial` arguments prepended to those passed to the new function. This method
-   * is similar `bind`, except it does **not** alter the `this` binding.
+   * is similar to `bind`, except it does **not** alter the `this` binding.
    *
    * @static
    * @memberOf _
@@ -4697,25 +4617,11 @@
    * // => 'hi: moe'
    */
   function partial(func) {
-    var args = slice.call(arguments, 1),
-        argsLength = args.length;
-
-    return function() {
-      var result,
-          others = arguments;
-
-      if (others.length) {
-        args.length = argsLength;
-        push.apply(args, others);
-      }
-      result = args.length == 1 ? func.call(this, args[0]) : func.apply(this, args);
-      args.length = argsLength;
-      return result;
-    };
+    return createBound(func, slice.call(arguments, 1));
   }
 
   /**
-   * Creates a new function that, when executed, will only call the `func`
+   * Creates a function that, when executed, will only call the `func`
    * function at most once per every `wait` milliseconds. If the throttled
    * function is invoked more than once during the `wait` timeout, `func` will
    * also be called on the trailing edge of the timeout. Subsequent calls to the
@@ -4742,29 +4648,29 @@
     function trailingCall() {
       lastCalled = new Date;
       timeoutId = null;
-      func.apply(thisArg, args);
+      result = func.apply(thisArg, args);
     }
-
     return function() {
       var now = new Date,
-          remain = wait - (now - lastCalled);
+          remaining = wait - (now - lastCalled);
 
       args = arguments;
       thisArg = this;
 
-      if (remain <= 0) {
+      if (remaining <= 0) {
+        clearTimeout(timeoutId);
         lastCalled = now;
         result = func.apply(thisArg, args);
       }
       else if (!timeoutId) {
-        timeoutId = setTimeout(trailingCall, remain);
+        timeoutId = setTimeout(trailingCall, remaining);
       }
       return result;
     };
   }
 
   /**
-   * Creates a new function that passes `value` to the `wrapper` function as its
+   * Creates a function that passes `value` to the `wrapper` function as its
    * first argument. Additional arguments passed to the new function are appended
    * to those passed to the `wrapper` function.
    *
@@ -4776,19 +4682,17 @@
    * @returns {Function} Returns the new function.
    * @example
    *
-   * var hello = function(name) { return 'hello: ' + name; };
+   * var hello = function(name) { return 'hello ' + name; };
    * hello = _.wrap(hello, function(func) {
    *   return 'before, ' + func('moe') + ', after';
    * });
    * hello();
-   * // => 'before, hello: moe, after'
+   * // => 'before, hello moe, after'
    */
   function wrap(value, wrapper) {
     return function() {
       var args = [value];
-      if (arguments.length) {
-        push.apply(args, arguments);
-      }
+      push.apply(args, arguments);
       return wrapper.apply(this, args);
     };
   }
@@ -4859,15 +4763,14 @@
     forEach(functions(object), function(methodName) {
       var func = lodash[methodName] = object[methodName];
 
-      LoDash.prototype[methodName] = function() {
-        var args = [this._wrapped];
-        if (arguments.length) {
-          push.apply(args, arguments);
-        }
+      lodash.prototype[methodName] = function() {
+        var args = [this.__wrapped__];
+        push.apply(args, arguments);
+
         var result = func.apply(lodash, args);
-        if (this._chain) {
-          result = new LoDash(result);
-          result._chain = true;
+        if (this.__chain__) {
+          result = new lodash(result);
+          result.__chain__ = true;
         }
         return result;
       };
@@ -4892,6 +4795,36 @@
   }
 
   /**
+   * Produces a random number between `min` and `max` (inclusive). If only one
+   * argument is passed, a number between `0` and the given number will be returned.
+   *
+   * @static
+   * @memberOf _
+   * @category Utilities
+   * @param {Number} [min=0] The minimum possible value.
+   * @param {Number} [max=1] The maximum possible value.
+   * @returns {Number} Returns a random number.
+   * @example
+   *
+   * _.random(0, 5);
+   * // => a number between 1 and 5
+   *
+   * _.random(5);
+   * // => also a number between 1 and 5
+   */
+  function random(min, max) {
+    if (min == null && max == null) {
+      max = 1;
+    }
+    min = +min || 0;
+    if (max == null) {
+      max = min;
+      min = 0;
+    }
+    return min + floor(nativeRandom() * ((+max || 0) - min + 1));
+  }
+
+  /**
    * Resolves the value of `property` on `object`. If `property` is a function
    * it will be invoked and its result returned, else the property value is
    * returned. If `object` is falsey, then `null` is returned.
@@ -4901,7 +4834,7 @@
    * @memberOf _
    * @category Utilities
    * @param {Object} object The object to inspect.
-   * @param {String} property The property to get the result of.
+   * @param {String} property The property to get the value of.
    * @returns {Mixed} Returns the resolved value.
    * @example
    *
@@ -4921,10 +4854,7 @@
   function result(object, property) {
     // based on Backbone's private `getValue` function
     // https://github.com/documentcloud/backbone/blob/0.9.2/backbone.js#L1419-1424
-    if (!object) {
-      return null;
-    }
-    var value = object[property];
+    var value = object ? object[property] : null;
     return isFunction(value) ? object[property]() : value;
   }
 
@@ -4945,16 +4875,22 @@
    * @param {String} text The template text.
    * @param {Obect} data The data object used to populate the text.
    * @param {Object} options The options object.
+   *  escape - The "escape" delimiter regexp.
+   *  evaluate - The "evaluate" delimiter regexp.
+   *  interpolate - The "interpolate" delimiter regexp.
+   *  sourceURL - The sourceURL of the template's compiled source.
+   *  variable - The data object variable name.
+   *
    * @returns {Function|String} Returns a compiled function when no `data` object
    *  is given, else it returns the interpolated text.
    * @example
    *
    * // using a compiled template
-   * var compiled = _.template('hello: <%= name %>');
+   * var compiled = _.template('hello <%= name %>');
    * compiled({ 'name': 'moe' });
-   * // => 'hello: moe'
+   * // => 'hello moe'
    *
-   * var list = '<% _.forEach(people, function(name) { %> <li><%= name %></li> <% }); %>';
+   * var list = '<% _.forEach(people, function(name) { %><li><%= name %></li><% }); %>';
    * _.template(list, { 'people': ['moe', 'larry', 'curly'] });
    * // => '<li>moe</li><li>larry</li><li>curly</li>'
    *
@@ -4963,23 +4899,28 @@
    * // => '<b>&lt;script></b>'
    *
    * // using the internal `print` function in "evaluate" delimiters
-   * _.template('<% print("Hello " + epithet); %>', { 'epithet': 'stooge' });
-   * // => 'Hello stooge.'
+   * _.template('<% print("hello " + epithet); %>!', { 'epithet': 'stooge' });
+   * // => 'hello stooge!'
    *
-   * // using custom template delimiter settings
+   * // using custom template delimiters
    * _.templateSettings = {
-   *   'interpolate': /\{\{(.+?)\}\}/g
+   *   'interpolate': /\{\{([\s\S]+?)\}\}/g
    * };
    *
-   * _.template('Hello {{ name }}!', { 'name': 'Mustache' });
-   * // => 'Hello Mustache!'
+   * _.template('hello {{ name }}!', { 'name': 'mustache' });
+   * // => 'hello mustache!'
+   *
+   * // using the `sourceURL` option to specify a custom sourceURL for the template
+   * var compiled = _.template('hello <%= name %>', null, { 'sourceURL': '/basic/greeting.jst' });
+   * compiled(data);
+   * // => find the source of "greeting.jst" under the Sources tab or Resources panel of the web inspector
    *
    * // using the `variable` option to ensure a with-statement isn't used in the compiled template
-   * var compiled = _.template('hello: <%= data.name %>', null, { 'variable': 'data' });
+   * var compiled = _.template('hello <%= data.name %>!', null, { 'variable': 'data' });
    * compiled.source;
    * // => function(data) {
    *   var __t, __p = '', __e = _.escape;
-   *   __p += 'hello: ' + ((__t = ( data.name )) == null ? '' : __t);
+   *   __p += 'hello ' + ((__t = ( data.name )) == null ? '' : __t) + '!';
    *   return __p;
    * }
    *
@@ -4996,90 +4937,64 @@
     // http://ejohn.org/blog/javascript-micro-templating/
     // and Laura Doktorova's doT.js
     // https://github.com/olado/doT
+    text || (text = '');
     options || (options = {});
-    text += '';
 
     var isEvaluating,
         result,
-        escapeDelimiter = options.escape,
-        evaluateDelimiter = options.evaluate,
-        interpolateDelimiter = options.interpolate,
+        index = 0,
         settings = lodash.templateSettings,
+        source = "__p += '",
         variable = options.variable || settings.variable,
         hasVariable = variable;
 
-    // use default settings if no options object is provided
-    if (escapeDelimiter == null) {
-      escapeDelimiter = settings.escape;
-    }
-    if (evaluateDelimiter == null) {
-      // use `false` as the fallback value, instead of leaving it `undefined`,
-      // so the initial assignment of `reEvaluateDelimiter` will still occur
-      evaluateDelimiter = settings.evaluate || false;
-    }
-    if (interpolateDelimiter == null) {
-      interpolateDelimiter = settings.interpolate;
-    }
+    // compile regexp to match each delimiter
+    var reDelimiters = RegExp(
+      (options.escape || settings.escape || reNoMatch).source + '|' +
+      (options.interpolate || settings.interpolate || reNoMatch).source + '|' +
+      (options.evaluate || settings.evaluate || reNoMatch).source + '|$'
+    , 'g');
 
-    // tokenize delimiters to avoid escaping them
-    if (escapeDelimiter) {
-      text = text.replace(escapeDelimiter, tokenizeEscape);
-    }
-    if (interpolateDelimiter) {
-      text = text.replace(interpolateDelimiter, tokenizeInterpolate);
-    }
-    if (evaluateDelimiter != lastEvaluateDelimiter) {
-      // generate `reEvaluateDelimiter` to match `_.templateSettings.evaluate`
-      // and internal `<e%- %>`, `<e%= %>` delimiters
-      lastEvaluateDelimiter = evaluateDelimiter;
-      reEvaluateDelimiter = RegExp(
-        '<e%-([\\s\\S]+?)%>|<e%=([\\s\\S]+?)%>' +
-        (evaluateDelimiter ? '|' + evaluateDelimiter.source : '')
-      , 'g');
-    }
-    isEvaluating = tokenized.length;
-    text = text.replace(reEvaluateDelimiter, tokenizeEvaluate);
-    isEvaluating = isEvaluating != tokenized.length;
+    text.replace(reDelimiters, function(match, escapeValue, interpolateValue, evaluateValue, offset) {
+      // escape characters that cannot be included in string literals
+      source += text.slice(index, offset).replace(reUnescapedString, escapeStringChar);
 
-    // escape characters that cannot be included in string literals and
-    // detokenize delimiter code snippets
-    text = "__p += '" + text
-      .replace(reUnescapedString, escapeStringChar)
-      .replace(reToken, detokenize) + "';\n";
+      // replace delimiters with snippets
+      source +=
+        escapeValue ? "' +\n__e(" + escapeValue + ") +\n'" :
+        evaluateValue ? "';\n" + evaluateValue + ";\n__p += '" :
+        interpolateValue ? "' +\n((__t = (" + interpolateValue + ")) == null ? '' : __t) +\n'" : '';
 
-    // clear stored code snippets
-    tokenized.length = 0;
+      isEvaluating || (isEvaluating = evaluateValue || reComplexDelimiter.test(escapeValue || interpolateValue));
+      index = offset + match.length;
+    });
+
+    source += "';\n";
 
     // if `variable` is not specified and the template contains "evaluate"
     // delimiters, wrap a with-statement around the generated code to add the
     // data object to the top of the scope chain
     if (!hasVariable) {
-      variable = lastVariable || 'obj';
-
+      variable = 'obj';
       if (isEvaluating) {
-        text = 'with (' + variable + ') {\n' + text + '\n}\n';
+        source = 'with (' + variable + ') {\n' + source + '\n}\n';
       }
       else {
-        if (variable != lastVariable) {
-          // generate `reDoubleVariable` to match references like `obj.obj` inside
-          // transformed "escape" and "interpolate" delimiters
-          lastVariable = variable;
-          reDoubleVariable = RegExp('(\\(\\s*)' + variable + '\\.' + variable + '\\b', 'g');
-        }
         // avoid a with-statement by prepending data object references to property names
-        text = text
+        var reDoubleVariable = RegExp('(\\(\\s*)' + variable + '\\.' + variable + '\\b', 'g');
+        source = source
           .replace(reInsertVariable, '$&' + variable + '.')
           .replace(reDoubleVariable, '$1__d');
       }
     }
 
     // cleanup code by stripping empty strings
-    text = ( isEvaluating ? text.replace(reEmptyStringLeading, '') : text)
+    source = (isEvaluating ? source.replace(reEmptyStringLeading, '') : source)
       .replace(reEmptyStringMiddle, '$1')
       .replace(reEmptyStringTrailing, '$1;');
 
     // frame code as the function body
-    text = 'function(' + variable + ') {\n' +
+    source = 'function(' + variable + ') {\n' +
       (hasVariable ? '' : variable + ' || (' + variable + ' = {});\n') +
       'var __t, __p = \'\', __e = _.escape' +
       (isEvaluating
@@ -5087,22 +5002,20 @@
           'function print() { __p += __j.call(arguments, \'\') }\n'
         : (hasVariable ? '' : ', __d = ' + variable + '.' + variable + ' || ' + variable) + ';\n'
       ) +
-      text +
+      source +
       'return __p\n}';
 
-    // add a sourceURL for easier debugging
+    // use a sourceURL for easier debugging
     // http://www.html5rocks.com/en/tutorials/developertools/sourcemaps/#toc-sourceurl
-    if (useSourceURL) {
-      text += '\n//@ sourceURL=/lodash/template/source[' + (templateCounter++) + ']';
-    }
+    var sourceURL = useSourceURL
+      ? '\n//@ sourceURL=' + (options.sourceURL || '/lodash/template/source[' + (templateCounter++) + ']')
+      : '';
 
     try {
-      result = Function('_', 'return ' + text)(lodash);
+      result = Function('_', 'return ' + source + sourceURL)(lodash);
     } catch(e) {
-      // defer syntax errors until the compiled template is executed to allow
-      // examining the `source` property beforehand and for consistency,
-      // because other template related errors occur at execution
-      result = function() { throw e; };
+      e.source = source;
+      throw e;
     }
 
     if (data) {
@@ -5111,44 +5024,48 @@
     // provide the compiled function's source via its `toString` method, in
     // supported environments, or the `source` property as a convenience for
     // inlining compiled templates during the build process
-    result.source = text;
+    result.source = source;
     return result;
   }
 
   /**
-   * Executes the `callback` function `n` times. The `callback` is bound to
-   * `thisArg` and invoked with 1 argument; (index).
+   * Executes the `callback` function `n` times, returning an array of the results
+   * of each `callback` execution. The `callback` is bound to `thisArg` and invoked
+   * with one argument; (index).
    *
    * @static
    * @memberOf _
    * @category Utilities
    * @param {Number} n The number of times to execute the callback.
    * @param {Function} callback The function called per iteration.
-   * @param {Mixed} [thisArg] The `this` binding for the callback.
+   * @param {Mixed} [thisArg] The `this` binding of `callback`.
+   * @returns {Array} Returns a new array of the results of each `callback` execution.
    * @example
    *
-   * _.times(3, function() { genie.grantWish(); });
-   * // => calls `genie.grantWish()` 3 times
+   * var diceRolls = _.times(3, _.partial(_.random, 1, 6));
+   * // => [3, 6, 4]
    *
-   * _.times(3, function() { this.grantWish(); }, genie);
-   * // => also calls `genie.grantWish()` 3 times
+   * _.times(3, function(n) { mage.castSpell(n); });
+   * // => calls `mage.castSpell(n)` three times, passing `n` of `0`, `1`, and `2` respectively
+   *
+   * _.times(3, function(n) { this.cast(n); }, mage);
+   * // => also calls `mage.castSpell(n)` three times
    */
   function times(n, callback, thisArg) {
-    var index = -1;
-    if (thisArg) {
-      while (++index < n) {
-        callback.call(thisArg, index);
-      }
-    } else {
-      while (++index < n) {
-        callback(index);
-      }
+    n = +n || 0;
+    var index = -1,
+        result = Array(n);
+
+    while (++index < n) {
+      result[index] = callback.call(thisArg, index);
     }
+    return result;
   }
 
   /**
-   * Converts the HTML entities `&amp;`, `&lt;`, `&gt;`, `&quot;`, and `&#x27;`
-   * in `string` to their corresponding characters.
+   * The opposite of `_.escape`, this method converts the HTML entities
+   * `&amp;`, `&lt;`, `&gt;`, `&quot;`, and `&#x27;` in `string` to their
+   * corresponding characters.
    *
    * @static
    * @memberOf _
@@ -5209,8 +5126,8 @@
    * // => 'moe is 40'
    */
   function chain(value) {
-    value = new LoDash(value);
-    value._chain = true;
+    value = new lodash(value);
+    value.__chain__ = true;
     return value;
   }
 
@@ -5227,7 +5144,7 @@
    * @returns {Mixed} Returns `value`.
    * @example
    *
-   * _.chain([1,2,3,200])
+   * _.chain([1, 2, 3, 200])
    *  .filter(function(num) { return num % 2 == 0; })
    *  .tap(alert)
    *  .map(function(num) { return num * num })
@@ -5254,7 +5171,7 @@
    * // => [1, 2, 3]
    */
   function wrapperChain() {
-    this._chain = true;
+    this.__chain__ = true;
     return this;
   }
 
@@ -5271,7 +5188,7 @@
    * // => [1, 2, 3]
    */
   function wrapperValue() {
-    return this._wrapped;
+    return this.__wrapped__;
   }
 
   /*--------------------------------------------------------------------------*/
@@ -5283,7 +5200,7 @@
    * @memberOf _
    * @type String
    */
-  lodash.VERSION = '0.6.1';
+  lodash.VERSION = '0.9.0';
 
   // assign static methods
   lodash.after = after;
@@ -5300,7 +5217,6 @@
   lodash.defer = defer;
   lodash.delay = delay;
   lodash.difference = difference;
-  lodash.drop = drop;
   lodash.escape = escape;
   lodash.every = every;
   lodash.extend = extend;
@@ -5318,6 +5234,7 @@
   lodash.indexOf = indexOf;
   lodash.initial = initial;
   lodash.intersection = intersection;
+  lodash.invert = invert;
   lodash.invoke = invoke;
   lodash.isArguments = isArguments;
   lodash.isArray = isArray;
@@ -5332,12 +5249,14 @@
   lodash.isNull = isNull;
   lodash.isNumber = isNumber;
   lodash.isObject = isObject;
+  lodash.isPlainObject = isPlainObject;
   lodash.isRegExp = isRegExp;
   lodash.isString = isString;
   lodash.isUndefined = isUndefined;
   lodash.keys = keys;
   lodash.last = last;
   lodash.lastIndexOf = lastIndexOf;
+  lodash.lateBind = lateBind;
   lodash.map = map;
   lodash.max = max;
   lodash.memoize = memoize;
@@ -5345,10 +5264,14 @@
   lodash.min = min;
   lodash.mixin = mixin;
   lodash.noConflict = noConflict;
+  lodash.object = object;
+  lodash.omit = omit;
   lodash.once = once;
+  lodash.pairs = pairs;
   lodash.partial = partial;
   lodash.pick = pick;
   lodash.pluck = pluck;
+  lodash.random = random;
   lodash.range = range;
   lodash.reduce = reduce;
   lodash.reduceRight = reduceRight;
@@ -5374,13 +5297,13 @@
   lodash.without = without;
   lodash.wrap = wrap;
   lodash.zip = zip;
-  lodash.zipObject = zipObject;
 
   // assign aliases
   lodash.all = every;
   lodash.any = some;
   lodash.collect = map;
   lodash.detect = find;
+  lodash.drop = rest;
   lodash.each = forEach;
   lodash.foldl = reduce;
   lodash.foldr = reduceRight;
@@ -5388,35 +5311,30 @@
   lodash.include = contains;
   lodash.inject = reduce;
   lodash.methods = functions;
-  lodash.omit = drop;
   lodash.select = filter;
   lodash.tail = rest;
   lodash.take = first;
   lodash.unique = uniq;
 
-  // add pseudo private properties used and removed during the build process
+  // add pseudo private property to be used and removed during the build process
   lodash._iteratorTemplate = iteratorTemplate;
-  lodash._shimKeys = shimKeys;
 
   /*--------------------------------------------------------------------------*/
 
-  // assign private `LoDash` constructor's prototype
-  LoDash.prototype = lodash.prototype;
-
-  // add all static functions to `LoDash.prototype`
+  // add all static functions to `lodash.prototype`
   mixin(lodash);
 
-  // add `LoDash.prototype.chain` after calling `mixin()` to avoid overwriting
+  // add `lodash.prototype.chain` after calling `mixin()` to avoid overwriting
   // it with the wrapped `lodash.chain`
-  LoDash.prototype.chain = wrapperChain;
-  LoDash.prototype.value = wrapperValue;
+  lodash.prototype.chain = wrapperChain;
+  lodash.prototype.value = wrapperValue;
 
   // add all mutator Array functions to the wrapper.
   forEach(['pop', 'push', 'reverse', 'shift', 'sort', 'splice', 'unshift'], function(methodName) {
-    var func = ArrayProto[methodName];
+    var func = arrayRef[methodName];
 
-    LoDash.prototype[methodName] = function() {
-      var value = this._wrapped;
+    lodash.prototype[methodName] = function() {
+      var value = this.__wrapped__;
       func.apply(value, arguments);
 
       // avoid array-like object bugs with `Array#shift` and `Array#splice` in
@@ -5424,9 +5342,9 @@
       if (hasObjectSpliceBug && value.length === 0) {
         delete value[0];
       }
-      if (this._chain) {
-        value = new LoDash(value);
-        value._chain = true;
+      if (this.__chain__) {
+        value = new lodash(value);
+        value.__chain__ = true;
       }
       return value;
     };
@@ -5434,15 +5352,15 @@
 
   // add all accessor Array functions to the wrapper.
   forEach(['concat', 'join', 'slice'], function(methodName) {
-    var func = ArrayProto[methodName];
+    var func = arrayRef[methodName];
 
-    LoDash.prototype[methodName] = function() {
-      var value = this._wrapped,
+    lodash.prototype[methodName] = function() {
+      var value = this.__wrapped__,
           result = func.apply(value, arguments);
 
-      if (this._chain) {
-        result = new LoDash(result);
-        result._chain = true;
+      if (this.__chain__) {
+        result = new lodash(result);
+        result.__chain__ = true;
       }
       return result;
     };
@@ -6085,6 +6003,7 @@ if (!JSON) {
       hasOwn = OP.hasOwnProperty,
       toString = OP.toString,
       forEach = AP.forEach,
+      indexOf = AP.indexOf,
       slice = AP.slice;
 
   var _each = function( obj, iterator, context ) {
@@ -6132,12 +6051,40 @@ if (!JSON) {
     return obj;
   };
 
+  // $.inArray
+  var _inArray = function( elem, arr, i ) {
+    var len;
+
+    if ( arr ) {
+      if ( indexOf ) {
+        return indexOf.call( arr, elem, i );
+      }
+
+      len = arr.length;
+      i = i ? i < 0 ? Math.max( 0, len + i ) : i : 0;
+
+      for ( ; i < len; i++ ) {
+        // Skip accessing in sparse arrays
+        if ( i in arr && arr[ i ] === elem ) {
+          return i;
+        }
+      }
+    }
+
+    return -1;
+  };
+
   // And some jQuery specific helpers
 
-  var class2type = { "[object Array]": "array", "[object Function]": "function" };
+  var class2type = {};
+
+  // Populate the class2type map
+  _each("Boolean Number String Function Array Date RegExp Object".split(" "), function(name, i) {
+    class2type[ "[object " + name + "]" ] = name.toLowerCase();
+  });
 
   var _type = function( obj ) {
-    return !obj ?
+    return obj == null ?
       String( obj ) :
       class2type[ toString.call(obj) ] || "object";
   };
@@ -6147,30 +6094,27 @@ if (!JSON) {
 
   // Internal Deferred namespace
   var _d = {};
+  // String to Object options format cache
+  var optionsCache = {};
 
-  var flagsCache = {};
-  // Convert String-formatted flags into Object-formatted ones and store in cache
-  function createFlags( flags ) {
-      var object = flagsCache[ flags ] = {},
-          i, length;
-      flags = flags.split( /\s+/ );
-      for ( i = 0, length = flags.length; i < length; i++ ) {
-          object[ flags[i] ] = true;
-      }
-      return object;
+  // Convert String-formatted options into Object-formatted ones and store in cache
+  function createOptions( options ) {
+    var object = optionsCache[ options ] = {};
+    _each( options.split( /\s+/ ), function( flag ) {
+      object[ flag ] = true;
+    });
+    return object;
   }
 
-  _d.Callbacks = function( flags ) {
+  _d.Callbacks = function( options ) {
 
-    // Convert flags from String-formatted to Object-formatted
+    // Convert options from String-formatted to Object-formatted if needed
     // (we check in cache first)
-    flags = flags ? ( flagsCache[ flags ] || createFlags( flags ) ) : {};
+    options = typeof options === "string" ?
+      ( optionsCache[ options ] || createOptions( options ) ) :
+      _extend( {}, options );
 
-    var // Actual callback list
-      list = [],
-      // Stack of fire calls for repeatable lists
-      stack = [],
-      // Last fire value (for non-forgettable lists)
+    var // Last fire value (for non-forgettable lists)
       memory,
       // Flag to know if list was already fired
       fired,
@@ -6182,53 +6126,34 @@ if (!JSON) {
       firingLength,
       // Index of currently firing callback (modified by remove if needed)
       firingIndex,
-      // Add one or several callbacks to the list
-      add = function( args ) {
-        var i,
-          length,
-          elem,
-          type,
-          actual;
-        for ( i = 0, length = args.length; i < length; i++ ) {
-          elem = args[ i ];
-          type = _type( elem );
-          if ( type === "array" ) {
-            // Inspect recursively
-            add( elem );
-          } else if ( type === "function" ) {
-            // Add if not in unique mode and callback is not in
-            if ( !flags.unique || !self.has( elem ) ) {
-              list.push( elem );
-            }
-          }
-        }
-      },
+      // Actual callback list
+      list = [],
+      // Stack of fire calls for repeatable lists
+      stack = !options.once && [],
       // Fire callbacks
-      fire = function( context, args ) {
-        args = args || [];
-        memory = !flags.memory || [ context, args ];
+      fire = function( data ) {
+        memory = options.memory && data;
         fired = true;
-        firing = true;
         firingIndex = firingStart || 0;
         firingStart = 0;
         firingLength = list.length;
+        firing = true;
         for ( ; list && firingIndex < firingLength; firingIndex++ ) {
-          if ( list[ firingIndex ].apply( context, args ) === false && flags.stopOnFalse ) {
-            memory = true; // Mark as halted
+          if ( list[ firingIndex ].apply( data[ 0 ], data[ 1 ] ) === false && options.stopOnFalse ) {
+            memory = false; // To prevent further calls using add
             break;
           }
         }
         firing = false;
         if ( list ) {
-          if ( !flags.once ) {
-            if ( stack && stack.length ) {
-              memory = stack.shift();
-              self.fireWith( memory[ 0 ], memory[ 1 ] );
+          if ( stack ) {
+            if ( stack.length ) {
+              fire( stack.shift() );
             }
-          } else if ( memory === true ) {
-            self.disable();
-          } else {
+          } else if ( memory ) {
             list = [];
+          } else {
+            self.disable();
           }
         }
       },
@@ -6237,18 +6162,28 @@ if (!JSON) {
         // Add a callback or a collection of callbacks to the list
         add: function() {
           if ( list ) {
-            var length = list.length;
-            add( arguments );
+            // First, we save the current length
+            var start = list.length;
+            (function add( args ) {
+              _each( args, function( arg ) {
+                var type = _type( arg );
+                if ( type === "function" && ( !options.unique || !self.has( arg ) ) ) {
+                  list.push( arg );
+                } else if ( arg && arg.length && type !== "string" ) {
+                  // Inspect recursively
+                  add( arg );
+                }
+              });
+            })( arguments );
             // Do we need to add the callbacks to the
             // current firing batch?
             if ( firing ) {
               firingLength = list.length;
             // With memory, if we're not firing then
-            // we should call right away, unless previous
-            // firing was halted (stopOnFalse)
-            } else if ( memory && memory !== true ) {
-              firingStart = length;
-              fire( memory[ 0 ], memory[ 1 ] );
+            // we should call right away
+            } else if ( memory ) {
+              firingStart = start;
+              fire( memory );
             }
           }
           return this;
@@ -6256,46 +6191,27 @@ if (!JSON) {
         // Remove a callback from the list
         remove: function() {
           if ( list ) {
-            var args = arguments,
-              argIndex = 0,
-              argLength = args.length;
-            for ( ; argIndex < argLength ; argIndex++ ) {
-              for ( var i = 0; i < list.length; i++ ) {
-                if ( args[ argIndex ] === list[ i ] ) {
-                  // Handle firingIndex and firingLength
-                  if ( firing ) {
-                    if ( i <= firingLength ) {
-                      firingLength--;
-                      if ( i <= firingIndex ) {
-                        firingIndex--;
-                      }
-                    }
+            _each( arguments, function( arg ) {
+              var index;
+              while( ( index = _inArray( arg, list, index ) ) > -1 ) {
+                list.splice( index, 1 );
+                // Handle firing indexes
+                if ( firing ) {
+                  if ( index <= firingLength ) {
+                    firingLength--;
                   }
-                  // Remove the element
-                  list.splice( i--, 1 );
-                  // If we have some unicity property then
-                  // we only need to do this once
-                  if ( flags.unique ) {
-                    break;
+                  if ( index <= firingIndex ) {
+                    firingIndex--;
                   }
                 }
               }
-            }
+            });
           }
           return this;
         },
         // Control if a given callback is in the list
         has: function( fn ) {
-          if ( list ) {
-            var i = 0,
-              length = list.length;
-            for ( ; i < length; i++ ) {
-              if ( fn === list[ i ] ) {
-                return true;
-              }
-            }
-          }
-          return false;
+          return _inArray( fn, list ) > -1;
         },
         // Remove all callbacks from the list
         empty: function() {
@@ -6314,7 +6230,7 @@ if (!JSON) {
         // Lock the list in its current state
         lock: function() {
           stack = undefined;
-          if ( !memory || memory === true ) {
+          if ( !memory ) {
             self.disable();
           }
           return this;
@@ -6325,13 +6241,13 @@ if (!JSON) {
         },
         // Call all callbacks with the given context and arguments
         fireWith: function( context, args ) {
-          if ( stack ) {
+          args = args || [];
+          args = [ context, args.slice ? args.slice() : args ];
+          if ( list && ( !fired || stack ) ) {
             if ( firing ) {
-              if ( !flags.once ) {
-                stack.push( [ context, args ] );
-              }
-            } else if ( !( flags.once && memory ) ) {
-              fire( context, args );
+              stack.push( args );
+            } else {
+              fire( args );
             }
           }
           return this;
@@ -6351,140 +6267,144 @@ if (!JSON) {
   };
 
   _d.Deferred = function( func ) {
-      var doneList = _d.Callbacks( "once memory" ),
-        failList = _d.Callbacks( "once memory" ),
-        progressList = _d.Callbacks( "memory" ),
-        state = "pending",
-        lists = {
-            resolve: doneList,
-            reject: failList,
-            notify: progressList
+
+    var tuples = [
+        // action, add listener, listener list, final state
+        [ "resolve", "done", _d.Callbacks("once memory"), "resolved" ],
+        [ "reject", "fail", _d.Callbacks("once memory"), "rejected" ],
+        [ "notify", "progress", _d.Callbacks("memory") ]
+      ],
+      state = "pending",
+      promise = {
+        state: function() {
+          return state;
         },
-        promise = {
-            done: doneList.add,
-            fail: failList.add,
-            progress: progressList.add,
-
-            state: function() {
-                return state;
-            },
-
-            // Deprecated
-            isResolved: doneList.fired,
-            isRejected: failList.fired,
-
-            then: function( doneCallbacks, failCallbacks, progressCallbacks ) {
-                deferred.done( doneCallbacks ).fail( failCallbacks ).progress( progressCallbacks );
-                return this;
-            },
-            always: function() {
-                deferred.done.apply( deferred, arguments ).fail.apply( deferred, arguments );
-                return this;
-            },
-            pipe: function( fnDone, fnFail, fnProgress ) {
-                return _d.Deferred(function( newDefer ) {
-                    _each( {
-                        done: [ fnDone, "resolve" ],
-                        fail: [ fnFail, "reject" ],
-                        progress: [ fnProgress, "notify" ]
-                    }, function( data, handler ) {
-                        var fn = data[ 0 ],
-                            action = data[ 1 ],
-                            returned;
-                        if ( _isFunction( fn ) ) {
-                            deferred[ handler ](function() {
-                                returned = fn.apply( this, arguments );
-                                if ( returned && _isFunction( returned.promise ) ) {
-                                    returned.promise().then( newDefer.resolve, newDefer.reject, newDefer.notify );
-                                } else {
-                                    newDefer[ action + "With" ]( this === deferred ? newDefer : this, [ returned ] );
-                                }
-                            });
-                        } else {
-                            deferred[ handler ]( newDefer[ action ] );
-                        }
-                    });
-                }).promise();
-            },
-            // Get a promise for this deferred
-            // If obj is provided, the promise aspect is added to the object
-            promise: function( obj ) {
-                if ( !obj ) {
-                    obj = promise;
-                } else {
-                    for ( var key in promise ) {
-                        obj[ key ] = promise[ key ];
-                    }
-                }
-                return obj;
-            }
+        always: function() {
+          deferred.done( arguments ).fail( arguments );
+          return this;
         },
-        deferred = promise.promise({}),
-        key;
-
-        for ( key in lists ) {
-            deferred[ key ] = lists[ key ].fire;
-            deferred[ key + "With" ] = lists[ key ].fireWith;
+        then: function( /* fnDone, fnFail, fnProgress */ ) {
+          var fns = arguments;
+          return _d.Deferred(function( newDefer ) {
+            _each( tuples, function( tuple, i ) {
+              var action = tuple[ 0 ],
+                fn = fns[ i ];
+              // deferred[ done | fail | progress ] for forwarding actions to newDefer
+              deferred[ tuple[1] ]( _isFunction( fn ) ?
+                function() {
+                  var returned = fn.apply( this, arguments );
+                  if ( returned && _isFunction( returned.promise ) ) {
+                    returned.promise()
+                      .done( newDefer.resolve )
+                      .fail( newDefer.reject )
+                      .progress( newDefer.notify );
+                  } else {
+                    newDefer[ action + "With" ]( this === deferred ? newDefer : this, [ returned ] );
+                  }
+                } :
+                newDefer[ action ]
+              );
+            });
+            fns = null;
+          }).promise();
+        },
+        // Get a promise for this deferred
+        // If obj is provided, the promise aspect is added to the object
+        promise: function( obj ) {
+          return typeof obj === "object" ? _extend( obj, promise ) : promise;
         }
+      },
+      deferred = {};
 
-        // Handle state
-        deferred.done( function() {
-          state = "resolved";
-        }, failList.disable, progressList.lock ).fail( function() {
-          state = "rejected";
-        }, doneList.disable, progressList.lock );
+    // Keep pipe for back-compat
+    promise.pipe = promise.then;
 
-        // Call given func if any
-        if ( func ) {
-          func.call( deferred, deferred );
-        }
+    // Add list-specific methods
+    _each( tuples, function( tuple, i ) {
+      var list = tuple[ 2 ],
+        stateString = tuple[ 3 ];
 
-        // All done!
-        return deferred;
-    };
+      // promise[ done | fail | progress ] = list.add
+      promise[ tuple[1] ] = list.add;
+
+      // Handle state
+      if ( stateString ) {
+        list.add(function() {
+          // state = [ resolved | rejected ]
+          state = stateString;
+
+        // [ reject_list | resolve_list ].disable; progress_list.lock
+        }, tuples[ i ^ 1 ][ 2 ].disable, tuples[ 2 ][ 2 ].lock );
+      }
+
+      // deferred[ resolve | reject | notify ] = list.fire
+      deferred[ tuple[0] ] = list.fire;
+      deferred[ tuple[0] + "With" ] = list.fireWith;
+    });
+
+    // Make the deferred a promise
+    promise.promise( deferred );
+
+    // Call given func if any
+    if ( func ) {
+      func.call( deferred, deferred );
+    }
+
+    // All done!
+    return deferred;
+  };
 
     // Deferred helper
-    _d.when = function( firstParam ) {
-      var args = slice.call( arguments, 0 ),
-        i = 0,
-        length = args.length,
-        pValues = new Array( length ),
-        count = length,
-        pCount = length,
-        deferred = length <= 1 && firstParam && _isFunction( firstParam.promise ) ?
-            firstParam :
-            _d.Deferred(),
-        promise = deferred.promise();
-      function resolveFunc( i ) {
+    _d.when = function( subordinate /* , ..., subordinateN */ ) {
+    var i = 0,
+      resolveValues = slice.call( arguments ),
+      length = resolveValues.length,
+
+      // the count of uncompleted subordinates
+      remaining = length !== 1 || ( subordinate && _isFunction( subordinate.promise ) ) ? length : 0,
+
+      // the master Deferred. If resolveValues consist of only a single Deferred, just use that.
+      deferred = remaining === 1 ? subordinate : _d.Deferred(),
+
+      // Update function for both resolve and progress values
+      updateFunc = function( i, contexts, values ) {
         return function( value ) {
-          args[ i ] = arguments.length > 1 ? slice.call( arguments, 0 ) : value;
-          if ( !( --count ) ) {
-            deferred.resolveWith( deferred, args );
+          contexts[ i ] = this;
+          values[ i ] = arguments.length > 1 ? slice.call( arguments ) : value;
+          if( values === progressValues ) {
+            deferred.notifyWith( contexts, values );
+          } else if ( !( --remaining ) ) {
+            deferred.resolveWith( contexts, values );
           }
         };
-      }
-      function progressFunc( i ) {
-        return function( value ) {
-          pValues[ i ] = arguments.length > 1 ? slice.call( arguments, 0 ) : value;
-          deferred.notifyWith( promise, pValues );
-        };
-      }
-      if ( length > 1 ) {
-        for ( ; i < length; i++ ) {
-          if ( args[ i ] && args[ i ].promise && _isFunction( args[ i ].promise ) ) {
-            args[ i ].promise().then( resolveFunc(i), deferred.reject, progressFunc(i) );
-          } else {
-            --count;
-          }
+      },
+
+      progressValues, progressContexts, resolveContexts;
+
+    // add listeners to Deferred subordinates; treat others as resolved
+    if ( length > 1 ) {
+      progressValues = new Array( length );
+      progressContexts = new Array( length );
+      resolveContexts = new Array( length );
+      for ( ; i < length; i++ ) {
+        if ( resolveValues[ i ] && _isFunction( resolveValues[ i ].promise ) ) {
+          resolveValues[ i ].promise()
+            .done( updateFunc( i, resolveContexts, resolveValues ) )
+            .fail( deferred.reject )
+            .progress( updateFunc( i, progressContexts, progressValues ) );
+        } else {
+          --remaining;
         }
-        if ( !count ) {
-          deferred.resolveWith( deferred, args );
-        }
-      } else if ( deferred !== firstParam ) {
-        deferred.resolveWith( deferred, length ? [ firstParam ] : [] );
       }
-      return promise;
-    };
+    }
+
+    // if we're not waiting on anything, resolve the master
+    if ( !remaining ) {
+      deferred.resolveWith( resolveContexts, resolveValues );
+    }
+
+    return deferred.promise();
+  };
 
   // Try exporting as a Common.js Module
   if ( typeof module !== "undefined" && module.exports ) {
@@ -6501,7 +6421,7 @@ if (!JSON) {
 
 })(this);
 /**
-* Miso.Dataset - v0.2.2 - 9/3/2012
+* Miso.Dataset - v0.3.0 - 10/26/2012
 * http://github.com/misoproject/dataset
 * Copyright (c) 2012 Alex Graul, Irene Ros;
 * Dual Licensed: MIT, GPL
@@ -6509,12 +6429,1444 @@ if (!JSON) {
 * https://github.com/misoproject/dataset/blob/master/LICENSE-GPL 
 */
 
+(function(global) {
+
+/**
+  * Instantiates a new dataset.
+  * Parameters:
+  * options - optional parameters.
+  *   data : "Object - an actual javascript object that already contains the data",
+  *   url : "String - url to fetch data from",
+  *   sync : Set to true to be able to bind to dataset changes. False by default.
+  *   jsonp : "boolean - true if this is a jsonp request",
+  *   delimiter : "String - a delimiter string that is used in a tabular datafile",
+  *   strict : "Whether to expect the json in our format or whether to interpret as raw array of objects, default false",
+  *   extract : "function to apply to JSON before internal interpretation, optional"
+  *   ready : the callback function to act on once the data is fetched. Isn't reuired for local imports
+  *           but is required for remote url fetching.
+  *   columns: A way to manually override column type detection. Expects an array of
+  *            objects of the following structure:
+  *           { name : 'columnname', type: 'columntype',
+  *             ... (additional params required for type here.) }
+  *   comparator : function (optional) - takes two rows and returns 1, 0, or -1  if row1 is
+  *     before, equal or after row2.
+  *   deferred : by default we use underscore.deferred, but if you want to pass your own (like jquery's) just
+  *              pass it here.
+  *   importer : The classname of any importer (passes through auto detection based on parameters.
+  *              For example: <code>Miso.Importers.Polling</code>.
+  *   parser   : The classname of any parser (passes through auto detection based on parameters.
+  *              For example: <code>Miso.Parsers.Delimited</code>.
+  *   resetOnFetch : set to true if any subsequent fetches after first one should overwrite the
+  *                  current data.
+  *   uniqueAgainst : Set to a column name to check for duplication on subsequent fetches.
+  *   interval : Polling interval. Set to any value in milliseconds to enable polling on a url.
+  }
+  */
+  global.Miso = global.Miso || {};
+  global.Miso.Dataset = function(options) {
+    this.length = 0;
+    
+    this._columns = [];
+    this._columnPositionByName = {};
+    this._computedColumns = [];
+    
+    if (typeof options !== "undefined") {
+      options = options || {};
+      this._initialize(options);
+    }
+  };
+}(this));
+
 (function(global, _) {
 
-  var Miso = global.Miso || (global.Miso = {});
+  var Dataset = global.Miso.Dataset;
 
-  Miso.typeOf = function(value, options) {
-    var types = _.keys(Miso.types),
+  /**
+  * A single column in a dataset
+  * Parameters:
+  *   options
+  *     name
+  *     type (from Miso.types)
+  *     data (optional)
+  *     before (a pre coercion formatter)
+  *     format (for time type.)
+  *     any additional arguments here..
+  * Returns:
+  *   new Miso.Column
+  */
+  Dataset.Column = function(options) {
+    _.extend(this, options);
+    this._id = options.id || _.uniqueId();
+    this.data = options.data || [];
+    return this;
+  };
+
+  _.extend(Dataset.Column.prototype, {
+
+    /**
+    * Converts any value to this column's type for a given position
+    * in some source array.
+    * Parameters:
+    *   value
+    * Returns: 
+    *   number
+    */
+    toNumeric : function(value) {
+      return Dataset.types[this.type].numeric(value);
+    },
+
+    /**
+    * Returns the numeric representation of a datum at any index in this 
+    * column.
+    * Parameters:
+    *   index - position in data array
+    * Returns
+    *   number
+    */
+    numericAt : function(index) {
+      return this.toNumeric(this.data[index]);
+    },
+
+    /**
+    * Coerces the entire column's data to the column type.
+    */
+    coerce : function() {
+      this.data = _.map(this.data, function(datum) {
+        return Dataset.types[this.type].coerce(datum, this);
+      }, this);
+    },
+
+    /**
+    * If this is a computed column, it calculates the value
+    * for this column and adds it to the data.
+    * Parameters:
+    *   row - the row from which column is computed.
+    *   i - Optional. the index at which this value will get added.
+    * Returns
+    *   val - the computed value
+    */
+    compute : function(row, i) {
+      if (this.func) {
+        var val = this.func(row);
+        if (typeof i !== "undefined") {
+          this.data[i] = val;  
+        } else {
+          this.data.push(val);
+        }
+        
+        return val;
+      }
+    },
+
+    /**
+    * returns true if this is a computed column. False otherwise.
+    */
+    isComputed : function() {
+      return !_.isUndefined(this.func);
+    },
+
+    _sum : function() {
+      return _.sum(this.data);
+    },
+
+    _mean : function() {
+      var m = 0;
+      for (var j = 0; j < this.data.length; j++) {
+        m += this.numericAt(j);
+      }
+      m /= this.data.length;
+      return Dataset.types[this.type].coerce(m, this);
+    },
+
+    _median : function() {
+      return Dataset.types[this.type].coerce(_.median(this.data), this);
+    },
+
+    _max : function() {
+      var max = -Infinity;
+      for (var j = 0; j < this.data.length; j++) {
+        if (this.data[j] !== null) {
+          if (Dataset.types[this.type].compare(this.data[j], max) > 0) {
+            max = this.numericAt(j);
+          }  
+        }
+      }
+
+      return Dataset.types[this.type].coerce(max, this);
+    },
+
+    _min : function() {
+      var min = Infinity;
+      for (var j = 0; j < this.data.length; j++) {
+        if (this.data[j] !== null) {
+          if (Dataset.types[this.type].compare(this.data[j], min) < 0) {
+            min = this.numericAt(j);
+          }  
+        }
+      }
+      return Dataset.types[this.type].coerce(min, this);
+    }
+  });
+
+  /**
+  * Creates a new view.
+  * Parameters
+  *   options - initialization parameters:
+  *     parent : parent dataset
+  *     filter : filter specification TODO: document better
+  *       columns : column name or multiple names
+  *       rows : rowId or function
+  * Returns
+  *   new Miso.Dataview.
+  */
+  Dataset.DataView = function(options) {
+    if (typeof options !== "undefined") {
+      options = options || (options = {});
+
+      if (_.isUndefined(options.parent)) {
+        throw new Error("A view must have a parent specified.");
+      } 
+      this.parent = options.parent;
+      this._initialize(options);
+    }
+  };
+
+  _.extend(Dataset.DataView.prototype, {
+
+    _initialize: function(options) {
+      
+      // is this a syncable dataset? if so, pull
+      // required methoMiso and mark this as a syncable dataset.
+      if (this.parent.syncable === true) {
+        _.extend(this, Dataset.Events);
+        this.syncable = true;
+      }
+
+      this.idAttribute = this.parent.idAttribute;
+
+      // save filter
+      this.filter = { };
+      this.filter.columns = _.bind(this._columnFilter(options.filter.columns || undefined), this);
+      this.filter.rows = _.bind(this._rowFilter(options.filter.rows || undefined), this);
+      
+      // initialize columns.
+      this._columns = this._selectData();
+
+      Dataset.Builder.cacheColumns(this);
+      Dataset.Builder.cacheRows(this);
+
+      // bind to parent if syncable
+      if (this.syncable) {
+        this.parent.bind("change", this._sync, this);  
+      }
+    },
+
+    // Syncs up the current view based on a passed delta.
+    _sync : function(event) {
+      var deltas = event.deltas, eventType = null;
+ 
+      // iterate over deltas and update rows that are affected.
+      _.each(deltas, function(d, deltaIndex) {
+        
+        // find row position based on delta _id
+        var rowPos = this._rowPositionById[d[this.idAttribute]];
+
+        // ===== ADD NEW ROW
+
+        if (typeof rowPos === "undefined" && Dataset.Event.isAdd(d)) {
+          // this is an add event, since we couldn't find an
+          // existing row to update and now need to just add a new
+          // one. Use the delta's changed properties as the new row
+          // if it passes the filter.
+          if (this.filter.rows && this.filter.rows(d.changed)) {
+            this._add(d.changed);  
+            eventType = "add";
+          }
+        } else {
+
+          //===== UPDATE EXISTING ROW
+          if (rowPos === "undefined") { return; }
+          
+          // iterate over each changed property and update the value
+          _.each(d.changed, function(newValue, columnName) {
+            
+            // find col position based on column name
+            var colPos = this._columnPositionByName[columnName];
+            if (_.isUndefined(colPos)) { return; }
+            this._columns[colPos].data[rowPos] = newValue;
+
+            eventType = "update";
+          }, this);
+        }
+
+
+        // ====== DELETE ROW (either by event or by filter.)
+        // TODO check if the row still passes filter, if not
+        // delete it.
+        var row = this.rowByPosition(rowPos);
+    
+        // if this is a delete event OR the row no longer
+        // passes the filter, remove it.
+        if (Dataset.Event.isRemove(d) || 
+            (this.filter.row && !this.filter.row(row))) {
+
+          // Since this is now a delete event, we need to convert it
+          // to such so that any child views, know how to interpet it.
+
+          var newDelta = {
+            old : this.rowByPosition(rowPos),
+            changed : {}
+          };
+          newDelta[this.idAttribute] = d[this.idAttribute];
+
+          // replace the old delta with this delta
+          event.deltas.splice(deltaIndex, 1, newDelta);
+
+          // remove row since it doesn't match the filter.
+          this._remove(rowPos);
+          eventType = "delete";
+        }
+
+      }, this);
+
+      // trigger any subscribers 
+      if (this.syncable) {
+        this.trigger(eventType, event);
+        this.trigger("change", event);  
+      }
+    },
+
+    /**
+    * Returns a dataset view based on the filtration parameters 
+    * Parameters:
+    *   filter - object with optional columns array and filter object/function 
+    *   options - Options.
+    * Returns:
+    *   new Miso.Dataset.DataView
+    */
+    where : function(filter, options) {
+      options = options || {};
+      options.filter = options.filter || {};
+      if ( _.isFunction(filter) ) {
+        options.filter.rows = filter;
+      } else {
+        options.filter = filter;
+      }
+      
+      options.parent = this;
+
+      return new Dataset.DataView(options);
+    },
+
+    _selectData : function() {
+      var selectedColumns = [];
+
+      _.each(this.parent._columns, function(parentColumn) {
+        
+        // check if this column passes the column filter
+        if (this.filter.columns(parentColumn)) {
+          selectedColumns.push(new Dataset.Column({
+            name : parentColumn.name,
+            data : [], 
+            type : parentColumn.type,
+            _id : parentColumn._id
+          }));
+        }
+
+      }, this);
+
+      // get the data that passes the row filter.
+      this.parent.each(function(row) {
+
+        if (!this.filter.rows(row)) { 
+          return; 
+        }
+
+        for(var i = 0; i < selectedColumns.length; i++) {
+          selectedColumns[i].data.push(row[selectedColumns[i].name]);
+        }
+      }, this);
+
+      return selectedColumns;
+    },
+
+    /**
+    * Returns a normalized version of the column filter function
+    * that can be executed.
+    * Parameters:
+    *   columnFilter - function or column name
+    */
+    _columnFilter: function(columnFilter) {
+      var columnSelector;
+
+      // if no column filter is specified, then just
+      // return a passthrough function that will allow
+      // any column through.
+      if (_.isUndefined(columnFilter)) {
+        columnSelector = function() {
+          return true;
+        };
+      } else { //array
+        if (_.isString(columnFilter) ) {
+          columnFilter = [ columnFilter ];
+        }
+        columnFilter.push(this.idAttribute);
+        columnSelector = function(column) {
+          return _.indexOf(columnFilter, column.name) === -1 ? false : true;
+        };
+      }
+
+      return columnSelector;
+    },
+
+    /**
+    * Returns a normalized row filter function
+    * that can be executed 
+    */
+    _rowFilter: function(rowFilter) {
+      
+      var rowSelector;
+
+      //support for a single ID;
+      if (_.isNumber(rowFilter)) {
+        rowFilter = [rowFilter];
+      }
+
+      if (_.isUndefined(rowFilter)) {
+        rowSelector = function() { 
+          return true;
+        };
+
+      } else if (_.isFunction(rowFilter)) {
+        rowSelector = rowFilter;
+
+      } else { //array
+        rowSelector = _.bind(function(row) {
+          return _.indexOf(rowFilter, row[this.idAttribute]) === -1 ? 
+            false : 
+            true;
+        }, this);
+      }
+
+      return rowSelector;
+    },
+
+    /**
+    * Returns a dataset view of the given column name
+    * Parameters:
+    *   name - name of the column to be selected
+    * Returns:
+    *   Miso.Column.
+    */
+    column : function(name) {
+      return this._column(name);
+    },
+
+    _column : function(name) {
+      if (_.isUndefined(this._columnPositionByName)) { return undefined; }
+      var pos = this._columnPositionByName[name];
+      return this._columns[pos];
+    },
+
+    /**
+    * Returns a dataset view of the given columns 
+    * Parameters:
+    *   columnsArray - an array of column names
+    * Returns:
+    *   Miso.DataView.
+    */    
+    columns : function(columnsArray) {
+     return new Dataset.DataView({
+        filter : { columns : columnsArray },
+        parent : this
+      });
+    },
+
+    /**
+    * Returns the names of all columns, not including id column.
+    * Returns:
+    *   columnNames array
+    */
+    columnNames : function() {
+      var cols = _.pluck(this._columns, 'name');
+      return _.reject(cols, function( colName ) {
+        return colName === this.idAttribute || colName === '_oids';
+      }, this);
+    },
+
+    /** 
+    * Returns true if a column exists, false otherwise.
+    * Parameters:
+    *   name (string)
+    * Returns
+    *   true | false
+    */
+    hasColumn : function(name) {
+      return (!_.isUndefined(this._columnPositionByName[name]));
+    },
+
+    /**
+    * Iterates over all rows in the dataset
+    * Paramters:
+    *   iterator - function that is passed each row
+    *              iterator(rowObject, index, dataset)
+    *   context - options object. Optional.
+    */
+    each : function(iterator, context) {
+      for(var i = 0; i < this.length; i++) {
+        iterator.apply(context || this, [this.rowByPosition(i), i]);
+      }
+    },
+
+    /**
+    * Iterates over all rows in the dataset in reverse order
+    * Parameters:
+    *   iterator - function that is passed each row
+    *              iterator(rowObject, index, dataset)
+    *   context - options object. Optional.
+    */
+    reverseEach : function(iterator, context) {
+      for(var i = this.length-1; i >= 0; i--) {
+        iterator.apply(context || this, [this.rowByPosition(i), i]);
+      }
+    },
+
+    /**
+    * Iterates over each column.
+    * Parameters:
+    *   iterator - function that is passed:
+    *              iterator(colName, column, index)
+    *   context - options object. Optional.
+    */
+    eachColumn : function(iterator, context) {
+      // skip id col
+      var cols = this.columnNames();
+      for(var i = 0; i < cols.length; i++) {
+        iterator.apply(context || this, [cols[i], this.column(cols[i]), i]);
+      }  
+    },
+
+    /**
+    * Returns a single row based on its position (NOT ID.)
+    * Paramters:
+    *   i - position index
+    * Returns:
+    *   row object representation
+    */
+    rowByPosition : function(i) {
+      return this._row(i);
+    },
+
+    /** 
+    * Returns a single row based on its id (NOT Position.)
+    * Parameters:
+    *   id - unique id
+    * Returns:
+    *   row object representation
+    */
+    rowById : function(id) {
+      return this._row(this._rowPositionById[id]);
+    },
+
+    _row : function(pos) {
+      var row = {};
+      _.each(this._columns, function(column) {
+        row[column.name] = column.data[pos];
+      });
+      return row;   
+    },
+    _remove : function(rowId) {
+      var rowPos = this._rowPositionById[rowId];
+
+      // remove all values
+      _.each(this._columns, function(column) {
+        column.data.splice(rowPos, 1);
+      });
+      
+      // update caches
+      delete this._rowPositionById[rowId];
+      this._rowIdByPosition.splice(rowPos, 1);
+      this.length--;
+
+      return this;
+    },
+
+    _add : function(row, options) {
+      
+      // first coerce all the values appropriatly
+      _.each(row, function(value, key) {
+        var column = this.column(key);
+
+        // is this a computed column? if so throw an error
+        if (column.isComputed()) {
+          throw "You're trying to update a computed column. Those get computed!";
+        }
+
+        // if we suddenly see values for data that didn't exist before as a column
+        // just drop it. First fetch defines the column structure.
+        if (typeof column !== "undefined") {
+          var Type = Dataset.types[column.type];
+
+          // test if value matches column type
+          if (column.force || Type.test(row[column.name], column)) {
+            
+            // do we have a before filter? If so, pass it through that first
+            if (!_.isUndefined(column.before)) {
+              row[column.name] = column.before(row[column.name]);
+            }
+
+            // coerce it.
+            row[column.name] = Type.coerce(row[column.name], column);
+
+          } else {
+            throw("incorrect value '" + row[column.name] + 
+                  "' of type " + Dataset.typeOf(row[column.name], column) +
+                  " passed to column '" + column.name + "' with type " + column.type);  
+          
+          }
+        }
+      }, this);
+
+      // do we have any computed columns? If so we need to calculate their values.
+      if (this._computedColumns) {
+        _.each(this._computedColumns, function(column) {
+          var newVal = column.compute(row);
+          row[column.name] = newVal;
+        });
+      }
+
+      // if we don't have a comparator, just append them at the end.
+      if (_.isUndefined(this.comparator)) {
+        
+        // add all data
+        _.each(this._columns, function(column) {
+          if (!column.isComputed()) {
+            column.data.push(!_.isUndefined(row[column.name]) && !_.isNull(row[column.name]) ? row[column.name] : null);
+          }
+        });
+
+        this.length++;
+
+        // add row indeces to the cache
+        this._rowIdByPosition = this._rowIdByPosition || (this._rowIdByPosition = []);
+        this._rowPositionById = this._rowPositionById || (this._rowPositionById = {});
+
+        // if this row already exists, throw an error
+        if (typeof this._rowPositionById[row[this.idAttribute]] !== "undefined") {
+          throw "The id " + row[this.idAttribute] + " is not unique. The " + this.idAttribute + " column must be unique";
+        }
+
+        this._rowPositionById[row[this.idAttribute]] = this._rowIdByPosition.length;
+        this._rowIdByPosition.push(row[this.idAttribute]);
+      
+      // otherwise insert them in the right place. This is a somewhat
+      // expensive operation.    
+      } else {
+        
+        var insertAt = function(at, value, into) {
+          Array.prototype.splice.apply(into, [at, 0].concat(value));
+        };
+
+        var i;
+        this.length++;
+        for(i = 0; i < this.length; i++) {
+          var row2 = this.rowByPosition(i);
+          if (_.isUndefined(row2[this.idAttribute]) || this.comparator(row, row2) < 0) {
+            
+            _.each(this._columns, function(column) {
+              insertAt(i, (row[column.name] ? row[column.name] : null), column.data);
+            });
+            
+            break;
+          }
+        }
+    
+        // rebuild position cache... 
+        // we could splice it in but its safer this way.
+        this._rowIdByPosition = [];
+        this._rowPositionById = {};
+        this.each(function(row, i) {
+          this._rowIdByPosition.push(row[this.idAttribute]);
+          this._rowPositionById[row[this.idAttribute]] = i;
+        }, this);
+      }
+      
+      return this;
+    },
+
+    /**
+    * Returns a dataset view of filtered rows
+    * @param {function|array} filter - a filter function or object, 
+    * the same as where
+    */    
+    rows : function(filter) {
+      return new Dataset.DataView({
+        filter : { rows : filter },
+        parent : this
+      });
+    },
+
+    /**
+    * Sort rows based on comparator
+    *
+    * roughly taken from here: 
+    * http://jxlib.googlecode.com/svn-history/r977/trunk/src/Source/Data/heapsort.js
+    * License:
+    *   Copyright (c) 2009, Jon Bomgardner.
+    *   This file is licensed under an MIT style license
+    * Parameters:
+    *   options - Optional
+    */    
+    sort : function(args) {
+      var options = {};
+    
+      //If the first param is the comparator, set it as such.
+      if ( _.isFunction(args) ) {
+        options.comparator = args;
+      } else {
+        options = args || options;
+      }
+
+      if (options.comparator) {
+        this.comparator = options.comparator;
+      }
+      
+      if (_.isUndefined(this.comparator)) {
+        throw new Error("Cannot sort without this.comparator.");
+      } 
+
+      var count = this.length, end;
+
+      if (count === 1) {
+        // we're done. only one item, all sorted.
+        return;
+      }
+
+      var swap = _.bind(function(from, to) {
+      
+        // move second row over to first
+        var row = this.rowByPosition(to);
+
+        _.each(row, function(value, column) {
+          var colPosition = this._columnPositionByName[column],
+              value2 = this._columns[colPosition].data[from];
+          this._columns[colPosition].data.splice(from, 1, value);
+          this._columns[colPosition].data.splice(to, 1, value2);
+        }, this);
+      }, this);
+
+      var siftDown = _.bind(function(start, end) {
+        var root = start, child;
+        while (root * 2 <= end) {
+          child = root * 2;
+          var root_node = this.rowByPosition(root);
+
+          if ((child + 1 < end) && 
+              this.comparator(
+                this.rowByPosition(child), 
+                this.rowByPosition(child+1)
+              ) < 0) {
+            child++;  
+          }
+
+          if (this.comparator(
+                root_node, 
+                this.rowByPosition(child)) < 0) {
+                  
+            swap(root, child);
+            root = child;
+          } else {
+            return;
+          }
+     
+        }
+          
+      }, this);
+      
+
+      // puts data in max-heap order
+      var heapify = function(count) {
+        var start = Math.round((count - 2) / 2);
+        while (start >= 0) {
+          siftDown(start, count - 1);
+          start--;
+        }  
+      };
+
+      if (count > 2) {
+        heapify(count);
+
+        end = count - 1;
+        while (end > 1) {
+          
+          swap(end, 0);
+          end--;
+          siftDown(0, end);
+
+        }
+      } else {
+        if (this.comparator(
+            this.rowByPosition(0), 
+            this.rowByPosition(1)) > 0) {
+          swap(0,1);
+        }
+      }
+
+      // check last two rows, they seem to always be off sync.
+      if (this.comparator(
+          this.rowByPosition(this.length - 2), 
+          this.rowByPosition(this.length - 1)) > 0) {
+        swap(this.length - 1,this.length - 2);
+      }
+
+      if (this.syncable && options.silent) {
+        this.trigger("sort");
+      }
+      return this;
+    },
+
+    /**
+    * Exports a version of the dataset in json format.
+    * Returns:
+    *   Array of rows.
+    */
+    toJSON : function() {
+      var rows = [];
+      for(var i = 0; i < this.length; i++) {
+        rows.push(this.rowByPosition(i));
+      }
+      return rows;
+    }
+  });
+
+}(this, _));
+
+/**
+Library Deets go here
+USE OUR CODES
+
+Version 0.0.1.2
+*/
+
+(function(global, _, moment) {
+
+  var Dataset = global.Miso.Dataset;
+
+  // take on miso dataview's prototype
+  Dataset.prototype = new Dataset.DataView();
+
+  // add dataset methods to dataview.
+  _.extend(Dataset.prototype, {
+
+    /**
+    * @private
+    * Internal initialization method. Reponsible for data parsing.
+    * @param {object} options - Optional options  
+    */
+    _initialize: function(options) {
+
+      // is this a syncable dataset? if so, pull
+      // required methods and mark this as a syncable dataset.
+      if (options.sync === true) {
+        _.extend(this, Dataset.Events);
+        this.syncable = true;
+      }
+
+      this.idAttribute = options.idAttribute || '_id';
+
+      // initialize importer from options or just create a blank
+      // one for now, we'll detect it later.
+      this.importer = options.importer || null;
+
+      // default parser is object parser, unless otherwise specified.
+      this.parser  = options.parser || Dataset.Parsers.Obj;
+
+      // figure out out if we need another parser.
+      if (_.isUndefined(options.parser)) {
+        if (options.strict) {
+          this.parser = Dataset.Parsers.Strict;
+        } else if (options.delimiter) {
+          this.parser = Dataset.Parsers.Delimited;
+        } 
+      }
+
+      // initialize the proper importer
+      if (this.importer === null) {
+        if (options.url) {
+
+          if (!options.interval) {
+            this.importer = Dataset.Importers.Remote;  
+          } else {
+            this.importer = Dataset.Importers.Polling;
+            this.interval = options.interval;
+          }
+          
+        } else {
+          this.importer = Dataset.Importers.Local;
+        }
+      }
+
+      // initialize importer and parser
+      this.parser = new this.parser(options);
+
+      if (this.parser instanceof Dataset.Parsers.Delimited) {
+        options.dataType = "text";
+      }
+
+      this.importer = new this.importer(options);
+
+      // save comparator if we have one
+      if (options.comparator) {
+        this.comparator = options.comparator;  
+      }
+
+      // if we have a ready callback, save it too
+      if (options.ready) {
+        this.ready = options.ready;
+      }
+
+      // If new data is being fetched and we want to just
+      // replace existing rows, save this flag.
+      if (options.resetOnFetch) {
+        this.resetOnFetch = options.resetOnFetch;
+      }
+
+      // if new data is being fetched and we want to make sure
+      // only new rows are appended, a column must be provided
+      // against which uniqueness will be checked.
+      // otherwise we are just going to blindly add rows.
+      if (options.uniqueAgainst) {
+        this.uniqueAgainst = options.uniqueAgainst;
+      }
+
+      // if there is no data and no url set, we must be building
+      // the dataset from scratch, so create an id column.
+      if (_.isUndefined(options.data) && _.isUndefined(options.url)) {
+        this._addIdColumn();  
+      }
+
+      // if for any reason, you want to use a different deferred
+      // implementation, pass it as an option
+      if (options.deferred) {
+        this.deferred = options.deferred;
+      } else {
+        this.deferred =  new _.Deferred();
+      }
+
+      //build any columns present in the constructor
+      if ( options.columns ) {
+        this.addColumns(options.columns);
+      }
+    },
+
+    /**
+    * Responsible for actually fetching the data based on the initialized dataset.
+    * Note that this needs to be called for either local or remote data.
+    * There are three different ways to use this method:
+    * ds.fetch() - will just fetch the data based on the importer. Note that for async 
+    *              fetching this isn't blocking so don't put your next set of instructions
+    *              expecting the data to be there.
+    * ds.fetch({
+    *   success: function() { 
+    *     // do stuff
+    *     // this is the dataset.
+    *   },
+    *   error : function(e) {
+    *     // do stuff
+    *   }
+    * })        - Allows you to pass success and error callbacks that will be called once data
+    *             is property fetched.
+    *
+    * _.when(ds.fetch(), function() {
+    *   // do stuff
+    *   // note 'this' is NOT the dataset.
+    * })        - Allows you to use deferred behavior to potentially chain multiple datasets.
+    *
+    * @param {object} options Optional success/error callbacks.
+    **/
+    fetch : function(options) {
+      options = options || {};
+      
+      var dfd = this.deferred;
+
+      if ( _.isNull(this.importer) ) {
+        throw "No importer defined";
+      }
+
+      this.importer.fetch({
+        success: _.bind(function( data ) {
+
+          try {
+            this._apply( data );
+          } catch (e) {
+            if (options.error) {
+              options.error.call(this, e);
+            } else {
+              throw e;
+            }
+          }
+
+          // if a comparator was defined, sort the data
+          if (this.comparator) {
+            this.sort();
+          }
+
+          if (this.ready) {
+            this.ready.call(this);
+          }
+
+          if (options.success) {
+            options.success.call(this);
+          }
+
+          // Ensure the context of the promise is set to the Dataset
+          dfd.resolveWith(this, [this]);
+
+        }, this),
+
+        error : _.bind(function(e) {
+          if (options.error) {
+            options.error.call(this, e);
+          }
+
+          dfd.reject(e);
+        }, this)
+      });
+
+      return dfd.promise();
+    },
+
+    //These are the methods that will be used to determine
+    //how to update a dataset's data when fetch() is called
+    _applications : {
+
+      //Update existing values, used the pass column to match 
+      //incoming data to existing rows.
+      againstColumn : function(data) {
+        var rows = [],
+            colNames = _.keys(data),   
+            row,
+            uniqName = this.uniqueAgainst,
+            uniqCol = this.column(uniqName),
+            toAdd = [],
+            toUpdate = [],
+            toRemove = [];
+
+        _.each(data[uniqName], function(key, dataIndex) { 
+          var rowIndex = uniqCol.data.indexOf( Dataset.types[uniqCol.type].coerce(key) );
+
+          var row = {};
+          _.each(data, function(col, name) {
+            row[name] = col[dataIndex];
+          });
+
+          if (rowIndex === -1) {
+            toAdd.push( row );
+          } else {
+            toUpdate.push( row );
+            row[this.idAttribute] = this.rowById(this.column(this.idAttribute).data[rowIndex])[this.idAttribute];
+            this.update(row);
+          }
+        }, this);
+        if (toAdd.length > 0) {
+          this.add(toAdd);
+        }
+      },
+
+      //Always blindly add new rows
+      blind : function( data ) {
+        var columnName, columnData, rows = [], row;
+
+        // figure out the length of rows we have.
+        var colNames = _.keys(data),
+            dataLength = _.max(_.map(colNames, function(name) {
+              return data[name].length;
+            }, this));
+
+        // build row objects
+        for( var i = 0; i < dataLength; i++) {
+          row = {};
+          for(var j = 0; j < colNames.length; j++) {
+            row[colNames[j]] = data[colNames[j]][i];
+          }
+          rows.push(row);
+        }
+
+        this.add(rows);
+      }
+    },
+
+    //Takes a dataset and some data and applies one to the other
+    _apply : function( data ) {
+      
+      var parsed = this.parser.parse( data );
+
+      // first time fetch
+      if ( !this.fetched ) {
+
+        // create columns (inc _id col.)
+        this._addIdColumn();
+        this.addColumns( _.map(parsed.columns, function( name ) {
+            return { name : name };
+          })
+        );
+        
+        // detect column types, add all rows blindly and cache them.
+        Dataset.Builder.detectColumnTypes(this, parsed.data);
+        this._applications.blind.call( this, parsed.data );
+        
+        this.fetched = true;
+      
+      // reset on fetch
+      } else if (this.resetOnFetch) {
+
+        // clear the data
+        this.reset();
+
+        // blindly add the data.
+        this._applications.blind.call( this, parsed.data );
+
+      // append
+      } else if (this.uniqueAgainst) {
+
+        // make sure we actually have this column
+        if (!this.hasColumn(this.uniqueAgainst)) {
+          throw new Error("You requested a unique add against a column that doesn't exist.");
+        }
+
+        this._applications.againstColumn.call(this, parsed.data);
+      
+      // polling fetch, just blindly add rows
+      } else {
+        this._applications.blind.call( this, parsed.data );
+      }
+
+      Dataset.Builder.cacheRows(this);
+    },
+
+    /**
+    * Adds columns to the dataset.
+    */
+    addColumns : function( columns ) {
+      _.each(columns, function( column ) {
+        this.addColumn( column );
+      }, this);
+    },
+
+    /**
+    * Allows adding of a computed column. A computed column is
+    * a column that is somehow based on the other existing columns.
+    * Parameters:
+    *   name : name of new column
+    *   type : The type of the column based on existing types.
+    *   func : The way that the column is derived. It takes a row as a parameter.
+    */
+    addComputedColumn : function(name, type, func) {
+      // check if we already ahve a column by this name.
+      if ( !_.isUndefined(this.column(name)) ) { 
+        throw "There is already a column by this name.";
+      } else {
+
+        // check that this is a known type.
+        if (typeof Dataset.types[type] === "undefined") {
+          throw "The type " + type + " doesn't exist";
+        }
+
+        var column = new Dataset.Column({
+          name : name,
+          type : type,
+          func : _.bind(func, this)
+        });
+
+        this._columns.push(column);
+        this._computedColumns.push(column);
+        this._columnPositionByName[column.name] = this._columns.length - 1;
+
+        // do we already have data? if so compute the values for this column.
+        if (this.length > 0) {
+          this.each(function(row, i) {
+            column.compute(row, i);
+          }, this);
+        }
+
+        return column;
+      }
+    },
+
+    /** 
+    * Adds a single column to the dataset
+    * Parameters:
+    *   column : a set of properties describing a column (name, type, data etc.)
+    * Returns
+    *   Miso.Column object.
+    */
+    addColumn : function(column) {
+      //don't create a column that already exists
+      if ( !_.isUndefined(this.column(column.name)) ) { 
+        return false; 
+      }
+
+      column = new Dataset.Column( column );
+
+      this._columns.push( column );
+      this._columnPositionByName[column.name] = this._columns.length - 1;
+
+      return column;
+    },
+
+    /**
+    * Adds an id column to the column definition. If a count
+    * is provided, also generates unique ids.
+    * Parameters:
+    *   count - the number of ids to generate.
+    */
+    _addIdColumn : function( count ) {
+      // if we have any data, generate actual ids.
+
+      if (!_.isUndefined(this.column(this.idAttribute))) {
+        return;
+      }
+
+      var ids = [];
+      if (count && count > 0) {
+        _.times(count, function() {
+          ids.push(_.uniqueId());
+        });
+      }
+
+      // add the id column
+      var idCol = this.addColumn({ name: this.idAttribute, data : ids });
+      // is this the default _id? if so set numeric type. Otherwise,
+      // detect data
+      if (this.idAttribute === "_id") {
+        idCol.type = "number";
+      }
+
+      // did we accidentally add it to the wrong place? (it should always be first.)
+      if (this._columnPositionByName[this.idAttribute] !== 0) {
+
+        // we need to move it to the beginning and unshift all the other
+        // columns
+        var oldIdColPos = this._columnPositionByName[this.idAttribute];
+
+        // move col back 
+        this._columns.splice(oldIdColPos, 1);
+        this._columns.unshift(idCol);
+        
+        this._columnPositionByName[this.idAttribute] = 0;
+        _.each(this._columnPositionByName, function(pos, colName) {
+          if (colName !== this.idAttribute && this._columnPositionByName[colName] < oldIdColPos) {
+            this._columnPositionByName[colName]++;
+          }
+        }, this);
+      }
+      
+    },
+
+    /**
+    * Add a row to the dataset. Triggers add and change.
+    * Parameters:
+    *   row - an object representing a row in the form of:
+    *         {columnName: value}
+    *   options - options
+    *     silent: boolean, do not trigger an add (and thus view updates) event
+    */    
+    add : function(rows, options) {
+      
+      options = options || {};
+
+      if (!_.isArray(rows)) {
+        rows = [rows];
+      }
+
+      var deltas = [];
+
+      _.each(rows, function(row) {
+        if (!row[this.idAttribute]) {
+          row[this.idAttribute] = _.uniqueId();
+        }
+
+        this._add(row, options);
+
+        // store all deltas for a single fire event.
+        if (this.syncable && !options.silent) {
+          deltas.push({ changed : row });
+        }
+      
+      }, this);
+      
+      if (this.syncable && !options.silent) {
+        var e = this._buildEvent(deltas, this);
+        this.trigger('add', e );
+        this.trigger('change', e );
+      }
+
+      return this;
+    },
+
+    /**
+    * Remove all rows that match the filter. Fires remove and change.
+    * Parameters:
+    *   filter - row id OR function applied to each row to see if it should be removed.
+    *   options - options. Optional.
+    *     silent: boolean, do not trigger an add (and thus view updates) event
+    */    
+    remove : function(filter, options) {
+      filter = this._rowFilter(filter);
+      var deltas = [], rowsToRemove = [];
+
+      this.each(function(row, rowIndex) {
+        if (filter(row)) {
+          rowsToRemove.push(row[this.idAttribute]);
+          deltas.push( { old: row } );
+        }
+      });
+
+      // don't attempt tp remove the rows while iterating over them
+      // since that modifies the length of the dataset and thus
+      // terminates the each loop early. 
+      _.each(rowsToRemove, function(rowId) {
+        this._remove(rowId);  
+      }, this);
+      
+      if (this.syncable && (!options || !options.silent)) {
+        var ev = this._buildEvent( deltas, this );
+        this.trigger('remove', ev );
+        this.trigger('change', ev );
+      }
+    },
+
+    _arrayUpdate : function(rows) {
+      var deltas = [];
+      _.each(rows, function(newRow) {
+        var delta = { old : {}, changed : {} };
+        delta[this.idAttribute] = newRow[this.idAttribute];
+
+        var pos = this._rowPositionById[newRow[this.idAttribute]];
+        _.each(newRow, function(value, prop) {
+          var column = this._columns[this._columnPositionByName[prop]];
+          var type = Dataset.types[column.type];
+
+          if ((column.name === this.idAttribute) && (column.data[pos] !== value)) {
+            throw "You can't update the id column";
+          }
+
+          if (typeof column === "undefined") { 
+            throw "column " + prop + " not found!"; 
+          }
+
+          //Ensure value passes the type test
+          if (!type.test(value, column)) {
+            throw "Value is incorrect type";
+          }
+
+          //skip if computed column
+          if (this._computedColumns[column.name]) {
+            return;
+          }
+
+          value = type.coerce(value, column);
+
+          //Run any before filters on the column
+          if (!_.isUndefined(column.before)) {
+            value = column.before(value);
+          }
+ 
+          if (column.data[pos] !== value) {
+            delta.old[prop] = column.data[pos];
+            column.data[pos] = value;
+            delta.changed[prop] = value;
+          }
+
+
+        }, this);
+
+          // Update any computed columns
+          if (typeof this._computedColumns !== "undefined") {
+            _.each(this._computedColumns, function(column) {
+              var temprow = _.extend({}, this._row(pos)),
+                  oldValue = temprow[column.name],
+                  newValue = column.compute(temprow, pos);
+              if (oldValue !== newValue) {
+                delta.old[column.name] = oldValue;
+                column.data[pos] = newValue;
+                delta.changed[column.name] = newValue;
+              }
+            }, this);
+          }
+        if ( _.keys(delta.changed).length > 0 ) {
+          deltas.push(delta);
+        }
+      }, this);
+      return deltas;
+    },
+
+    _functionUpdate : function(func) {
+      var rows = [];
+      for(var i = 0; i < this.length; i++) {
+        var newRow = func(this.rowByPosition(i));
+        if (newRow !== false) {
+          rows.push( newRow );
+        }
+      }
+      return this._arrayUpdate(rows);
+    },
+
+    /**
+    * Update can be used on one of three ways.
+    * 1: To update specific rows by passing in an object with the _id
+    * 2: To update a number of rows by passing in an array of objects with _ids
+    * 3: To update a number of row by passing in a function which will be applied to
+    * all rows.
+    * */    
+    update : function( rowsOrFunction, options ) {
+      var deltas;
+
+      if ( _.isFunction(rowsOrFunction) ) {
+        deltas = this._functionUpdate(rowsOrFunction);
+      } else {
+        var rows = _.isArray(rowsOrFunction) ? rowsOrFunction : [rowsOrFunction];
+        deltas = this._arrayUpdate(rows);
+      }
+
+      //computer column updates
+      //update triggers
+      if (this.syncable && (!options || !options.silent)) {
+        var ev = this._buildEvent( deltas, this );
+        this.trigger('update', ev );
+        this.trigger('change', ev );
+      }
+      return this;
+    },
+
+    /**
+    * Clears all the rows
+    * Fires a "reset" event.
+    * Parameters:
+    *   options (object)
+    *     silent : true | false.
+    */
+    reset : function(options) {
+      _.each(this._columns, function(col) {
+        col.data = [];
+      });
+      this.length = 0;
+      if (this.syncable && (!options || !options.silent)) {
+        this.trigger("reset");
+      }
+    }
+
+  });
+  
+}(this, _, moment));
+
+
+(function(global, _) {
+
+  var Dataset = global.Miso.Dataset;
+
+  Dataset.typeOf = function(value, options) {
+    var types = _.keys(Dataset.types),
         chosenType;
 
     //move string and mixed to the end
@@ -6522,7 +7874,7 @@ if (!JSON) {
     types.push(types.splice(_.indexOf(types, 'mixed'), 1)[0]);
 
     chosenType = _.find(types, function(type) {
-      return Miso.types[type].test(value, options);
+      return Dataset.types[type].test(value, options);
     });
 
     chosenType = _.isUndefined(chosenType) ? 'string' : chosenType;
@@ -6530,7 +7882,7 @@ if (!JSON) {
     return chosenType;
   };
   
-  Miso.types = {
+  Dataset.types = {
     
     mixed : {
       name : 'mixed',
@@ -6585,7 +7937,7 @@ if (!JSON) {
       }
     },
 
-    boolean : {
+    "boolean" : {
       name : "boolean",
       regexp : /^(true|false)$/,
       coerce : function(v) {
@@ -6744,7 +8096,7 @@ if (!JSON) {
 
 (function(global, _) {
 
-  var Miso = global.Miso || (global.Miso = {});
+  var Dataset = global.Miso.Dataset;
 
   /**
   * A representation of an event as it is passed through the
@@ -6754,14 +8106,15 @@ if (!JSON) {
   *   deltas - array of deltas.
   *     each delta: { changed : {}, old : {} }
   */
-  Miso.Event = function(deltas) {
+  Dataset.Event = function(deltas, dataset) {
     if (!_.isArray(deltas)) {
       deltas = [deltas];
     }
     this.deltas = deltas;
+    this.dataset = dataset || null;
   };
 
-  _.extend(Miso.Event.prototype, {
+  _.extend(Dataset.Event.prototype, {
     affectedColumns : function() {
       var cols = [];
       _.each(this.deltas, function(delta) {
@@ -6770,15 +8123,15 @@ if (!JSON) {
         cols = _.chain(cols)
           .union(_.keys(delta.old), _.keys(delta.changed) )
           .reject(function(col) {
-            return col === '_id';
-          }).value();
-      });
+            return col === this.dataset.idAttribute;
+          }, this).value();
+      }, this);
 
       return cols;
     }
   });
 
-   _.extend(Miso.Event, {
+   _.extend(Dataset.Event, {
     /**
     * Returns true if the event is a deletion
     */
@@ -6815,7 +8168,7 @@ if (!JSON) {
   
   
   //Event Related Methods
-  Miso.Events = {};
+  Dataset.Events = {};
 
   /**
   * Bind callbacks to dataset events
@@ -6826,7 +8179,7 @@ if (!JSON) {
   * Returns 
   *   object being bound to.
   */
-  Miso.Events.bind = function (ev, callback, context) {
+  Dataset.Events.bind = function (ev, callback, context) {
     var calls = this._callbacks || (this._callbacks = {});
     var list  = calls[ev] || (calls[ev] = {});
     var tail = list.tail || (list.tail = list.next = {});
@@ -6846,7 +8199,7 @@ if (!JSON) {
   * Returns:
   *   The object being unbound from.
   */
-  Miso.Events.unbind = function(ev, callback) {
+  Dataset.Events.unbind = function(ev, callback) {
     var calls, node, prev;
     if (!ev) {
       this._callbacks = null;
@@ -6874,7 +8227,7 @@ if (!JSON) {
   * Returns;
   *   object being triggered on.
   */
-  Miso.Events.trigger = function(eventName) {
+  Dataset.Events.trigger = function(eventName) {
     var node, calls, callback, args, ev, events = ['all', eventName];
     if (!(calls = this._callbacks)) {
       return this;
@@ -6894,20 +8247,20 @@ if (!JSON) {
   };
 
   // Used to build event objects accross the application.
-  Miso.Events._buildEvent = function(delta) {
-    return new Miso.Event(delta);
+  Dataset.Events._buildEvent = function(delta, dataset) {
+    return new Dataset.Event(delta, dataset);
   };
 }(this, _));
 
 (function(global, _) {
   
-  var Miso = global.Miso || {};
+  var Dataset = global.Miso.Dataset;
   
   /**
   * This is a generic collection of dataset-building utilities
   * that are used by Miso.Dataset and Miso.DataView.
   */
-  Miso.Builder = {
+  Dataset.Builder = {
 
     /**
     * Detects the type of a column based on some input data.
@@ -6923,7 +8276,7 @@ if (!JSON) {
       // and then squashing it to create a unique subset.
       var type = _.inject(data.slice(0, 5), function(memo, value) {
 
-        var t = Miso.typeOf(value);
+        var t = Dataset.typeOf(value);
 
         if (value !== "" && memo.indexOf(t) === -1 && !_.isNull(value)) {
           memo.push(t);
@@ -6959,7 +8312,7 @@ if (!JSON) {
           column.force = true;
           return; 
         } else {
-          Miso.Builder.detectColumnType(column, data);
+          Dataset.Builder.detectColumnType(column, data);
         }
 
       }, this);
@@ -6973,11 +8326,11 @@ if (!JSON) {
     */
     cacheRows : function(dataset) {
 
-      Miso.Builder.clearRowCache(dataset);
+      Dataset.Builder.clearRowCache(dataset);
 
       // cache the row id positions in both directions.
       // iterate over the _id column and grab the row ids
-      _.each(dataset._columns[dataset._columnPositionByName._id].data, function(id, index) {
+      _.each(dataset._columns[dataset._columnPositionByName[dataset.idAttribute]].data, function(id, index) {
         dataset._rowPositionById[id] = index;
         dataset._rowIdByPosition.push(id);
       }, dataset);  
@@ -7030,765 +8383,10 @@ if (!JSON) {
   }
 
 }(this, _));
-(function(global, _) {
-
-  var Miso = global.Miso;
-
-  /**
-  * A single column in a dataset
-  * Parameters:
-  *   options
-  *     name
-  *     type (from Miso.types)
-  *     data (optional)
-  *     before (a pre coercion formatter)
-  *     format (for time type.)
-  *     any additional arguments here..
-  * Returns:
-  *   new Miso.Column
-  */
-  Miso.Column = function(options) {
-    _.extend(this, options);
-    this._id = options.id || _.uniqueId();
-    this.data = options.data || [];
-    return this;
-  };
-
-  _.extend(Miso.Column.prototype, {
-
-    /**
-    * Converts any value to this column's type for a given position
-    * in some source array.
-    * Parameters:
-    *   value
-    * Returns: 
-    *   number
-    */
-    toNumeric : function(value) {
-      return Miso.types[this.type].numeric(value);
-    },
-
-    /**
-    * Returns the numeric representation of a datum at any index in this 
-    * column.
-    * Parameters:
-    *   index - position in data array
-    * Returns
-    *   number
-    */
-    numericAt : function(index) {
-      return this.toNumeric(this.data[index]);
-    },
-
-    /**
-    * Coerces the entire column's data to the column type.
-    */
-    coerce : function() {
-      this.data = _.map(this.data, function(datum) {
-        return Miso.types[this.type].coerce(datum, this);
-      }, this);
-    },
-
-    /**
-    * If this is a computed column, it calculates the value
-    * for this column and adds it to the data.
-    * Parameters:
-    *   row - the row from which column is computed.
-    *   i - Optional. the index at which this value will get added.
-    * Returns
-    *   val - the computed value
-    */
-    compute : function(row, i) {
-      if (this.func) {
-        var val = this.func(row);
-        if (typeof i !== "undefined") {
-          this.data[i] = val;  
-        } else {
-          this.data.push(val);
-        }
-        
-        return val;
-      }
-    },
-
-    /**
-    * returns true if this is a computed column. False otherwise.
-    */
-    isComputed : function() {
-      return !_.isUndefined(this.func);
-    },
-
-    _sum : function() {
-      return _.sum(this.data);
-    },
-
-    _mean : function() {
-      var m = 0;
-      for (var j = 0; j < this.data.length; j++) {
-        m += this.numericAt(j);
-      }
-      m /= this.data.length;
-      return Miso.types[this.type].coerce(m, this);
-    },
-
-    _median : function() {
-      return Miso.types[this.type].coerce(_.median(this.data), this);
-    },
-
-    _max : function() {
-      var max = -Infinity;
-      for (var j = 0; j < this.data.length; j++) {
-        if (this.data[j] !== null) {
-          if (Miso.types[this.type].compare(this.data[j], max) > 0) {
-            max = this.numericAt(j);
-          }  
-        }
-      }
-
-      return Miso.types[this.type].coerce(max, this);
-    },
-
-    _min : function() {
-      var min = Infinity;
-      for (var j = 0; j < this.data.length; j++) {
-        if (this.data[j] !== null) {
-          if (Miso.types[this.type].compare(this.data[j], min) < 0) {
-            min = this.numericAt(j);
-          }  
-        }
-      }
-      return Miso.types[this.type].coerce(min, this);
-    }
-  });
-
-  /**
-  * Creates a new view.
-  * Parameters
-  *   options - initialization parameters:
-  *     parent : parent dataset
-  *     filter : filter specification TODO: document better
-  *       columns : column name or multiple names
-  *       rows : rowId or function
-  * Returns
-  *   new Miso.Dataview.
-  */
-  Miso.DataView = function(options) {
-    if (typeof options !== "undefined") {
-      options = options || (options = {});
-
-      if (_.isUndefined(options.parent)) {
-        throw new Error("A view must have a parent specified.");
-      } 
-      this.parent = options.parent;
-      this._initialize(options);
-    }
-  };
-
-  _.extend(Miso.DataView.prototype, {
-
-    _initialize: function(options) {
-      
-      // is this a syncable dataset? if so, pull
-      // required methoMiso and mark this as a syncable dataset.
-      if (this.parent.syncable === true) {
-        _.extend(this, Miso.Events);
-        this.syncable = true;
-      }
-
-      // save filter
-      this.filter = {
-        columns : this._columnFilter(options.filter.columns || undefined),
-        rows    : this._rowFilter(options.filter.rows || undefined)
-      };
-
-      // initialize columns.
-      this._columns = this._selectData();
-
-      Miso.Builder.cacheColumns(this);
-      Miso.Builder.cacheRows(this);
-
-      // bind to parent if syncable
-      if (this.syncable) {
-        this.parent.bind("change", this._sync, this);  
-      }
-    },
-
-    // Syncs up the current view based on a passed delta.
-    _sync : function(event) {
-      var deltas = event.deltas, eventType = null;
- 
-      // iterate over deltas and update rows that are affected.
-      _.each(deltas, function(d, deltaIndex) {
-        
-        // find row position based on delta _id
-        var rowPos = this._rowPositionById[d._id];
-
-        // ===== ADD NEW ROW
-
-        if (typeof rowPos === "undefined" && Miso.Event.isAdd(d)) {
-          // this is an add event, since we couldn't find an
-          // existing row to update and now need to just add a new
-          // one. Use the delta's changed properties as the new row
-          // if it passes the filter.
-          if (this.filter.rows && this.filter.rows(d.changed)) {
-            this._add(d.changed);  
-            eventType = "add";
-          }
-        } else {
-
-          //===== UPDATE EXISTING ROW
-          if (rowPos === "undefined") { return; }
-          
-          // iterate over each changed property and update the value
-          _.each(d.changed, function(newValue, columnName) {
-            
-            // find col position based on column name
-            var colPos = this._columnPositionByName[columnName];
-            if (_.isUndefined(colPos)) { return; }
-            this._columns[colPos].data[rowPos] = newValue;
-
-            eventType = "update";
-          }, this);
-        }
-
-
-        // ====== DELETE ROW (either by event or by filter.)
-        // TODO check if the row still passes filter, if not
-        // delete it.
-        var row = this.rowByPosition(rowPos);
-    
-        // if this is a delete event OR the row no longer
-        // passes the filter, remove it.
-        if (Miso.Event.isRemove(d) || 
-            (this.filter.row && !this.filter.row(row))) {
-
-          // Since this is now a delete event, we need to convert it
-          // to such so that any child views, know how to interpet it.
-
-          var newDelta = {
-            _id : d._id,
-            old : this.rowByPosition(rowPos),
-            changed : {}
-          };
-
-          // replace the old delta with this delta
-          event.deltas.splice(deltaIndex, 1, newDelta);
-
-          // remove row since it doesn't match the filter.
-          this._remove(rowPos);
-          eventType = "delete";
-        }
-
-      }, this);
-
-      // trigger any subscribers 
-      if (this.syncable) {
-        this.trigger(eventType, event);
-        this.trigger("change", event);  
-      }
-    },
-
-    /**
-    * Returns a dataset view based on the filtration parameters 
-    * Parameters:
-    *   filter - object with optional columns array and filter object/function 
-    *   options - Options.
-    * Returns:
-    *   new Miso.DataView
-    */
-    where : function(filter, options) {
-      options = options || {};
-      options.filter = options.filter || {};
-      if ( _.isFunction(filter) ) {
-        options.filter.rows = filter;
-      } else {
-        options.filter = filter;
-      }
-      
-      options.parent = this;
-
-      return new Miso.DataView(options);
-    },
-
-    _selectData : function() {
-      var selectedColumns = [];
-
-      _.each(this.parent._columns, function(parentColumn) {
-        
-        // check if this column passes the column filter
-        if (this.filter.columns(parentColumn)) {
-          selectedColumns.push(new Miso.Column({
-            name : parentColumn.name,
-            data : [], 
-            type : parentColumn.type,
-            _id : parentColumn._id
-          }));
-        }
-
-      }, this);
-
-      // get the data that passes the row filter.
-      this.parent.each(function(row) {
-
-        if (!this.filter.rows(row)) { 
-          return; 
-        }
-
-        for(var i = 0; i < selectedColumns.length; i++) {
-          selectedColumns[i].data.push(row[selectedColumns[i].name]);
-        }
-      }, this);
-
-      return selectedColumns;
-    },
-
-    /**
-    * Returns a normalized version of the column filter function
-    * that can be executed.
-    * Parameters:
-    *   columnFilter - function or column name
-    */
-    _columnFilter: function(columnFilter) {
-      var columnSelector;
-
-      // if no column filter is specified, then just
-      // return a passthrough function that will allow
-      // any column through.
-      if (_.isUndefined(columnFilter)) {
-        columnSelector = function() {
-          return true;
-        };
-      } else { //array
-        if (_.isString(columnFilter) ) {
-          columnFilter = [ columnFilter ];
-        }
-        columnFilter.push('_id');
-        columnSelector = function(column) {
-          return _.indexOf(columnFilter, column.name) === -1 ? false : true;
-        };
-      }
-
-      return columnSelector;
-    },
-
-    /**
-    * Returns a normalized row filter function
-    * that can be executed 
-    */
-    _rowFilter: function(rowFilter) {
-      
-      var rowSelector;
-
-      //support for a single ID;
-      if (_.isNumber(rowFilter)) {
-        rowFilter = [rowFilter];
-      }
-
-      if (_.isUndefined(rowFilter)) {
-        rowSelector = function() { 
-          return true;
-        };
-
-      } else if (_.isFunction(rowFilter)) {
-        rowSelector = rowFilter;
-
-      } else { //array
-        rowSelector = function(row) {
-          return _.indexOf(rowFilter, row._id) === -1 ? false : true;
-        };
-      }
-
-      return rowSelector;
-    },
-
-    /**
-    * Returns a dataset view of the given column name
-    * Parameters:
-    *   name - name of the column to be selected
-    * Returns:
-    *   Miso.Column.
-    */
-    column : function(name) {
-      return this._column(name);
-    },
-
-    _column : function(name) {
-      if (_.isUndefined(this._columnPositionByName)) { return undefined; }
-      var pos = this._columnPositionByName[name];
-      return this._columns[pos];
-    },
-
-    /**
-    * Returns a dataset view of the given columns 
-    * Parameters:
-    *   columnsArray - an array of column names
-    * Returns:
-    *   Miso.DataView.
-    */    
-    columns : function(columnsArray) {
-     return new Miso.DataView({
-        filter : { columns : columnsArray },
-        parent : this
-      });
-    },
-
-    /**
-    * Returns the names of all columns, not including id column.
-    * Returns:
-    *   columnNames array
-    */
-    columnNames : function() {
-      var cols = _.pluck(this._columns, 'name');
-      return _.reject(cols, function( colName ) {
-        return colName === '_id' || colName === '_oids';
-      });
-    },
-
-    /** 
-    * Returns true if a column exists, false otherwise.
-    * Parameters:
-    *   name (string)
-    * Returns
-    *   true | false
-    */
-    hasColumn : function(name) {
-      return (!_.isUndefined(this._columnPositionByName[name]));
-    },
-
-    /**
-    * Iterates over all rows in the dataset
-    * Paramters:
-    *   iterator - function that is passed each row
-    *              iterator(rowObject, index, dataset)
-    *   context - options object. Optional.
-    */
-    each : function(iterator, context) {
-      for(var i = 0; i < this.length; i++) {
-        iterator.apply(context || this, [this.rowByPosition(i), i]);
-      }
-    },
-
-    /**
-    * Iterates over all rows in the dataset in reverse order
-    * Parameters:
-    *   iterator - function that is passed each row
-    *              iterator(rowObject, index, dataset)
-    *   context - options object. Optional.
-    */
-    reverseEach : function(iterator, context) {
-      for(var i = this.length-1; i >= 0; i--) {
-        iterator.apply(context || this, [this.rowByPosition(i), i]);
-      }
-    },
-
-    /**
-    * Iterates over each column.
-    * Parameters:
-    *   iterator - function that is passed:
-    *              iterator(colName, column, index)
-    *   context - options object. Optional.
-    */
-    eachColumn : function(iterator, context) {
-      // skip id col
-      var cols = this.columnNames();
-      for(var i = 0; i < cols.length; i++) {
-        iterator.apply(context || this, [cols[i], this.column(cols[i]), i]);
-      }  
-    },
-
-    /**
-    * Returns a single row based on its position (NOT ID.)
-    * Paramters:
-    *   i - position index
-    * Returns:
-    *   row object representation
-    */
-    rowByPosition : function(i) {
-      return this._row(i);
-    },
-
-    /** 
-    * Returns a single row based on its id (NOT Position.)
-    * Parameters:
-    *   id - unique id
-    * Returns:
-    *   row object representation
-    */
-    rowById : function(id) {
-      return this._row(this._rowPositionById[id]);
-    },
-
-    _row : function(pos) {
-      var row = {};
-      _.each(this._columns, function(column) {
-        row[column.name] = column.data[pos];
-      });
-      return row;   
-    },
-    _remove : function(rowId) {
-      var rowPos = this._rowPositionById[rowId];
-
-      // remove all values
-      _.each(this._columns, function(column) {
-        column.data.splice(rowPos, 1);
-      });
-      
-      // update caches
-      delete this._rowPositionById[rowId];
-      this._rowIdByPosition.splice(rowPos, 1);
-      this.length--;
-
-      return this;
-    },
-
-    _add : function(row, options) {
-      
-      // first coerce all the values appropriatly
-      _.each(row, function(value, key) {
-        var column = this.column(key);
-
-        // is this a computed column? if so throw an error
-        if (column.isComputed()) {
-          throw "You're trying to update a computed column. Those get computed!";
-        }
-
-        // if we suddenly see values for data that didn't exist before as a column
-        // just drop it. First fetch defines the column structure.
-        if (typeof column !== "undefined") {
-          var Type = Miso.types[column.type];
-
-          // test if value matches column type
-          if (column.force || Type.test(row[column.name], column)) {
-            
-            // do we have a before filter? If so, pass it through that first
-            if (!_.isUndefined(column.before)) {
-              row[column.name] = column.before(row[column.name]);
-            }
-
-            // coerce it.
-            row[column.name] = Type.coerce(row[column.name], column);
-
-          } else {
-            throw("incorrect value '" + row[column.name] + 
-                  "' of type " + Miso.typeOf(row[column.name], column) +
-                  " passed to column '" + column.name + "' with type " + column.type);  
-          
-          }
-        }
-      }, this);
-
-      // do we have any computed columns? If so we need to calculate their values.
-      if (this._computedColumns) {
-        _.each(this._computedColumns, function(column) {
-          var newVal = column.compute(row);
-          row[column.name] = newVal;
-        });
-      }
-
-      // if we don't have a comparator, just append them at the end.
-      if (_.isUndefined(this.comparator)) {
-        
-        // add all data
-        _.each(this._columns, function(column) {
-          if (!column.isComputed()) {
-            column.data.push(!_.isUndefined(row[column.name]) && !_.isNull(row[column.name]) ? row[column.name] : null);
-          }
-        });
-
-        this.length++;
-
-        // add row indeces to the cache
-        this._rowIdByPosition = this._rowIdByPosition || (this._rowIdByPosition = []);
-        this._rowPositionById = this._rowPositionById || (this._rowPositionById = {});
-        this._rowIdByPosition.push(row._id);
-        this._rowPositionById[row._id] = this._rowIdByPosition.length;
-      
-      // otherwise insert them in the right place. This is a somewhat
-      // expensive operation.    
-      } else {
-        
-        var insertAt = function(at, value, into) {
-          Array.prototype.splice.apply(into, [at, 0].concat(value));
-        };
-
-        var i;
-        this.length++;
-        for(i = 0; i < this.length; i++) {
-          var row2 = this.rowByPosition(i);
-          if (_.isUndefined(row2._id) || this.comparator(row, row2) < 0) {
-            
-            _.each(this._columns, function(column) {
-              insertAt(i, (row[column.name] ? row[column.name] : null), column.data);
-            });
-            
-            break;
-          }
-        }
-    
-        // rebuild position cache... 
-        // we could splice it in but its safer this way.
-        this._rowIdByPosition = [];
-        this._rowPositionById = {};
-        this.each(function(row, i) {
-          this._rowIdByPosition.push(row._id);
-          this._rowPositionById[row._id] = i;
-        });
-      }
-      
-      return this;
-    },
-
-    /**
-    * Returns a dataset view of filtered rows
-    * @param {function|array} filter - a filter function or object, 
-    * the same as where
-    */    
-    rows : function(filter) {
-      return new Miso.DataView({
-        filter : { rows : filter },
-        parent : this
-      });
-    },
-
-    /**
-    * Sort rows based on comparator
-    *
-    * roughly taken from here: 
-    * http://jxlib.googlecode.com/svn-history/r977/trunk/src/Source/Data/heapsort.js
-    * License:
-    *   Copyright (c) 2009, Jon Bomgardner.
-    *   This file is licensed under an MIT style license
-    * Parameters:
-    *   options - Optional
-    */    
-    sort : function(args) {
-      var options = {};
-    
-      //If the first param is the comparator, set it as such.
-      if ( _.isFunction(args) ) {
-        options.comparator = args;
-      } else {
-        options = args || options;
-      }
-
-      if (options.comparator) {
-        this.comparator = options.comparator;
-      }
-      
-      if (_.isUndefined(this.comparator)) {
-        throw new Error("Cannot sort without this.comparator.");
-      } 
-
-      var count = this.length, end;
-
-      if (count === 1) {
-        // we're done. only one item, all sorted.
-        return;
-      }
-
-      var swap = _.bind(function(from, to) {
-      
-        // move second row over to first
-        var row = this.rowByPosition(to);
-
-        _.each(row, function(value, column) {
-          var colPosition = this._columnPositionByName[column],
-              value2 = this._columns[colPosition].data[from];
-          this._columns[colPosition].data.splice(from, 1, value);
-          this._columns[colPosition].data.splice(to, 1, value2);
-        }, this);
-      }, this);
-
-      var siftDown = _.bind(function(start, end) {
-        var root = start, child;
-        while (root * 2 <= end) {
-          child = root * 2;
-          var root_node = this.rowByPosition(root);
-
-          if ((child + 1 < end) && 
-              this.comparator(
-                this.rowByPosition(child), 
-                this.rowByPosition(child+1)
-              ) < 0) {
-            child++;  
-          }
-
-          if (this.comparator(
-                root_node, 
-                this.rowByPosition(child)) < 0) {
-                  
-            swap(root, child);
-            root = child;
-          } else {
-            return;
-          }
-     
-        }
-          
-      }, this);
-      
-
-      // puts data in max-heap order
-      var heapify = function(count) {
-        var start = Math.round((count - 2) / 2);
-        while (start >= 0) {
-          siftDown(start, count - 1);
-          start--;
-        }  
-      };
-
-      if (count > 2) {
-        heapify(count);
-
-        end = count - 1;
-        while (end > 1) {
-          
-          swap(end, 0);
-          end--;
-          siftDown(0, end);
-
-        }
-      } else {
-        if (this.comparator(
-            this.rowByPosition(0), 
-            this.rowByPosition(1)) > 0) {
-          swap(0,1);
-        }
-      }
-
-      // check last two rows, they seem to always be off sync.
-      if (this.comparator(
-          this.rowByPosition(this.length - 2), 
-          this.rowByPosition(this.length - 1)) > 0) {
-        swap(this.length - 1,this.length - 2);
-      }
-
-      if (this.syncable && options.silent) {
-        this.trigger("sort");
-      }
-      return this;
-    },
-
-    /**
-    * Exports a version of the dataset in json format.
-    * Returns:
-    *   Array of rows.
-    */
-    toJSON : function() {
-      var rows = [];
-      for(var i = 0; i < this.length; i++) {
-        rows.push(this.rowByPosition(i));
-      }
-      return rows;
-    }
-  });
-
-}(this, _));
 
 (function(global, _) {
 
-  // shorthand
-  var Miso = global.Miso;
+  var Dataset = global.Miso.Dataset;
 
   /**
   * A Miso.Product is a single computed value that can be obtained 
@@ -7799,7 +8397,7 @@ if (!JSON) {
   *   func - the function that derives the computation.
   *   columns - the columns from which the function derives the computation
   */
-  Miso.Product = (Miso.Product || function(options) {
+  Dataset.Product = function(options) {
     options = options || {};
     
     // save column name. This will be necessary later
@@ -7822,9 +8420,9 @@ if (!JSON) {
 
     this.func({ silent : true });
     return this;
-  });
+  };
 
-  _.extend(Miso.Product.prototype, Miso.Events, {
+  _.extend(Dataset.Product.prototype, Dataset.Events, {
 
     /**
     * return the raw value of the product
@@ -7859,7 +8457,7 @@ if (!JSON) {
     }
   });
 
-  Miso.Product.define = function(func) {
+  Dataset.Product.define = function(func) {
     return function(columns, options) {
       options = options || {};
       var columnObjects = this._findColumns(columns);
@@ -7870,19 +8468,19 @@ if (!JSON) {
       //define wrapper function to handle coercion
       var producer = function() {
         var val = func.call(_self, columnObjects, options);
-        return Miso.types[options.type].coerce(val, options.typeOptions);
+        return Dataset.types[options.type].coerce(val, options.typeOptions);
       };
 
       if (this.syncable) {
         //create product object to pass back for syncable datasets/views
-        var prod = new Miso.Product({
+        var prod = new Dataset.Product({
           columns : columnObjects,
           func : function(options) {
             options = options || {};
             var delta = this._buildDelta(this.value, producer.call(_self));
             this.value = delta.changed;
             if (_self.syncable) {
-              var event = this._buildEvent(delta);
+              var event = this._buildEvent(delta, this);
               if (!_.isUndefined(delta.old) && !options.silent && delta.old !== delta.changed) {
                 this.trigger("change", event);
               }
@@ -7900,7 +8498,7 @@ if (!JSON) {
   };
 
 
-  _.extend(Miso.DataView.prototype, {
+  _.extend(Dataset.DataView.prototype, {
 
     // finds the column objects that match the single/multiple
     // input columns. Helper method.
@@ -7931,9 +8529,9 @@ if (!JSON) {
     *   options
     *     silent - set to tue to prevent event propagation
     */
-    sum : Miso.Product.define( function(columns, options) {
+    sum : Dataset.Product.define( function(columns, options) {
       _.each(columns, function(col) {
-        if (col.type === Miso.types.time.name) {
+        if (col.type === Dataset.types.time.name) {
           throw new Error("Can't sum up time");
         }
       });
@@ -7946,7 +8544,7 @@ if (!JSON) {
     * Parameters:
     *   column - string or array of column names on which the value is calculated 
     */    
-    max : Miso.Product.define( function(columns, options) {
+    max : Dataset.Product.define( function(columns, options) {
       return _.max(_.map(columns, function(c) { 
         return c._max(); 
       }));
@@ -7959,7 +8557,7 @@ if (!JSON) {
     * Paramaters:
     *   columns - string or array of column names on which the value is calculated 
     */    
-    min : Miso.Product.define( function(columns, options) {
+    min : Dataset.Product.define( function(columns, options) {
       return _.min(_.map(columns, function(c) { 
         return c._min(); 
       }));
@@ -7971,7 +8569,7 @@ if (!JSON) {
     * Parameters:
     *   column - string or array of column names on which the value is calculated 
     */    
-    mean : Miso.Product.define( function(columns, options) {
+    mean : Dataset.Product.define( function(columns, options) {
       var vals = [];
       _.each(columns, function(col) {
         vals.push(col.data);
@@ -7983,7 +8581,7 @@ if (!JSON) {
       var type = columns[0].type;
 
       // convert the values to their appropriate numeric value
-      vals = _.map(vals, function(v) { return Miso.types[type].numeric(v); });
+      vals = _.map(vals, function(v) { return Dataset.types[type].numeric(v); });
       return _.mean(vals);   
     })
 
@@ -7992,673 +8590,9 @@ if (!JSON) {
 }(this, _));
 
 
-/**
-Library Deets go here
-USE OUR CODES
-
-Version 0.0.1.2
-*/
-
-(function(global, _, moment) {
-
-  var Miso = global.Miso;
-
-  /**
-  * Instantiates a new dataset.
-  * Parameters:
-  * options - optional parameters. 
-  *   data : "Object - an actual javascript object that already contains the data",  
-  *   url : "String - url to fetch data from",
-  *   sync : Set to true to be able to bind to dataset changes. False by default.
-  *   jsonp : "boolean - true if this is a jsonp request",
-  *   delimiter : "String - a delimiter string that is used in a tabular datafile",
-  *   strict : "Whether to expect the json in our format or whether to interpret as raw array of objects, default false",
-  *   extract : "function to apply to JSON before internal interpretation, optional"
-  *   ready : the callback function to act on once the data is fetched. Isn't reuired for local imports
-  *           but is required for remote url fetching.
-  *   columns: A way to manually override column type detection. Expects an array of 
-  *            objects of the following structure: 
-  *           { name : 'columnname', type: 'columntype', 
-  *             ... (additional params required for type here.) }
-  *   comparator : function (optional) - takes two rows and returns 1, 0, or -1  if row1 is
-  *     before, equal or after row2. 
-  *   deferred : by default we use underscore.deferred, but if you want to pass your own (like jquery's) just
-  *              pass it here.
-  *   importer : The classname of any importer (passes through auto detection based on parameters. 
-  *              For example: <code>Miso.Importers.Polling</code>.
-  *   parser   : The classname of any parser (passes through auto detection based on parameters. 
-  *              For example: <code>Miso.Parsers.Delimited</code>.
-  *   resetOnFetch : set to true if any subsequent fetches after first one should overwrite the
-  *                  current data.
-  *   uniqueAgainst : Set to a column name to check for duplication on subsequent fetches.
-  *   interval : Polling interval. Set to any value in milliseconds to enable polling on a url.
-  }
-  */
-  Miso.Dataset = function(options) {
-    this.length = 0;
-    
-    this._columns = [];
-    this._columnPositionByName = {};
-    this._computedColumns = [];
-    
-    if (typeof options !== "undefined") {
-      options = options || {};
-      this._initialize(options);
-    }
-  };
-
-  // take on miso dataview's prototype
-  Miso.Dataset.prototype = new Miso.DataView();
-
-  // add dataset methods to dataview.
-  _.extend(Miso.Dataset.prototype, {
-
-    /**
-    * @private
-    * Internal initialization method. Reponsible for data parsing.
-    * @param {object} options - Optional options  
-    */
-    _initialize: function(options) {
-
-      // is this a syncable dataset? if so, pull
-      // required methods and mark this as a syncable dataset.
-      if (options.sync === true) {
-        _.extend(this, Miso.Events);
-        this.syncable = true;
-      }
-
-      // initialize importer from options or just create a blank
-      // one for now, we'll detect it later.
-      this.importer = options.importer || null;
-
-      // default parser is object parser, unless otherwise specified.
-      this.parser  = options.parser || Miso.Parsers.Obj;
-
-      // figure out out if we need another parser.
-      if (_.isUndefined(options.parser)) {
-        if (options.strict) {
-          this.parser = Miso.Parsers.Strict;
-        } else if (options.delimiter) {
-          this.parser = Miso.Parsers.Delimited;
-        } 
-      }
-
-      // initialize the proper importer
-      if (this.importer === null) {
-        if (options.url) {
-
-          if (!options.interval) {
-            this.importer = Miso.Importers.Remote;  
-          } else {
-            this.importer = Miso.Importers.Polling;
-            this.interval = options.interval;
-          }
-          
-        } else {
-          this.importer = Miso.Importers.Local;
-        }
-      }
-
-      // initialize importer and parser
-      this.parser = new this.parser(options);
-
-      if (this.parser instanceof Miso.Parsers.Delimited) {
-        options.dataType = "text";
-      }
-
-      this.importer = new this.importer(options);
-
-      // save comparator if we have one
-      if (options.comparator) {
-        this.comparator = options.comparator;  
-      }
-
-      // if we have a ready callback, save it too
-      if (options.ready) {
-        this.ready = options.ready;
-      }
-
-      // If new data is being fetched and we want to just
-      // replace existing rows, save this flag.
-      if (options.resetOnFetch) {
-        this.resetOnFetch = options.resetOnFetch;
-      }
-
-      // if new data is being fetched and we want to make sure
-      // only new rows are appended, a column must be provided
-      // against which uniqueness will be checked.
-      // otherwise we are just going to blindly add rows.
-      if (options.uniqueAgainst) {
-        this.uniqueAgainst = options.uniqueAgainst;
-      }
-
-      // if there is no data and no url set, we must be building
-      // the dataset from scratch, so create an id column.
-      if (_.isUndefined(options.data) && _.isUndefined(options.url)) {
-        this._addIdColumn();  
-      }
-
-      // if for any reason, you want to use a different deferred
-      // implementation, pass it as an option
-      if (options.deferred) {
-        this.deferred = options.deferred;
-      } else {
-        this.deferred =  new _.Deferred();
-      }
-
-      //build any columns present in the constructor
-      if ( options.columns ) {
-        this.addColumns(options.columns);
-      }
-    },
-
-    /**
-    * Responsible for actually fetching the data based on the initialized dataset.
-    * Note that this needs to be called for either local or remote data.
-    * There are three different ways to use this method:
-    * ds.fetch() - will just fetch the data based on the importer. Note that for async 
-    *              fetching this isn't blocking so don't put your next set of instructions
-    *              expecting the data to be there.
-    * ds.fetch({
-    *   success: function() { 
-    *     // do stuff
-    *     // this is the dataset.
-    *   },
-    *   error : function(e) {
-    *     // do stuff
-    *   }
-    * })        - Allows you to pass success and error callbacks that will be called once data
-    *             is property fetched.
-    *
-    * _.when(ds.fetch(), function() {
-    *   // do stuff
-    *   // note 'this' is NOT the dataset.
-    * })        - Allows you to use deferred behavior to potentially chain multiple datasets.
-    *
-    * @param {object} options Optional success/error callbacks.
-    **/
-    fetch : function(options) {
-      options = options || {};
-      
-      var dfd = this.deferred;
-
-      if ( _.isNull(this.importer) ) {
-        throw "No importer defined";
-      }
-
-      this.importer.fetch({
-        success: _.bind(function( data ) {
-
-          try {
-            this._apply( data );
-          } catch (e) {
-            if (options.error) {
-              options.error.call(this, e);
-            } else {
-              throw e;
-            }
-          }
-
-          // if a comparator was defined, sort the data
-          if (this.comparator) {
-            this.sort();
-          }
-
-          if (this.ready) {
-            this.ready.call(this);
-          }
-
-          if (options.success) {
-            options.success.call(this);
-          }
-
-          // Ensure the context of the promise is set to the Dataset
-          dfd.resolveWith(this, [this]);
-
-        }, this),
-
-        error : _.bind(function(e) {
-          if (options.error) {
-            options.error.call(this, e);
-          }
-
-          dfd.reject(e);
-        }, this)
-      });
-
-      return dfd.promise();
-    },
-
-    //These are the methods that will be used to determine
-    //how to update a dataset's data when fetch() is called
-    _applications : {
-
-      //Update existing values, used the pass column to match 
-      //incoming data to existing rows.
-      againstColumn : function(data) {
-        
-        var rows = [],
-            colNames = _.keys(data),   
-            row,
-            uniqName = this.uniqueAgainst,
-            uniqCol = this.column(uniqName),
-            toAdd = [],
-            toUpdate = [],
-            toRemove = [];
-
-        _.each(data[uniqName], function(key, dataIndex) { 
-          var rowIndex = uniqCol.data.indexOf( Miso.types[uniqCol.type].coerce(key) );
-
-          var row = {};
-          _.each(data, function(col, name) {
-            row[name] = col[dataIndex];
-          });
-
-          if (rowIndex === -1) {
-            toAdd.push( row );
-          } else {
-            toUpdate.push( row );
-            var oldRow = this.rowById(this.column('_id').data[rowIndex])._id;
-            this.update(oldRow, row);
-          }
-        }, this);
-        if (toAdd.length > 0) {
-          this.add(toAdd);
-        }
-      },
-
-      //Always blindly add new rows
-      blind : function( data ) {
-        var columnName, columnData, rows = [], row;
-
-        // figure out the length of rows we have.
-        var colNames = _.keys(data),
-            dataLength = _.max(_.map(colNames, function(name) {
-              return data[name].length;
-            }, this));
-
-        // build row objects
-        for( var i = 0; i < dataLength; i++) {
-          row = {};
-          for(var j = 0; j < colNames.length; j++) {
-            row[colNames[j]] = data[colNames[j]][i];
-          }
-          rows.push(row);
-        }
-
-        this.add(rows);
-      }
-    },
-
-    //Takes a dataset and some data and applies one to the other
-    _apply : function( data ) {
-      
-      var parsed = this.parser.parse( data );
-
-      // first time fetch
-      if ( !this.fetched ) {
-
-        // create columns (inc _id col.)
-        this._addIdColumn();
-        this.addColumns( _.map(parsed.columns, function( name ) {
-            return { name : name };
-          })
-        );
-        
-        // detect column types, add all rows blindly and cache them.
-        Miso.Builder.detectColumnTypes(this, parsed.data);
-        this._applications.blind.call( this, parsed.data );
-        
-        this.fetched = true;
-      
-      // reset on fetch
-      } else if (this.resetOnFetch) {
-
-        // clear the data
-        this.reset();
-
-        // blindly add the data.
-        this._applications.blind.call( this, parsed.data );
-
-      // append
-      } else if (this.uniqueAgainst) {
-
-        // make sure we actually have this column
-        if (!this.hasColumn(this.uniqueAgainst)) {
-          throw new Error("You requested a unique add against a column that doesn't exist.");
-        }
-
-        this._applications.againstColumn.call(this, parsed.data);
-      
-      // polling fetch, just blindly add rows
-      } else {
-        this._applications.blind.call( this, parsed.data );
-      }
-
-      Miso.Builder.cacheRows(this);
-    },
-
-    /**
-    * Adds columns to the dataset.
-    */
-    addColumns : function( columns ) {
-      _.each(columns, function( column ) {
-        this.addColumn( column );
-      }, this);
-    },
-
-    /**
-    * Allows adding of a computed column. A computed column is
-    * a column that is somehow based on the other existing columns.
-    * Parameters:
-    *   name : name of new column
-    *   type : The type of the column based on existing types.
-    *   func : The way that the column is derived. It takes a row as a parameter.
-    */
-    addComputedColumn : function(name, type, func) {
-      // check if we already ahve a column by this name.
-      if ( !_.isUndefined(this.column(name)) ) { 
-        throw "There is already a column by this name.";
-      } else {
-
-        // check that this is a known type.
-        if (typeof Miso.types[type] === "undefined") {
-          throw "The type " + type + " doesn't exist";
-        }
-
-        var column = new Miso.Column({
-          name : name,
-          type : type,
-          func : _.bind(func, this)
-        });
-
-        this._columns.push(column);
-        this._computedColumns.push(column);
-        this._columnPositionByName[column.name] = this._columns.length - 1;
-
-        // do we already have data? if so compute the values for this column.
-        if (this.length > 0) {
-          this.each(function(row, i) {
-            column.compute(row, i);
-          }, this);
-        }
-
-        return column;
-      }
-    },
-
-    /** 
-    * Adds a single column to the dataset
-    * Parameters:
-    *   column : a set of properties describing a column (name, type, data etc.)
-    * Returns
-    *   Miso.Column object.
-    */
-    addColumn : function(column) {
-      //don't create a column that already exists
-      if ( !_.isUndefined(this.column(column.name)) ) { 
-        return false; 
-      }
-
-      column = new Miso.Column( column );
-
-      this._columns.push( column );
-      this._columnPositionByName[column.name] = this._columns.length - 1;
-
-      return column;
-    },
-
-    /**
-    * Adds an id column to the column definition. If a count
-    * is provided, also generates unique ids.
-    * Parameters:
-    *   count - the number of ids to generate.
-    */
-    _addIdColumn : function( count ) {
-      // if we have any data, generate actual ids.
-
-      if (!_.isUndefined(this.column("_id"))) {
-        return;
-      }
-
-      var ids = [];
-      if (count && count > 0) {
-        _.times(count, function() {
-          ids.push(_.uniqueId());
-        });
-      }
-
-      // add the id column
-      this.addColumn({ name: "_id", type : "number", data : ids });
-
-      // did we accidentally add it to the wrong place? (it should always be first.)
-      if (this._columnPositionByName._id !== 0) {
-
-        // we need to move it to the beginning and unshift all the other
-        // columns
-        var idCol = this._columns[this._columnPositionByName._id],
-            oldIdColPos = this._columnPositionByName._id;
-
-        // move col back 
-        this._columns.splice(oldIdColPos, 1);
-        this._columns.unshift(idCol);
-        
-        this._columnPositionByName._id = 0;
-        _.each(this._columnPositionByName, function(pos, colName) {
-          if (colName !== "_id" && this._columnPositionByName[colName] < oldIdColPos) {
-            this._columnPositionByName[colName]++;
-          }
-        }, this);
-      }
-      
-    },
-
-    /**
-    * Add a row to the dataset. Triggers add and change.
-    * Parameters:
-    *   row - an object representing a row in the form of:
-    *         {columnName: value}
-    *   options - options
-    *     silent: boolean, do not trigger an add (and thus view updates) event
-    */    
-    add : function(rows, options) {
-      
-      options = options || {};
-
-      if (!_.isArray(rows)) {
-        rows = [rows];
-      }
-
-      var deltas = [];
-
-      _.each(rows, function(row) {
-        if (!row._id) {
-          row._id = _.uniqueId();
-        }
-
-        this._add(row, options);
-
-        // store all deltas for a single fire event.
-        if (this.syncable && !options.silent) {
-          deltas.push({ changed : row });
-        }
-      
-      }, this);
-      
-      if (this.syncable && !options.silent) {
-        var e = this._buildEvent(deltas);
-        this.trigger('add', e );
-        this.trigger('change', e );
-      }
-
-      return this;
-    },
-
-    /**
-    * Remove all rows that match the filter. Fires remove and change.
-    * Parameters:
-    *   filter - row id OR function applied to each row to see if it should be removed.
-    *   options - options. Optional.
-    *     silent: boolean, do not trigger an add (and thus view updates) event
-    */    
-    remove : function(filter, options) {
-      filter = this._rowFilter(filter);
-      var deltas = [], rowsToRemove = [];
-
-      this.each(function(row, rowIndex) {
-        if (filter(row)) {
-          rowsToRemove.push(row._id);
-          deltas.push( { old: row } );
-        }
-      });
-
-      // don't attempt tp remove the rows while iterating over them
-      // since that modifies the length of the dataset and thus
-      // terminates the each loop early. 
-      _.each(rowsToRemove, function(rowId) {
-        this._remove(rowId);  
-      }, this);
-      
-      if (this.syncable && (!options || !options.silent)) {
-        var ev = this._buildEvent( deltas );
-        this.trigger('remove', ev );
-        this.trigger('change', ev );
-      }
-    },
-
-    /**
-    * Update all rows that match the filter. Fires update and change.
-    * Parameters:
-    *   filter - row id OR filter rows to be updated
-    *   newProperties - values to be updated.
-    *   options - options. Optional
-    *     silent - set to true to prevent event triggering..
-    */    
-    update : function(filter, newProperties, options) {
-
-      var newKeys, deltas = [];
-
-      var updateRow = _.bind(function(row, rowIndex) {
-        var c, props;
-
-        if (_.isFunction(newProperties)) {
-          props = newProperties.apply(this, [row]);
-        } else {
-          props = newProperties;
-        }
-
-        newKeys = _.keys(props);
-
-        _.each(newKeys, function(columnName) {
-
-          c = this.column(columnName);
-
-          // check if we're trying to update a computed column. If so
-          // fail.
-          if (c.isComputed()) {
-            throw "You're trying to update a computed column. Those get computed!";
-          }
-
-          // test if the value passes the type test
-          var Type = Miso.types[c.type];
-          
-          if (Type) {
-            if (Type.test(props[c.name], c)) {
-
-              // do we have a before filter on the column? If so, apply it
-              if (!_.isUndefined(c.before)) {
-                props[c.name] = c.before(props[c.name]);
-              }
-
-              // coerce it.
-              props[c.name] = Type.coerce(props[c.name], c);
-            } else {
-              throw("incorrect value '" + props[c.name] + 
-                    "' of type " + Miso.typeOf(props[c.name], c) +
-                    " passed to column '" + c.name + "' with type " + c.type);  
-            }
-          }
-          c.data[rowIndex] = props[c.name];
-        }, this);
-        
-        // do we have any computed columns? if so we need to update
-        // the row.
-        if (typeof this._computedColumns !== "undefined") {
-          _.each(this._computedColumns, function(column) {
-
-            // compute the complete row:
-            var newrow = _.extend({}, row, props);
-            
-            var oldValue = newrow[column.name];
-            var newValue = column.compute(newrow, rowIndex);
-            // if this is actually a new value, then add it to the delta.
-            if (oldValue !== newValue) {
-              props[column.name] = newValue;
-            }
-          });
-        }
-
-        deltas.push( { _id : row._id, old : row, changed : props } );
-      }, this);
-
-      // do we just have a single id? array it up.
-      if (_.isString(filter)) {
-        filter = [filter];
-      }
-      // do we have an array of ids instead of filter functions?
-      if (_.isArray(filter)) {
-        var row, rowIndex;
-        _.each(filter, function(rowId) {
-          row = this.rowById(rowId);
-          rowIndex = this._rowPositionById[rowId];
-          
-          updateRow(row, rowIndex);
-        });
-
-      } else {
-
-        // make a filter function.
-        filter = this._rowFilter(filter);
-
-        this.each(function(row, rowIndex) {
-          if (filter(row)) {
-            updateRow(row, rowIndex);
-          }
-        }, this);
-      }
-
-      if (this.syncable && (!options || !options.silent)) {
-        var ev = this._buildEvent( deltas );
-        this.trigger('update', ev );
-        this.trigger('change', ev );
-      }
-      return this;
-    },
-
-    /**
-    * Clears all the rows
-    * Fires a "reset" event.
-    * Parameters:
-    *   options (object)
-    *     silent : true | false.
-    */
-    reset : function(options) {
-      _.each(this._columns, function(col) {
-        col.data = [];
-      });
-      this.length = 0;
-      if (this.syncable && (!options || !options.silent)) {
-        this.trigger("reset");
-      }
-    }
-
-  });
-}(this, _, moment));
-
-
 (function(global, _) {
 
-  var Miso = global.Miso || (global.Miso = {});
+  var Dataset = global.Miso.Dataset;
 
   /**
   * A Miso.Derived dataset is a regular dataset that has been derived
@@ -8673,14 +8607,20 @@ Version 0.0.1.2
   *   a derived dataset instance
   */
 
-  Miso.Derived = function(options) {
+  Dataset.Derived = function(options) {
     options = options || {};
 
-    Miso.Dataset.call(this);
+    Dataset.call(this);
     
     // save parent dataset reference
     this.parent = options.parent;
 
+    // the id column in a derived dataset is always _id
+    // since there might not be a 1-1 mapping to each row
+    // but could be a 1-* mapping at which point a new id 
+    // is needed.
+    this.idAttribute = "_id";
+    
     // save the method we apply to bins.
     this.method = options.method;
 
@@ -8692,17 +8632,17 @@ Version 0.0.1.2
     });
 
     if (this.parent.syncable) {
-      _.extend(this, Miso.Events);
+      _.extend(this, Dataset.Events);
       this.syncable = true;
       this.parent.bind("change", this._sync, this);  
     }
   };
 
   // take in dataset's prototype.
-  Miso.Derived.prototype = new Miso.Dataset();
+  Dataset.Derived.prototype = new Dataset();
 
   // inherit all of dataset's methods.
-  _.extend(Miso.Derived.prototype, {
+  _.extend(Dataset.Derived.prototype, {
     _sync : function(event) {
       // recompute the function on an event.
       // TODO: would be nice to be more clever about this at some point.
@@ -8713,7 +8653,7 @@ Version 0.0.1.2
 
 
   // add derived methods to dataview (and thus dataset & derived)
-  _.extend(Miso.DataView.prototype, {
+  _.extend(Dataset.DataView.prototype, {
 
     /**
     * moving average
@@ -8729,7 +8669,7 @@ Version 0.0.1.2
       
       options = options || {};
 
-      var d = new Miso.Derived({
+      var d = new Dataset.Derived({
         parent : this,
         method : options.method || _.mean,
         size : size,
@@ -8738,13 +8678,19 @@ Version 0.0.1.2
 
       // copy over all columns
       this.eachColumn(function(columnName) {
+        
+        // don't try to compute a moving average on the id column.
+        if (columnName === this.idAttribute) {
+          throw "You can't compute a moving average on the id column";
+        }
+
         d.addColumn({
           name : columnName, type : this.column(columnName).type, data : []
         });
       }, this);
 
       // save column positions on new dataset.
-      Miso.Builder.cacheColumns(d);
+      Dataset.Builder.cacheColumns(d);
 
       // apply with the arguments columns, size, method
       var computeMovingAverage = function() {
@@ -8756,7 +8702,9 @@ Version 0.0.1.2
         }
 
         // copy the ids
-        this.column("_id").data = this.parent.column("_id").data.slice(size-1, this.parent.length);
+        this.column(this.idAttribute).data = this.parent
+          .column(this.parent.idAttribute)
+          .data.slice(size-1, this.parent.length);
 
         // copy the columns we are NOT combining minus the sliced size.
         this.eachColumn(function(columnName, column, i) {
@@ -8775,10 +8723,10 @@ Version 0.0.1.2
         var oidcol = this.column("_oids");
         oidcol.data = [];
         for(var i = 0; i < this.length; i++) {
-          oidcol.data.push(this.parent.column("_id").data.slice(i, i+size));
+          oidcol.data.push(this.parent.column(this.parent.idAttribute).data.slice(i, i+size));
         }
         
-        Miso.Builder.cacheRows(this);
+        Dataset.Builder.cacheRows(this);
         
         return this;
       };
@@ -8794,7 +8742,7 @@ Version 0.0.1.2
     countBy : function(byColumn, options) {
 
       options = options || {};
-      var d = new Miso.Derived({
+      var d = new Dataset.Derived({
         parent : this,
         method : _.sum,
         args : arguments
@@ -8806,19 +8754,20 @@ Version 0.0.1.2
         name : byColumn,
         type : parentByColumn.type
       });
+
       d.addColumn({ name : 'count', type : 'number' });
       d.addColumn({ name : '_oids', type : 'mixed' });
-      Miso.Builder.cacheColumns(d);
+      Dataset.Builder.cacheColumns(d);
 
-      var names = d._column(byColumn).data, 
-          values = d._column('count').data, 
-          _oids = d._column('_oids').data,
-          _ids = d._column('_id').data;
+      var names = d.column(byColumn).data, 
+          values = d.column('count').data, 
+          _oids = d.column('_oids').data,
+          _ids = d.column(d.idAttribute).data;
 
       function findIndex(names, datum, type) {
         var i;
         for(i = 0; i < names.length; i++) {
-          if (Miso.types[type].compare(names[i], datum) === 0) {
+          if (Dataset.types[type].compare(names[i], datum) === 0) {
             return i;
           }
         }
@@ -8831,14 +8780,14 @@ Version 0.0.1.2
           names.push( row[byColumn] );
           _ids.push( _.uniqueId() );
           values.push( 1 );
-          _oids.push( [row._id] );
+          _oids.push( [row[this.parent.idAttribute]] );
         } else {
           values[index] += 1;
-          _oids[index].push( row._id ); 
+          _oids[index].push( row[this.parent.idAttribute]); 
         }
-      });
+      }, d);
 
-      Miso.Builder.cacheRows(d);
+      Dataset.Builder.cacheRows(d);
       return d;
     },
 
@@ -8859,7 +8808,7 @@ Version 0.0.1.2
       
       options = options || {};
 
-      var d = new Miso.Derived({
+      var d = new Dataset.Derived({
 
         // save a reference to parent dataset
         parent : this,
@@ -8887,14 +8836,16 @@ Version 0.0.1.2
       }, d);
 
       // save column positions on new dataset.
-      Miso.Builder.cacheColumns(d);
+      Dataset.Builder.cacheColumns(d);
 
       // will get called with all the arguments passed to this
       // host function
       var computeGroupBy = function() {
 
+        var self = this;
+
         // clear row cache if it exists
-        Miso.Builder.clearRowCache(this);
+        Dataset.Builder.clearRowCache(this);
 
         // a cache of values
         var categoryPositions = {},
@@ -8924,7 +8875,7 @@ Version 0.0.1.2
             // bin the values
             _.each(columns, function(columnToGroup) {
               var column = this.column(columnToGroup);
-              var idCol  = this.column("_id");
+              var idCol  = this.column(this.idAttribute);
               column.data[categoryCount] = [];
               idCol.data[categoryCount] = _.uniqueId();
             }, this);
@@ -8958,7 +8909,7 @@ Version 0.0.1.2
               
               // save the original ids that created this group by?
               oidcol.data[binPos] = oidcol.data[binPos] || [];
-              oidcol.data[binPos].push(_.map(bin, function(row) { return row._id; }));
+              oidcol.data[binPos].push(_.map(bin, function(row) { return row[self.parent.idAttribute]; }));
               oidcol.data[binPos] = _.flatten(oidcol.data[binPos]);
 
               // compute the final value.
@@ -8969,7 +8920,7 @@ Version 0.0.1.2
 
         }, this);
 
-        Miso.Builder.cacheRows(this);
+        Dataset.Builder.cacheRows(this);
         return this;
       };
       
@@ -8984,9 +8935,10 @@ Version 0.0.1.2
 
 
 (function(global, _) {
-  var Miso = (global.Miso || (global.Miso = {}));
 
-  Miso.Importers = function(data, options) {};
+  var Dataset = global.Miso.Dataset;
+
+  Dataset.Importers = function(data, options) {};
 
   /**
   * Simple base extract method, passing data through
@@ -8995,7 +8947,7 @@ Version 0.0.1.2
   * a dataset, overwrite this method to return the
   * actual data object.
   */
-  Miso.Importers.prototype.extract = function(data) {
+  Dataset.Importers.prototype.extract = function(data) {
     data = _.clone(data);
     return data;
   };
@@ -9003,20 +8955,21 @@ Version 0.0.1.2
 }(this, _));
 
 (function(global, _) {
-  var Miso = (global.Miso || (global.Miso = {}));
+
+  var Dataset = global.Miso.Dataset;
 
   /**
   * Local data importer is responsible for just using
   * a data object and passing it appropriately.
   */
-  Miso.Importers.Local = function(options) {
+  Dataset.Importers.Local = function(options) {
     options = options || {};
 
     this.data = options.data || null;
     this.extract = options.extract || this.extract;
   };
 
-  _.extend(Miso.Importers.Local.prototype, Miso.Importers.prototype, {
+  _.extend(Dataset.Importers.Local.prototype, Dataset.Importers.prototype, {
     fetch : function(options) {
       var data = options.data ? options.data : this.data;
       options.success( this.extract(data) );
@@ -9026,7 +8979,9 @@ Version 0.0.1.2
 }(this, _));
 
 (function(global, _) {
-  var Miso = (global.Miso || (global.Miso = {}));
+
+  var Dataset = global.Miso.Dataset;
+  
 
   /**
   * A remote importer is responsible for fetching data from a url.
@@ -9037,7 +8992,7 @@ Version 0.0.1.2
   *     dataType - ajax datatype
   *     jsonp  - true if it's a jsonp request, false otherwise.
   */
-  Miso.Importers.Remote = function(options) {
+  Dataset.Importers.Remote = function(options) {
     options = options || {};
 
     this._url = options.url;
@@ -9052,7 +9007,7 @@ Version 0.0.1.2
     };
   };
 
-  _.extend(Miso.Importers.Remote.prototype, Miso.Importers.prototype, {
+  _.extend(Dataset.Importers.Remote.prototype, Dataset.Importers.prototype, {
     fetch : function(options) {
 
       // call the original fetch method of object parsing.
@@ -9069,7 +9024,7 @@ Version 0.0.1.2
       }
 
       // make ajax call to fetch remote url.
-      Miso.Xhr(_.extend(this.params, {
+      Dataset.Xhr(_.extend(this.params, {
         success : this.callback ? this.callback : callback,
         error   : options.error
       }));
@@ -9089,7 +9044,7 @@ Version 0.0.1.2
     }
   }, rparams = /\?/;
 
-  Miso.Xhr = function(options) {
+  Dataset.Xhr = function(options) {
 
     // json|jsonp etc.
     options.dataType = options.dataType && options.dataType.toLowerCase() || null;
@@ -9099,7 +9054,7 @@ Version 0.0.1.2
     if (options.dataType &&
       (options.dataType === "jsonp" || options.dataType === "script" )) {
 
-        Miso.Xhr.getJSONP(
+        Dataset.Xhr.getJSONP(
           url, 
           options.success,
           options.dataType === "script",
@@ -9128,11 +9083,11 @@ Version 0.0.1.2
         settings.ajax.open(settings.type, settings.url, settings.async);
         settings.ajax.send(settings.data || null);
 
-        return Miso.Xhr.httpData(settings);
+        return Dataset.Xhr.httpData(settings);
       }
   };
 
-  Miso.Xhr.getJSONP = function(url, success, isScript, error, callback) {
+  Dataset.Xhr.getJSONP = function(url, success, isScript, error, callback) {
     // If this is a script request, ensure that we do not
     // call something that has already been loaded
     if (isScript) {
@@ -9242,10 +9197,10 @@ Version 0.0.1.2
     return;
   };
 
-  Miso.Xhr.httpData = function(settings) {
-    var data, json = null;
+  Dataset.Xhr.httpData = function(settings) {
+    var data, json = null, handleResponse;
 
-    settings.ajax.onreadystatechange = function() {
+    handleResponse = function () {
       if (settings.ajax.readyState === 4) {
         try {
           json = JSON.parse(settings.ajax.responseText);
@@ -9274,6 +9229,12 @@ Version 0.0.1.2
       }
     };
 
+    if ( settings.ajax.readyState === 4 ) {
+      handleResponse(); // Internet Exploder doesn't bother with readystatechange handlers for cached resources... trigger the handler manually
+    } else {
+      settings.ajax.onreadystatechange = handleResponse;
+    }
+
     return data;
   };
 
@@ -9281,7 +9242,7 @@ Version 0.0.1.2
 
 (function(global,_){
   
-  var Miso = (global.Miso || (global.Miso = {}));
+  var Dataset = global.Miso.Dataset;
 
   /**
   * A remote polling importer that queries a url once every 1000
@@ -9290,15 +9251,15 @@ Version 0.0.1.2
   *   interval - poll every N milliseconds. Default is 1000.
   *   extract  - a method to pass raw data through before handing back to parser.
   */
-  Miso.Importers.Polling = function(options) {
+  Dataset.Importers.Polling = function(options) {
     options = options || {};
     this.interval = options.interval || 1000;
     this._def = null;
 
-    Miso.Importers.Remote.apply(this, [options]);
+    Dataset.Importers.Remote.apply(this, [options]);
   };
 
-  _.extend(Miso.Importers.Polling.prototype, Miso.Importers.Remote.prototype, {
+  _.extend(Dataset.Importers.Polling.prototype, Dataset.Importers.Remote.prototype, {
     fetch : function(options) {
 
       if (this._def === null) {
@@ -9333,7 +9294,7 @@ Version 0.0.1.2
         importer._def = _.Deferred();
       });
 
-      Miso.Xhr(_.extend(this.params, {
+      Dataset.Xhr(_.extend(this.params, {
         success : this.success_callback,
         error : this.error_callback
       }));
@@ -9362,7 +9323,7 @@ Version 0.0.1.2
 
 (function(global, _) {
 
-  var Miso = (global.Miso || (global.Miso = {}));
+  var Dataset = global.Miso.Dataset;
   
   /**
   * Instantiates a new google spreadsheet importer.
@@ -9376,7 +9337,7 @@ Version 0.0.1.2
   *     url - a more complex url (that may include filtering.) In this case
   *           make sure it's returning the feed json data.
   */
-  Miso.Importers.GoogleSpreadsheet = function(options) {
+  Dataset.Importers.GoogleSpreadsheet = function(options) {
     options = options || {};
     if (options.url) {
 
@@ -9427,21 +9388,22 @@ Version 0.0.1.2
     return this;
   };
 
-  _.extend(Miso.Importers.GoogleSpreadsheet.prototype, Miso.Importers.Remote.prototype);
+  _.extend(Dataset.Importers.GoogleSpreadsheet.prototype, Dataset.Importers.Remote.prototype);
 
 }(this, _));
+
 (function(global, _) {
 
-  var Miso = (global.Miso || (global.Miso = {}));
+  var Dataset = global.Miso.Dataset;
 
   /**
   * Base Miso.Parser class.
   */
-  Miso.Parsers = function( options ) {
+  Dataset.Parsers = function( options ) {
     this.options = options || {};
   };
 
-  _.extend(Miso.Parsers.prototype, {
+  _.extend(Dataset.Parsers.prototype, {
 
     //this is the main function for the parser,
     //it must return an object with the columns names
@@ -9452,7 +9414,8 @@ Version 0.0.1.2
 }(this, _));
 
 (function(global, _) {
-  var Miso = (global.Miso || (global.Miso = {}));
+
+  var Dataset = global.Miso.Dataset;
 
   /**
   * Strict format parser.
@@ -9465,11 +9428,11 @@ Version 0.0.1.2
   *   }
   * }
   */
-  Miso.Parsers.Strict = function( options ) {
+  Dataset.Parsers.Strict = function( options ) {
     this.options = options || {};
   }; 
 
-  _.extend( Miso.Parsers.Strict.prototype, Miso.Parsers.prototype, {
+  _.extend( Dataset.Parsers.Strict.prototype, Dataset.Parsers.prototype, {
 
     parse : function( data ) {
       var columnData = {}, columnNames = [];
@@ -9494,16 +9457,17 @@ Version 0.0.1.2
 }(this, _));
 
 (function(global, _) {
-  var Miso = (global.Miso || (global.Miso = {}));
+
+  var Dataset = global.Miso.Dataset;
 
   /**
   * Object parser
   * Converts an array of objects to strict format.
   * Each object is a flat json object of properties.
   */
-  Miso.Parsers.Obj = Miso.Parsers;
+  Dataset.Parsers.Obj = Dataset.Parsers;
 
-  _.extend(Miso.Parsers.Obj.prototype, Miso.Parsers.prototype, {
+  _.extend(Dataset.Parsers.Obj.prototype, Dataset.Parsers.prototype, {
 
     parse : function( data ) {
       var columns = _.keys(data[0]),
@@ -9537,18 +9501,18 @@ Version 0.0.1.2
 
 (function(global, _) {
 
-  var Miso = (global.Miso || (global.Miso = {}));
+  var Dataset = global.Miso.Dataset;
   /**
   * Google Spreadsheet Parser. 
   * This is utilizing the format that can be obtained using this:
   * http://code.google.com/apis/gdata/samples/spreadsheet_sample.html
   * Used in conjunction with the Google Spreadsheet Importer.
   */
-  Miso.Parsers.GoogleSpreadsheet = function(options) {
+  Dataset.Parsers.GoogleSpreadsheet = function(options) {
     this.fast = options.fast || false;
   };
 
-  _.extend(Miso.Parsers.GoogleSpreadsheet.prototype, Miso.Parsers.prototype, {
+  _.extend(Dataset.Parsers.GoogleSpreadsheet.prototype, Dataset.Parsers.prototype, {
 
     parse : function(data) {
       var columns = [],
@@ -9667,7 +9631,7 @@ Version 0.0.1.2
 
 (function(global, _) {
 
-  var Miso = (global.Miso || (global.Miso = {}));
+  var Dataset = global.Miso.Dataset;
 
   /**
   * Delimited data parser.
@@ -9676,7 +9640,7 @@ Version 0.0.1.2
   *   options
   *     delimiter : ","
   */
-  Miso.Parsers.Delimited = function(options) {
+  Dataset.Parsers.Delimited = function(options) {
     options = options || {};
 
     this.delimiter = options.delimiter || ",";
@@ -9707,7 +9671,7 @@ Version 0.0.1.2
     };
   }
 
-  _.extend(Miso.Parsers.Delimited.prototype, Miso.Parsers.prototype, {
+  _.extend(Dataset.Parsers.Delimited.prototype, Dataset.Parsers.prototype, {
 
     parse : function(data) {
       var columns = [],
