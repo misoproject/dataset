@@ -33,15 +33,15 @@
   */
   global.Miso = global.Miso || {};
   global.Miso.Dataset = function(options) {
+    
+    options = options || {};
+
     this.length = 0;
     
     this._columns = [];
     this._columnPositionByName = {};
     this._computedColumns = [];
     
-    if (typeof options !== "undefined") {
-      options = options || {};
-      this._initialize(options);
-    }
+    this._initialize(options);
   };
 }(this));
