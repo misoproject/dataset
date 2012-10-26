@@ -76,32 +76,45 @@
     equals(ds.length, 2);
   });
 
-  test("upating a row with an incorrect type", function() {
+  test("updating a row with an incorrect type", function() {
     var ds = Util.baseSample();
     _.each(['a', []], function(value) {
       raises(function() {
-        ds.update(ds._rowIdByPosition[0], { 'one' : value } );
+        ds.update({ _id : ds._rowIdByPosition[0], one : value } );
       });
     });
   });
 
   test("updating a row", function() {
     var ds = Util.baseSample();
-    ds._columns[1].type = 'untyped';
+    ds._columns[1].type = 'mixed';
     var firstRowId = ds._rowIdByPosition[0];
     _.each([100, 'a', null, undefined, []], function(value) {
-      ds.update(firstRowId, { 'one': value } );
+      ds.update({ _id : firstRowId, one: value });
       equals(ds._columns[1].data[0], value, "value updated to "+value);
     });
   });
+ 
+    test("updating multiple rows", function() {
+    var ds = Util.baseSample();
+    ds._columns[1].type = 'mixed';
+    var firstRowId = ds._rowIdByPosition[0];
+    var secondRowId = ds._rowIdByPosition[1];
+    _.each([100, 'a', null, undefined, []], function(value) {
+      ds.update([{ _id : firstRowId, one: value },{ _id : secondRowId, one: value }]);
+      equals(ds._columns[1].data[0], value, "value updated to "+value);
+      equals(ds._columns[1].data[1], value, "value updated to "+value);
+    });
+  });
+ 
 
   test("updating a row with custom idAttribute (non id column)", function() {
     var ds = Util.baseSampleCustomID();
-    ds._columns[1].type = 'untyped';
+    ds._columns[1].type = 'mixed';
     var firstRowId = ds.rowByPosition(0).one;
 
     _.each([100, 'a', null, undefined, []], function(value) {
-      ds.update(firstRowId, { 'two': value } );
+      ds.update({ one : firstRowId, two: value } );
       equals(ds._columns[1].data[0], value, "value updated to "+value);
     });
   });
@@ -111,7 +124,7 @@
     var firstRowId = ds.rowByPosition(0).one;
 
     raises(function() {
-      ds.update(firstRowId, { one : 1 });
+      ds.update({ one : 99});
     }, "You can't update the id column");
 
   });
@@ -119,12 +132,11 @@
   test("#105 - updating a row with a function", function() {
     var ds = Util.baseSample();
     ds.update(function(row) {
-      return true;
-    }, function(row) {
       return {
         one : row.one % 2 === 0 ? 100 : 0,
         two : row.two % 2 === 0 ? 100 : 0,
-        three : row.three % 2 === 0 ? 100 : 0
+        three : row.three % 2 === 0 ? 100 : 0,
+        _id : row._id
       };
     });
 
@@ -132,6 +144,26 @@
     ok(_.isEqual(ds.column("two").data, [100,0,100]));
     ok(_.isEqual(ds.column("three").data, [0,100,0]));
   });
+
+   test("#105 - updating a row with a function skips a row when false is returned", function() {
+    var ds = Util.baseSample();
+    ds.update(function(row) {
+      if (row.one === 1) {
+        return false;
+      }
+      return {
+        one : row.one % 2 === 0 ? 100 : 0,
+        two : row.two % 2 === 0 ? 100 : 0,
+        three : row.three % 2 === 0 ? 100 : 0,
+        _id : row._id
+      };
+    });
+
+    ok(_.isEqual(ds.column("one").data, [1,100,0]));
+    ok(_.isEqual(ds.column("two").data, [4,0,100]));
+    ok(_.isEqual(ds.column("three").data, [7,100,0]));
+  });
+
 
   module("Computed Columns");
   test("Add computed column to empty dataset", function() {
@@ -350,9 +382,7 @@
 
       var firstId = ds.rowByPosition(0)._id;
 
-      ds.update(firstId, {
-        one : 100
-      });
+      ds.update({ _id : firstId, one : 100 });
 
       ok(_.isEqual(newcol.data, [110,22,33]), newcol.data);
       ok(_.isEqual(newcol2.data,  [220,44,66]), newcol2.data);
@@ -436,7 +466,8 @@
         start();
       });
 
-      ds.update(ds.rowByPosition(0)._id, {
+      ds.update({
+        _id : ds.rowByPosition(0)._id,
         one : 100
       });
 

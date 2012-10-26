@@ -89,7 +89,8 @@
     _.when(ds.fetch()).then(function() {
       ok(_.isEqual(ds.sum("vals"), 550));
       ok(_.isEqual(ds.column("vals").data, [10,20,30,40,50,60,70,80,90,100]), ds.column("vals").data);
-      ds.update(ds._columns[0].data[0], {
+      ds.update({
+        _id : ds._columns[0].data[0],
         vals : 4
       });
       equals(ds.column('vals').data[0], 40);
@@ -489,7 +490,7 @@ module("Views :: Syncing");
         firstRowId = ds._rowIdByPosition[0],
         view3 = ds.where(firstRowId);
 
-    ds.update(firstRowId, { one: 100, two: 200 });
+    ds.update({ _id : firstRowId, one: 100, two: 200 });
     equals(view1.column('one').data[0], 100);
     equals(view2.column('two').data[0], 200);
     equals(view3._columns[1].data[0], 100);

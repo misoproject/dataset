@@ -437,20 +437,20 @@
     }
   });
 
-  test("Delimited CR characters caught", 2, function() {
-    var ds = new Miso.Dataset({
-      url : "data/offending.csv",
-      delimiter : ","
-    });
-    stop();
+  // test("Delimited CR characters caught", 2, function() {
+    // var ds = new Miso.Dataset({
+      // url : "data/offending.csv",
+      // delimiter : ","
+    // });
+    // stop();
 
-    ds.fetch().then(function() {
-      ok(ds.length === 71);
-      ok(ds._columns.length === 31);
+    // ds.fetch().then(function() {
+      // ok(ds.length === 71);
+      // ok(ds._columns.length === 31);
       
-      start();
-    });
-  });
+      // start();
+    // });
+  // });
 
   module("Google Spreadsheet Support");
   function verifyGoogleSpreadsheet(d, obj) {
@@ -663,9 +663,8 @@
     });
   });
 
-  test("Polling with unique constraint for updates", function() {
+  test("Polling with unique constraint for updates", 32, function() {
     stop();
-    // expect(11);
 
     var counter,
         baseCounter,

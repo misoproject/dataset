@@ -314,8 +314,8 @@
         equals(meantime.val().format("YYYYMMDD"), moment("2010/01/10").format("YYYYMMDD"));        
       });
 
-      ds.update(ds._rowIdByPosition[2], { t : "2010/01/20" }, { silent : true });
-      ds.update(ds._rowIdByPosition[1], { t : "2010/01/10" });
+      ds.update({ _id : ds._rowIdByPosition[2], t : "2010/01/20" }, { silent : true });
+      ds.update({ _id : ds._rowIdByPosition[1], t : "2010/01/10" });
     });
   });
 
@@ -330,7 +330,7 @@
 
     ok(max.val() === 3, "old max correct");
 
-    ds.update(ds._rowIdByPosition[0], { one : 22 });
+    ds.update({ _id : ds._rowIdByPosition[0],  one : 22 });
 
     ok(max.val() === 22, "max was updated");
   });
@@ -357,8 +357,8 @@
       counter += 1;
     });
 
-    ds.update(ds._rowIdByPosition[0], { one : 22});
-    ds.update(ds._rowIdByPosition[0], { one : 34});
+    ds.update({ _id : ds._rowIdByPosition[0], one : 22});
+    ds.update({ _id : ds._rowIdByPosition[0], one : 34});
 
     equals(counter, 2);
 
@@ -383,8 +383,8 @@
       counter += 1;
     });
 
-    ds.update(ds._rowIdByPosition[0], { one : 22});
-    ds.update(ds._rowIdByPosition[1], { one : 2});
+    ds.update({ _id : ds._rowIdByPosition[0], one : 22});
+    ds.update({ _id : ds._rowIdByPosition[1], one : 2});
 
     equals(counter, 1);
 
@@ -407,7 +407,7 @@
 
     equals(min.val(), 1, "custum product calcualted the minimum");
 
-    ds.update(ds._rowIdByPosition[0], { one : 22});
+    ds.update({ _id : ds._rowIdByPosition[0], one : 22});
 
     equals(min.val(), 2, "custom product calculated the updated minimum");
 
@@ -430,7 +430,7 @@
 
     equals(custom.val(), 1, "custum product calculated the minimum");
 
-    ds.update(ds._rowIdByPosition[0], { one : 22});
+    ds.update({ _id : ds._rowIdByPosition[0], one : 22});
 
     equals(custom.val(), 2, "custum product calculated the updated minimum");
 
@@ -453,7 +453,7 @@
 
     equals(custom.val(), 1, "custum product calcualted the minimum");
 
-    ds.update(ds._rowIdByPosition[0], { one : 22});
+    ds.update({ _id : ds._rowIdByPosition[0], one : 22});
 
     equals(custom.val(), 2, "custum product calculated the updated minimum");
 

@@ -257,9 +257,9 @@
 
         // test update
         ds.update(function(row) {
-          // update all rows
-          return true;
-        }, { a : "1" , b : 5 });
+          row.a = '1';
+          return row;
+        });
 
         equals(ds.rows(function(row) {
           return row.a === "1";
