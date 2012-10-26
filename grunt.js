@@ -35,7 +35,6 @@ module.exports = function(grunt) {
           "src/sync.js",
           "src/builder.js",
           "src/product.js",
-          "src/derived.js",
           "src/importer.js",
           "src/importers/local.js",
           "src/importers/remote.js",
@@ -45,7 +44,8 @@ module.exports = function(grunt) {
           "src/parsers/strict.js",
           "src/parsers/object.js",
           "src/parsers/google_spreadsheet.js",
-          "src/parsers/delimited.js"
+          "src/parsers/delimited.js",
+          "src/derived.js"
         ]
       },
 
