@@ -654,8 +654,6 @@
         throw new Error("Cannot sort without this.comparator.");
       }
 
-      idField = this.idAttribute || '_id';
-      
       // cache rows
       for(var i = 0; i < this.length; i++) {
         cachedRows[i] = this._row(i);
@@ -668,8 +666,8 @@
       while ( i-- ) {
         row = cachedRows[i];
 
-        this._rowIdByPosition[i] = row[ idField ];
-        this._rowPositionById[ row[ idField ] ] = i;
+        this._rowIdByPosition[i] = row[ this.idAttribute ];
+        this._rowPositionById[ row[ this.idAttribute ] ] = i;
 
         var j = this._columns.length;
         while ( j-- ) {
