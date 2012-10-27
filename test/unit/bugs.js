@@ -373,4 +373,64 @@
       equals(ds.length, 3);
     });
   });
+
+  // test("Not even sure yet", function() {
+    // var url = "http://query.yahooapis.com/v1/public/yql?q=select%20*%20from%20xml%20where%20url%3D'http%3A%2F%2Fwww.tfl.gov.uk/tfl/syndication/feeds/cycle-hire/livecyclehireupdates.xml'&format=json&diagnostics=true&callback=";
+    // var ds = new Miso.Dataset({
+      // url: url,
+      // jsonp: true,
+      // interval: 5000,
+      // extract: function ( data ) {
+        // snapshot = data.query.results.stations.station;
+        // return snapshot;
+      // },
+      // resetOnFetch: false,
+      // columns: [ // need to specify these so Dataset doesn't trip over null values etc
+        // { name: 'lat',  type: 'number' },
+        // { name: 'long', type: 'number' },
+        // { name: 'installDate', type: 'number' },
+        // { name: 'distance', type: 'number' },
+        // { name: 'nbBikes', type: 'number' },
+        // { name: 'nbEmptyDocks', type: 'number' }
+      // ],
+      // sync: true,
+      // uniqueAgainst: 'id',
+      // idAttribute: 'id'
+    // })
+    // ds.fetch();
+    // ds.sort( function ( stationA, stationB ) {
+      // if (stationA.distance > stationB.distance) {
+        // return 1;
+      // } else {
+        // return -1;
+      // }
+    // });
+
+  // });
+  //
+  test("Non -1/0/1 comparators cause a mess", function() {
+    var ds = new Dataset({
+      url : "/poller/updated.json",
+      interval : 100,
+      uniqueAgainst : "name",
+      sync: true
+    });
+
+    stop();
+    ds.fetch({ 
+      success : function() {  
+        ds.sort(function(a,b) {
+          return a.one - b.one;
+        });
+      }, 
+      error : function(r) { 
+        ok(false);
+      }
+    });
+    setTimeout(function() {
+      start();
+    }, 200);
+  });
+
+
 }(this));
