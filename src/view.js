@@ -655,21 +655,22 @@
       }
 
       // cache rows
-      for(var i = 0; i < this.length; i++) {
+      var i, j, row;
+      for(i = 0; i < this.length; i++) {
         cachedRows[i] = this._row(i);
       }
 
       cachedRows.sort( this.comparator );
 
       // iterate through cached rows, overwriting data in columns
-      var i = cachedRows.length;
+      i = cachedRows.length;
       while ( i-- ) {
         row = cachedRows[i];
 
         this._rowIdByPosition[i] = row[ this.idAttribute ];
         this._rowPositionById[ row[ this.idAttribute ] ] = i;
 
-        var j = this._columns.length;
+        j = this._columns.length;
         while ( j-- ) {
           var col = this._columns[j];
           col.data[i] = row[ col.name ];
