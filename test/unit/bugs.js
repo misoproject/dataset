@@ -408,7 +408,10 @@
 
   // });
   //
-  test("Non -1/0/1 comparators cause a mess", function() {
+  test("Non -1/0/1 comparators cause a mess", 1, function() {
+    //we use this to check we've managed to update twice
+    //without an error about updating the ID column
+    var count = 0;
     var ds = new Dataset({
       url : "/poller/updated.json",
       interval : 100,
@@ -422,14 +425,17 @@
         ds.sort(function(a,b) {
           return a.one - b.one;
         });
+        count += 1;
+        if (count === 3) {
+          ok(true);
+          start();
+        }
       }, 
       error : function(r) { 
+        start();
         ok(false);
       }
     });
-    setTimeout(function() {
-      start();
-    }, 200);
   });
 
 

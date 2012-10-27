@@ -638,114 +638,53 @@
     * Parameters:
     *   options - Optional
     */    
-    sort : function(args) {
-      var options = {};
+  sort : function(args) {
+      var options = {}, cachedRows = [];
     
       //If the first param is the comparator, set it as such.
       if ( _.isFunction(args) ) {
         options.comparator = args;
       } else {
-        options = args || options;
+        options = args || {};
       }
 
       if (options.comparator) {
         this.comparator = options.comparator;
-      }
-      
-      if (_.isUndefined(this.comparator)) {
+      } else if (_.isUndefined(this.comparator)) {
         throw new Error("Cannot sort without this.comparator.");
-      } 
-
-      var count = this.length, end;
-
-      if (count === 1) {
-        // we're done. only one item, all sorted.
-        return;
       }
 
-      var swap = _.bind(function(from, to) {
+      idField = this.idAttribute || '_id';
       
-        // move second row over to first
-        var row = this.rowByPosition(to);
+      // cache rows
+      for(var i = 0; i < this.length; i++) {
+        cachedRows[i] = this._row(i);
+      }
 
-        _.each(row, function(value, column) {
-          var colPosition = this._columnPositionByName[column],
-              value2 = this._columns[colPosition].data[from];
-          this._columns[colPosition].data.splice(from, 1, value);
-          this._columns[colPosition].data.splice(to, 1, value2);
-        }, this);
-      }, this);
+      cachedRows.sort( this.comparator );
 
-      var siftDown = _.bind(function(start, end) {
-        var root = start, child;
-        while (root * 2 <= end) {
-          child = root * 2;
-          var root_node = this.rowByPosition(root);
+      // iterate through cached rows, overwriting data in columns
+      var i = cachedRows.length;
+      while ( i-- ) {
+        row = cachedRows[i];
 
-          if ((child + 1 < end) && 
-              this.comparator(
-                this.rowByPosition(child), 
-                this.rowByPosition(child+1)
-              ) < 0) {
-            child++;  
-          }
+        this._rowIdByPosition[i] = row[ idField ];
+        this._rowPositionById[ row[ idField ] ] = i;
 
-          if (this.comparator(
-                root_node, 
-                this.rowByPosition(child)) < 0) {
-                  
-            swap(root, child);
-            root = child;
-          } else {
-            return;
-          }
-     
-        }
-          
-      }, this);
-      
-
-      // puts data in max-heap order
-      var heapify = function(count) {
-        var start = Math.round((count - 2) / 2);
-        while (start >= 0) {
-          siftDown(start, count - 1);
-          start--;
-        }  
-      };
-
-      if (count > 2) {
-        heapify(count);
-
-        end = count - 1;
-        while (end > 1) {
-          
-          swap(end, 0);
-          end--;
-          siftDown(0, end);
-
-        }
-      } else {
-        if (this.comparator(
-            this.rowByPosition(0), 
-            this.rowByPosition(1)) > 0) {
-          swap(0,1);
+        var j = this._columns.length;
+        while ( j-- ) {
+          var col = this._columns[j];
+          col.data[i] = row[ col.name ];
         }
       }
 
-      // check last two rows, they seem to always be off sync.
-      if (this.comparator(
-          this.rowByPosition(this.length - 2), 
-          this.rowByPosition(this.length - 1)) > 0) {
-        swap(this.length - 1,this.length - 2);
-      }
-
-      if (this.syncable && options.silent) {
+      if (this.syncable && !options.silent) {
         this.trigger("sort");
       }
+
       return this;
     },
-
+   
     /**
     * Exports a version of the dataset in json format.
     * Returns:
