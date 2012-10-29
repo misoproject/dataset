@@ -10,8 +10,16 @@
   <script src="../lib/underscore.math.js"></script>
   <script src="../lib/underscore.deferred.js"></script>
 
-  <script src="../dist/miso.ds.0.1.0.js"></script>
+  <script src="../dist/miso.ds.deps.0.3.0.js"></script>
 
+  <script type='text/javascript'>
+    window.Miso = window.Miso || (window.Miso = {});
+    window.Miso.Tester = {
+      foo : function() {
+        return 44;
+      },
+    };
+  </script> 
   <!-- Load data sets -->
   <script src="data/short_obj.js"></script>
   <script src="data/alphabet_obj.js"></script>

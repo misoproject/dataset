@@ -7,28 +7,39 @@ Read more about Dataset [here](http://misoproject.com/dataset)
 
 ## Download 
 
+All downloads are located in the [/dist](https://github.com/misoproject/dataset/tree/master/dist) directory. Here are some of them:
+
 ### Including Dependencies
 
-[miso.ds.dev.zip](https://github.com/downloads/misoproject/dataset/miso.ds.dev.0.2.2.zip) - Download Development With Dependencies - 0.2.2
+[miso.ds.dev.0.3.0.zip](https://github.com/downloads/misoproject/dataset/miso.ds.dev.0.3.0.zip) - Download Development With Dependencies - 0.3.0
 
-[miso.ds.deps.min.js](https://github.com/downloads/misoproject/dataset/miso.ds.deps.min.0.2.2.js) - Download Production With Dependencies - 0.2.2
+[miso.ds.deps.min.0.3.0.js](https://github.com/downloads/misoproject/dataset/miso.ds.deps.min.0.3.0.js) - Download Production With Dependencies - 0.3.0
+
+[miso.ds.deps.ie.0.3.0.js](https://github.com/downloads/misoproject/dataset/miso.ds.deps.ie.0.3.0.js) - Download Development With Dependencies for IE - 0.3.0
+
+[miso.ds.deps.ie.min.0.3.0.js](https://github.com/downloads/misoproject/dataset/miso.ds.deps.ie.0.3.0.js) - Download Production With Dependencies for IE - 0.3.0
 
 ### Without Dependencies
 
 The following builds do not have any of the dependencies built in. It is your own responsibility to include them as appropriate script elements in your page.
 
-[miso.ds.js](https://github.com/downloads/misoproject/dataset/miso.ds.min.0.2.2.js) - Download Production No Dependencies - 0.2.2
+[miso.ds.0.3.0.js](https://github.com/downloads/misoproject/dataset/miso.ds.min.0.3.0.js) - Download Development No Dependencies - 0.3.0
 
-[miso.ds.min.js](https://github.com/misoproject/dataset/tree/master/dist/) - Download Development No Dependencies - 0.2.2
+[miso.ds.min.0.3.0.js](https://github.com/misoproject/dataset/tree/master/dist/miso.ds.min.0.3.0.js) - Download Production No Dependencies - 0.3.0
+
+[miso.ds.0.3.0.m.js](https://github.com/misoproject/dataset/tree/master/dist/miso.ds.0.3.0.m.js) - Download AMD Compatibile Build No Dependencies- 0.3.0
+
+[miso.ds.min.0.3.0.m.js](https://github.com/misoproject/dataset/tree/master/dist/miso.ds.min.0.3.0.m.js) - Download AMD Compatibile Build Production No Dependencies- 0.3.0
+
 
 ### Dependencies
 
 Dataset has the following dependencies:
 
-* [Lodash.js 0.6.1](http://lodash.com/)
+* [Lodash.js 0.9.0](http://lodash.com/)
 * [Underscore.math.js (version unknown)](https://github.com/syntagmatic/underscore.math) 
-* [Underscore.deferred.js 0.1.2](https://github.com/wookiehangover/underscore.Deferred)
-* [moment.js 1.7.0](http://momentjs.com/) (for date and time parsing)
+* [Underscore.deferred.js 0.2.0](https://github.com/wookiehangover/underscore.Deferred)
+* [moment.js 1.7.2](http://momentjs.com/) (for date and time parsing)
 
 If you are planning on supporting IE, include the following json2.js library as well:
 * [json2.js 2011-10-19](https://github.com/douglascrockford/JSON-js) 
