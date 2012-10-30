@@ -23,7 +23,7 @@ All downloads are located in the [/dist](https://github.com/misoproject/dataset/
 
 The following builds do not have any of the dependencies built in. It is your own responsibility to include them as appropriate script elements in your page.
 
-[miso.ds.0.3.0.js](https://github.com/downloads/misoproject/dataset/miso.ds.min.0.3.0.js) - Download Development No Dependencies - 0.3.0
+[miso.ds.0.3.0.js](https://github.com/downloads/misoproject/dataset/miso.ds.0.3.0.js) - Download Development No Dependencies - 0.3.0
 
 [miso.ds.min.0.3.0.js](https://github.com/misoproject/dataset/tree/master/dist/miso.ds.min.0.3.0.js) - Download Production No Dependencies - 0.3.0
 
