@@ -1,6 +1,7 @@
 (function(global, _) {
 
-  var Dataset = global.Miso.Dataset;
+  var Miso = global.Miso || (global.Miso = {});
+  var Dataset = Miso.Dataset;
 
   /**
   * A Miso.Derived dataset is a regular dataset that has been derived
@@ -40,9 +41,9 @@
     });
 
     if (this.parent.syncable) {
-      _.extend(this, Dataset.Events);
+      _.extend(this, Miso.Events);
       this.syncable = true;
-      this.parent.bind("change", this._sync, this);  
+      this.parent.subscribe("change", this._sync, { context : this });  
     }
   };
 
@@ -51,11 +52,11 @@
 
   // inherit all of dataset's methods.
   _.extend(Dataset.Derived.prototype, {
-    _sync : function(event) {
+    _sync : function() {
       // recompute the function on an event.
       // TODO: would be nice to be more clever about this at some point.
       this.func.call(this.args);
-      this.trigger("change");
+      this.publish("change");
     }
   });
 
@@ -102,7 +103,6 @@
 
       // apply with the arguments columns, size, method
       var computeMovingAverage = function() {
-        var win = [];
 
         // normalize columns arg - if single string, to array it.
         if (typeof columns === "string") {
@@ -115,7 +115,7 @@
           .data.slice(size-1, this.parent.length);
 
         // copy the columns we are NOT combining minus the sliced size.
-        this.eachColumn(function(columnName, column, i) {
+        this.eachColumn(function(columnName, column) {
           if (columns.indexOf(columnName) === -1 && columnName !== "_oids") {
             // copy data
             column.data = this.parent.column(columnName).data.slice(size-1, this.parent.length);
@@ -258,7 +258,6 @@
         // a cache of values
         var categoryPositions = {},
             categoryCount     = 0,
-            byColumnPosition  = this._columnPositionByName[byColumn],
             originalByColumn = this.parent.column(byColumn);
 
         // bin all values by their
@@ -297,7 +296,6 @@
           _.each(columns, function(columnToGroup) {
             
             var column = this.column(columnToGroup),
-                value  = this.parent.column(columnToGroup).data[i],
                 binPosition = categoryPositions[category];
 
             column.data[binPosition].push(this.parent.rowByPosition(i));

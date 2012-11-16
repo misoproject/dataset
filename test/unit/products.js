@@ -73,9 +73,6 @@
 
     //empty
     equals(ds.max().val(), 9);
-    var names = _.compact(_.map(ds._columns, function(column) {
-      if (column.name !== "_id") {return column.name;}
-    }));
 
     ok(ds.max(ds.columnNames()).val() === 9);
 
@@ -94,9 +91,6 @@
 
     //empty
     equals(ds.max(), 9);
-    var names = _.compact(_.map(ds._columns, function(column) {
-      if (column.name !== "_id") {return column.name;}
-    }));
 
     ok(ds.max(ds.columnNames()) === 9);
   });
@@ -154,9 +148,6 @@
 
     //empty
     equals(ds.min().val(), 1);
-    var names = _.compact(_.map(ds._columns, function(column) {
-      if (column.name !== "_id") {return column.name;}
-    }));
   });
 
   test("Basic Min Product Non Syncable", function() {
@@ -241,17 +232,17 @@
       equals(m3.val(), 5.5);
       equals(ds.mean(['vals', 'valsrandomorder', 'randomvals']).val(), 18.4);
 
-      m.bind("change", function(s) {
+      m.subscribe("change", function(s) {
         equals(s.deltas[0].old, 5.5);
         equals(this.val(), 6.4);
       });
 
-      m2.bind("change", function(s) {
+      m2.subscribe("change", function(s) {
         equals(s.deltas[0].old, 5.5);
         equals(this.val(), 6.4);
       });
 
-      m3.bind("change", function(s) {
+      m3.subscribe("change", function(s) {
         equals(s.deltas[0].old, 5.5);
         equals(this.val(), 5.95);
       });
@@ -310,7 +301,7 @@
       var meantime = ds.mean("t");
       equals(meantime.val().format("YYYYMMDD"), moment("2010/01/15").format("YYYYMMDD"));
 
-      meantime.bind("change", function() {
+      meantime.subscribe("change", function() {
         equals(meantime.val().format("YYYYMMDD"), moment("2010/01/10").format("YYYYMMDD"));        
       });
 
@@ -350,10 +341,9 @@
   test("Basic subscription to product changes", function() {
     var ds = Util.baseSyncingSample(),
         max = ds.max("one"),
-        maxFunc = ds.max("one"),
         counter = 0;
 
-    max.bind('change', function() {
+    max.subscribe('change', function() {
       counter += 1;
     });
 
@@ -366,10 +356,9 @@
 
   test("Basic subscription to product changes on syncable doesn't trigger", function() {
     var ds = Util.baseSample(),
-        max = ds.max("one"),
-        counter = 0;
+        max = ds.max("one");
 
-    equals(_.isUndefined(max.bind), true);
+    equals(_.isUndefined(max.subscribe), true);
     equals(Dataset.typeOf(max), "number");
   });
 
@@ -379,7 +368,7 @@
         max = ds.max("one"),
         counter = 0;
 
-    max.bind('change', function() {
+    max.subscribe('change', function() {
       counter += 1;
     });
 

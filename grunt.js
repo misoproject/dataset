@@ -65,6 +65,7 @@ module.exports = function(grunt) {
           "lib/lodash.js",
           "lib/underscore.math.js",
           "lib/underscore.deferred.js",
+          "lib/miso.events.js",
           "dist/miso.ds.<%= pkg.version %>.js"
         ]
       },
@@ -78,6 +79,7 @@ module.exports = function(grunt) {
           "lib/json2.js",
           "lib/underscore.math.js",
           "lib/underscore.deferred.js",
+          "lib/miso.events.js",
           "dist/miso.ds.<%= pkg.version %>.js"
         ]
       },
@@ -107,6 +109,10 @@ module.exports = function(grunt) {
 
       "dist/development/lib/underscore.deferred.js" : [
         "lib/underscore.deferred.js"
+      ],
+
+      "dist/development/lib/miso.events.js" : [
+        "lib/miso.events.js"
       ],
 
       buildstatus : {
@@ -201,8 +207,6 @@ module.exports = function(grunt) {
 
     jshint : {
       options : {
-        unused : true,
-        unuseds : true,
         devel : true,
         noempty : true,
         forin : false,

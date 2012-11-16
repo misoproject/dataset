@@ -1,6 +1,5 @@
 (function(global) {
   
-  var Util  = global.Util;
   var Miso  = global.Miso || {};  
   var Dataset = Miso.Dataset;
 
@@ -624,7 +623,7 @@
           });
 
           // check data size
-          ds.eachColumn(function(cn, c, i) {
+          ds.eachColumn(function(cn, c) {
             equals(c.data.length, expectedSize);
           });
 
@@ -706,11 +705,11 @@
       });
     }
 
-    ds.bind('update', function(event) {
+    ds.subscribe('update', function(event) {
       events.push(event.deltas);
     });
 
-    ds.bind('add', function(event) {
+    ds.subscribe('add', function(event) {
       addEvents.push(event.deltas);
     });
 
@@ -751,7 +750,7 @@
         madereqs++;
         counter += 1;
       }, 
-      error : function(r) { 
+      error : function() { 
         console.log('ERROR', arguments); 
       }
     });

@@ -7,6 +7,7 @@ Version 0.0.1.2
 
 (function(global, _, moment) {
 
+  var Miso = global.Miso || (global.Miso = {});
   var Dataset = global.Miso.Dataset;
 
   // take on miso dataview's prototype
@@ -25,7 +26,7 @@ Version 0.0.1.2
       // is this a syncable dataset? if so, pull
       // required methods and mark this as a syncable dataset.
       if (options.sync === true) {
-        _.extend(this, Dataset.Events);
+        _.extend(this, Miso.Events);
         this.syncable = true;
       }
 
@@ -453,9 +454,9 @@ Version 0.0.1.2
       }, this);
       
       if (this.syncable && !options.silent) {
-        var e = this._buildEvent(deltas, this);
-        this.trigger('add', e );
-        this.trigger('change', e );
+        var e = Dataset.Events._buildEvent(deltas, this);
+        this.publish('add', e );
+        this.publish('change', e );
       }
 
       return this;
@@ -487,9 +488,9 @@ Version 0.0.1.2
       }, this);
       
       if (this.syncable && (!options || !options.silent)) {
-        var ev = this._buildEvent( deltas, this );
-        this.trigger('remove', ev );
-        this.trigger('change', ev );
+        var ev = Dataset.Events._buildEvent( deltas, this );
+        this.publish('remove', ev );
+        this.publish('change', ev );
       }
     },
 
@@ -589,9 +590,9 @@ Version 0.0.1.2
       //computer column updates
       //update triggers
       if (this.syncable && (!options || !options.silent)) {
-        var ev = this._buildEvent( deltas, this );
-        this.trigger('update', ev );
-        this.trigger('change', ev );
+        var ev = Dataset.Events._buildEvent( deltas, this );
+        this.publish('update', ev );
+        this.publish('change', ev );
       }
       return this;
     },
@@ -609,7 +610,7 @@ Version 0.0.1.2
       });
       this.length = 0;
       if (this.syncable && (!options || !options.silent)) {
-        this.trigger("reset");
+        this.publish("reset");
       }
     }
 

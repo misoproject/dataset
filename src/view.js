@@ -1,5 +1,6 @@
 (function(global, _) {
 
+  var Miso = global.Miso || (global.Miso = {});
   var Dataset = global.Miso.Dataset;
 
   /**
@@ -159,7 +160,7 @@
       // is this a syncable dataset? if so, pull
       // required methoMiso and mark this as a syncable dataset.
       if (this.parent.syncable === true) {
-        _.extend(this, Dataset.Events);
+        _.extend(this, Miso.Events);
         this.syncable = true;
       }
 
@@ -178,7 +179,7 @@
 
       // bind to parent if syncable
       if (this.syncable) {
-        this.parent.bind("change", this._sync, this);  
+        this.parent.subscribe("change", this._sync, { context : this });  
       }
     },
 
@@ -252,8 +253,8 @@
 
       // trigger any subscribers 
       if (this.syncable) {
-        this.trigger(eventType, event);
-        this.trigger("change", event);  
+        this.publish(eventType, event);
+        this.publish("change", event);  
       }
     },
 
@@ -512,7 +513,7 @@
       return this;
     },
 
-    _add : function(row, options) {
+    _add : function(row) {
       
       // first coerce all the values appropriatly
       _.each(row, function(value, key) {
@@ -678,7 +679,7 @@
       }
 
       if (this.syncable && !options.silent) {
-        this.trigger("sort");
+        this.publish("sort");
       }
 
       return this;

@@ -1,8 +1,6 @@
 (function(global) {
   
-  var Util  = global.Util;
   var Miso    = global.Miso || {};
-  var Dataset = Miso.Dataset;
 
   module("CountBy");
   var countData = {
@@ -272,28 +270,6 @@
     };
   }
 
-  function getGroupByData() {
-    return {
-      columns : [
-        { 
-          name : "state",
-          type : "string",
-          data : ["AZ", "MA"]
-        },
-        {
-          name : "count",
-          type : "number",
-          data : [6,15]
-        },
-        {
-          name : "anothercount",
-          type : "number", 
-          data : [60,150]
-        }
-      ]
-    };
-  }
-
   test("base group by", function() {
     
     var ds = new Miso.Dataset({
@@ -481,7 +457,7 @@
       ok(_.isEqual(groupedData._columns[4].data, [60,150]), "anothercounts correct" + groupedData._columns[3].data);
 
       groupedData = ds.groupBy("state", ["count", "anothercount"], {
-        preprocess : function(state) {
+        preprocess : function() {
           return "A";
         }
       });
