@@ -1,5 +1,5 @@
 /**
-* Miso.Dataset - v0.3.0 - 10/27/2012
+* Miso.Dataset - v0.4.0 - 11/16/2012
 * http://github.com/misoproject/dataset
 * Copyright (c) 2012 Alex Graul, Irene Ros;
 * Dual Licensed: MIT, GPL
@@ -6420,8 +6420,128 @@ if (!JSON) {
   }
 
 })(this);
+(function(global, _) {
+
+  var Miso = global.Miso = (global.Miso || {});
+
+  /**
+  * Miso Events is a small set of methods that can be mixed into any object
+  * to make it evented. It allows one to then subscribe to specific object events,
+  * to publish events, unsubscribe and subscribeOnce.
+  */
+  Miso.Events = {
+
+    /**
+    * Triggers a specific event and passes any additional arguments
+    * to the callbacks subscribed to that event.
+    * Params:
+    *   name - the name of the event to trigger
+    *   .* - any additional arguments to pass to callbacks.
+    */
+    publish : function(name) {
+      var args = _.toArray(arguments);
+      args.shift();
+
+      if (this._events && this._events[name]) {
+        _.each(this._events[name], function(subscription) {
+          subscription.callback.apply(subscription.context || this, args);
+        }, this);
+      }
+      return this;
+    },
+
+    /**
+    * Allows subscribing on an evented object to a specific name.
+    * Provide a callback to trigger.
+    * Params:
+    *   name - event to subscribe to
+    *   callback - callback to trigger
+    *   options - optional arguments
+    *     priority - allows rearranging of existing callbacks based on priority
+    *     context - allows attaching diff context to callback
+    *     token - allows callback identification by token.
+    */
+    subscribe : function(name, callback, options) {
+      options = options || {};
+      this._events = this._events || {};
+      this._events[name] = this._events[name] || [];
+
+      var subscription = {
+        callback : callback,
+        priority : options.priority || 0, 
+        token : options.token || _.uniqueId('t'),
+        context : options.context || this
+      };
+      var position;
+      _.each(this._events[name], function(event, index) {
+        if (!_.isUndefined(position)) { return; }
+        if (event.priority <= subscription.priority) {
+          position = index;
+        }
+      });
+
+      this._events[name].splice(position, 0, subscription);
+      return subscription.token;
+    },
+
+    /**
+    * Allows subscribing to an event once. When the event is triggered
+    * this subscription will be removed.
+    * Params:
+    *   name - name of event
+    *   callback - The callback to trigger
+    *   options - optional arguments
+    *     priority - allows rearranging of existing callbacks based on priority
+    *     context - allows attaching diff context to callback
+    *     token - allows callback identification by token.
+    */
+    subscribeOnce : function(name, callback, options) {
+      this._events = this._events || {};
+      options = options || {};
+      var self = this;
+
+      if (typeof options.token === "undefined") {
+        options.token = _.uniqueId('t');
+      }
+
+      return this.subscribe(name, function() {
+        self.unsubscribe(name, { token : options.token });
+        callback.apply(this, arguments);
+      }, options);
+    },
+
+    /**
+    * Allows unsubscribing from a specific event
+    * Params:
+    *   name - event to unsubscribe from
+    *   identifier - callback to remove OR token.
+    */
+    unsubscribe : function(name, identifier) {
+
+      if (_.isUndefined(this._events[name])) { return this; }
+
+      if (_.isFunction(identifier)) {
+        this._events[name] = _.reject(this._events[name], function(b) {
+          return b.callback === identifier;
+        });
+
+      } else if ( _.isString(identifier)) {
+        this._events[name] = _.reject(this._events[name], function(b) {
+          return b.token === identifier;
+        });
+
+      } else {
+        this._events[name] = [];
+      }
+      return this;
+    }
+
+  };
+
+}(this, _));
+
 /**
-* Miso.Dataset - v0.3.0 - 10/27/2012
+* Miso.Dataset - v0.4.0 - 11/16/2012
 * http://github.com/misoproject/dataset
 * Copyright (c) 2012 Alex Graul, Irene Ros;
 * Dual Licensed: MIT, GPL
@@ -6479,6 +6599,7 @@ if (!JSON) {
 
 (function(global, _) {
 
+  var Miso = global.Miso || (global.Miso = {});
   var Dataset = global.Miso.Dataset;
 
   /**
@@ -6638,7 +6759,7 @@ if (!JSON) {
       // is this a syncable dataset? if so, pull
       // required methoMiso and mark this as a syncable dataset.
       if (this.parent.syncable === true) {
-        _.extend(this, Dataset.Events);
+        _.extend(this, Miso.Events);
         this.syncable = true;
       }
 
@@ -6657,7 +6778,7 @@ if (!JSON) {
 
       // bind to parent if syncable
       if (this.syncable) {
-        this.parent.bind("change", this._sync, this);  
+        this.parent.subscribe("change", this._sync, { context : this });  
       }
     },
 
@@ -6731,8 +6852,8 @@ if (!JSON) {
 
       // trigger any subscribers 
       if (this.syncable) {
-        this.trigger(eventType, event);
-        this.trigger("change", event);  
+        this.publish(eventType, event);
+        this.publish("change", event);  
       }
     },
 
@@ -6991,7 +7112,7 @@ if (!JSON) {
       return this;
     },
 
-    _add : function(row, options) {
+    _add : function(row) {
       
       // first coerce all the values appropriatly
       _.each(row, function(value, key) {
@@ -7157,7 +7278,7 @@ if (!JSON) {
       }
 
       if (this.syncable && !options.silent) {
-        this.trigger("sort");
+        this.publish("sort");
       }
 
       return this;
@@ -7188,6 +7309,7 @@ Version 0.0.1.2
 
 (function(global, _, moment) {
 
+  var Miso = global.Miso || (global.Miso = {});
   var Dataset = global.Miso.Dataset;
 
   // take on miso dataview's prototype
@@ -7206,7 +7328,7 @@ Version 0.0.1.2
       // is this a syncable dataset? if so, pull
       // required methods and mark this as a syncable dataset.
       if (options.sync === true) {
-        _.extend(this, Dataset.Events);
+        _.extend(this, Miso.Events);
         this.syncable = true;
       }
 
@@ -7634,9 +7756,9 @@ Version 0.0.1.2
       }, this);
       
       if (this.syncable && !options.silent) {
-        var e = this._buildEvent(deltas, this);
-        this.trigger('add', e );
-        this.trigger('change', e );
+        var e = Dataset.Events._buildEvent(deltas, this);
+        this.publish('add', e );
+        this.publish('change', e );
       }
 
       return this;
@@ -7668,9 +7790,9 @@ Version 0.0.1.2
       }, this);
       
       if (this.syncable && (!options || !options.silent)) {
-        var ev = this._buildEvent( deltas, this );
-        this.trigger('remove', ev );
-        this.trigger('change', ev );
+        var ev = Dataset.Events._buildEvent( deltas, this );
+        this.publish('remove', ev );
+        this.publish('change', ev );
       }
     },
 
@@ -7770,9 +7892,9 @@ Version 0.0.1.2
       //computer column updates
       //update triggers
       if (this.syncable && (!options || !options.silent)) {
-        var ev = this._buildEvent( deltas, this );
-        this.trigger('update', ev );
-        this.trigger('change', ev );
+        var ev = Dataset.Events._buildEvent( deltas, this );
+        this.publish('update', ev );
+        this.publish('change', ev );
       }
       return this;
     },
@@ -7790,7 +7912,7 @@ Version 0.0.1.2
       });
       this.length = 0;
       if (this.syncable && (!options || !options.silent)) {
-        this.trigger("reset");
+        this.publish("reset");
       }
     }
 
@@ -7830,7 +7952,7 @@ Version 0.0.1.2
         }
         return v;
       },
-      test : function(v) {
+      test : function() {
         return true;
       },
       compare : function(s1, s2) {
@@ -7993,7 +8115,7 @@ Version 0.0.1.2
         // if string, then parse as a time
         if (_.isString(v)) {
           var format = options.format || this.format;
-          return moment(v, options.format);   
+          return moment(v, format);   
         } else if (_.isNumber(v)) {
           return moment(v);
         } else {
@@ -8108,86 +8230,11 @@ Version 0.0.1.2
   //Event Related Methods
   Dataset.Events = {};
 
-  /**
-  * Bind callbacks to dataset events
-  * Parameters:
-  *   ev - name of the event
-  *   callback - callback function
-  *   context - context for the callback. optional.
-  * Returns 
-  *   object being bound to.
-  */
-  Dataset.Events.bind = function (ev, callback, context) {
-    var calls = this._callbacks || (this._callbacks = {});
-    var list  = calls[ev] || (calls[ev] = {});
-    var tail = list.tail || (list.tail = list.next = {});
-    tail.callback = callback;
-    tail.context = context;
-    list.tail = tail.next = {};
-    return this;
-  };
-
-  /**
-  * Remove one or many callbacks. If `callback` is null, removes all
-  * callbacks for the event. If `ev` is null, removes all bound callbacks
-  * for all events.
-  * Parameters:
-  *   ev - event name
-  *   callback - Optional. callback function to be removed
-  * Returns:
-  *   The object being unbound from.
-  */
-  Dataset.Events.unbind = function(ev, callback) {
-    var calls, node, prev;
-    if (!ev) {
-      this._callbacks = null;
-    } else if (calls = this._callbacks) {
-      if (!callback) {
-        calls[ev] = {};
-      } else if (node = calls[ev]) {
-        while ((prev = node) && (node = node.next)) {
-          if (node.callback !== callback) { 
-            continue;
-          }
-          prev.next = node.next;
-          node.context = node.callback = null;
-          break;
-        }
-      }
-    }
-    return this;
-  };
-
-  /**
-  * trigger a given event
-  * Parameters:
-  *   eventName - name of event
-  * Returns;
-  *   object being triggered on.
-  */
-  Dataset.Events.trigger = function(eventName) {
-    var node, calls, callback, args, ev, events = ['all', eventName];
-    if (!(calls = this._callbacks)) {
-      return this;
-    }
-    while (ev = events.pop()) {
-      if (!(node = calls[ev])) {
-        continue;
-      }
-      args = ev === 'all' ? arguments : Array.prototype.slice.call(arguments, 1);
-      while (node = node.next) {
-        if (callback = node.callback) {
-          callback.apply(node.context || this, args);
-        }
-      }
-    }
-    return this;
-  };
-
   // Used to build event objects accross the application.
   Dataset.Events._buildEvent = function(delta, dataset) {
     return new Dataset.Event(delta, dataset);
   };
+
 }(this, _));
 
 (function(global, _) {
@@ -8324,6 +8371,7 @@ Version 0.0.1.2
 
 (function(global, _) {
 
+  var Miso = global.Miso || (global.Miso = {});
   var Dataset = global.Miso.Dataset;
 
   /**
@@ -8360,7 +8408,7 @@ Version 0.0.1.2
     return this;
   };
 
-  _.extend(Dataset.Product.prototype, Dataset.Events, {
+  _.extend(Dataset.Product.prototype, Miso.Events, {
 
     /**
     * return the raw value of the product
@@ -8418,14 +8466,14 @@ Version 0.0.1.2
             var delta = this._buildDelta(this.value, producer.call(_self));
             this.value = delta.changed;
             if (_self.syncable) {
-              var event = this._buildEvent(delta, this);
+              var event = Dataset.Events._buildEvent(delta, this);
               if (!_.isUndefined(delta.old) && !options.silent && delta.old !== delta.changed) {
-                this.trigger("change", event);
+                this.publish("change", event);
               }
             }
           }
         });
-        this.bind("change", prod._sync, prod); 
+        this.subscribe("change", prod._sync, { context : prod }); 
         return prod; 
 
       } else {
@@ -9162,7 +9210,7 @@ Version 0.0.1.2
         var positionRegex = /([A-Z]+)(\d+)/,
             columnPositions = {};
 
-        _.each(data.feed.entry, function(cell, index) {
+        _.each(data.feed.entry, function(cell) {
 
           var parts = positionRegex.exec(cell.title.$t),
           column = parts[1],
@@ -9463,7 +9511,8 @@ Version 0.0.1.2
 
 (function(global, _) {
 
-  var Dataset = global.Miso.Dataset;
+  var Miso = global.Miso || (global.Miso = {});
+  var Dataset = Miso.Dataset;
 
   /**
   * A Miso.Derived dataset is a regular dataset that has been derived
@@ -9503,9 +9552,9 @@ Version 0.0.1.2
     });
 
     if (this.parent.syncable) {
-      _.extend(this, Dataset.Events);
+      _.extend(this, Miso.Events);
       this.syncable = true;
-      this.parent.bind("change", this._sync, this);  
+      this.parent.subscribe("change", this._sync, { context : this });  
     }
   };
 
@@ -9514,11 +9563,11 @@ Version 0.0.1.2
 
   // inherit all of dataset's methods.
   _.extend(Dataset.Derived.prototype, {
-    _sync : function(event) {
+    _sync : function() {
       // recompute the function on an event.
       // TODO: would be nice to be more clever about this at some point.
       this.func.call(this.args);
-      this.trigger("change");
+      this.publish("change");
     }
   });
 
@@ -9565,7 +9614,6 @@ Version 0.0.1.2
 
       // apply with the arguments columns, size, method
       var computeMovingAverage = function() {
-        var win = [];
 
         // normalize columns arg - if single string, to array it.
         if (typeof columns === "string") {
@@ -9578,7 +9626,7 @@ Version 0.0.1.2
           .data.slice(size-1, this.parent.length);
 
         // copy the columns we are NOT combining minus the sliced size.
-        this.eachColumn(function(columnName, column, i) {
+        this.eachColumn(function(columnName, column) {
           if (columns.indexOf(columnName) === -1 && columnName !== "_oids") {
             // copy data
             column.data = this.parent.column(columnName).data.slice(size-1, this.parent.length);
@@ -9721,7 +9769,6 @@ Version 0.0.1.2
         // a cache of values
         var categoryPositions = {},
             categoryCount     = 0,
-            byColumnPosition  = this._columnPositionByName[byColumn],
             originalByColumn = this.parent.column(byColumn);
 
         // bin all values by their
@@ -9760,7 +9807,6 @@ Version 0.0.1.2
           _.each(columns, function(columnToGroup) {
             
             var column = this.column(columnToGroup),
-                value  = this.parent.column(columnToGroup).data[i],
                 binPosition = categoryPositions[category];
 
             column.data[binPosition].push(this.parent.rowByPosition(i));
