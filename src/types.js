@@ -29,7 +29,7 @@
         }
         return v;
       },
-      test : function(v) {
+      test : function() {
         return true;
       },
       compare : function(s1, s2) {
@@ -192,7 +192,7 @@
         // if string, then parse as a time
         if (_.isString(v)) {
           var format = options.format || this.format;
-          return moment(v, options.format);   
+          return moment(v, format);   
         } else if (_.isNumber(v)) {
           return moment(v);
         } else {

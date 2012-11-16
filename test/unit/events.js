@@ -1,6 +1,5 @@
 (function(global) {
   
-  var Util  = global.Util;
   var Miso    = global.Miso || {};
   
   module("Events");
@@ -18,10 +17,10 @@
       result += by;
     };
 
-    ds.bind('ping', increment);
+    ds.subscribe('ping', increment);
 
     result = 0;
-    ds.trigger('ping', 1);
+    ds.publish('ping', 1);
     equals(result, 1);
   });
 
@@ -37,11 +36,11 @@
       result += by;
     };
 
-    ds.bind('ping', increment);
+    ds.subscribe('ping', increment);
 
-    ds.trigger('ping');
-    ds.unbind('ping', increment);
-    ds.trigger('ping');
+    ds.publish('ping');
+    ds.unsubscribe('ping', increment);
+    ds.publish('ping');
     equals(result, 1);
   });
 
@@ -55,7 +54,7 @@
       sync : true
     });
     ds.fetch({ success: function() {
-      this.bind('add', function(event) {
+      this.subscribe('add', function(event) {
         equals( event.affectedColumns().length, 1);
         ok( event.affectedColumns()[0] === 'one' );
       });
@@ -74,7 +73,7 @@
       sync : true
     });
     ds.fetch({ success: function() {
-      this.bind('remove', function(event) {
+      this.subscribe('remove', function(event) {
         equals( event.affectedColumns().length, 1);
         ok( event.affectedColumns()[0] === 'one' );
       });
@@ -93,7 +92,7 @@
       sync : true
     });
     ds.fetch({ success: function() {
-      this.bind('change', function(event) {
+      this.subscribe('change', function(event) {
         equals( event.affectedColumns().length, 1);
         ok( event.affectedColumns()[0] === 'one' );
       });
@@ -116,7 +115,7 @@
       sync : true
     });
     ds.fetch({ success: function() {
-      this.bind('change', function(event) {
+      this.subscribe('change', function(event) {
         equals( event.affectedColumns().length, 1);
         ok( event.affectedColumns()[0] === 'one' );
       });

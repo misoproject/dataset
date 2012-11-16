@@ -1,8 +1,7 @@
 (function(global) {
 
-  var Util  = global.Util;
   var Miso    = global.Miso || {};
-  var Dataset = global.Miso.Dataset;
+  var Dataset = Miso.Dataset;
 
   module("Bugs");
 
@@ -342,7 +341,7 @@
       ok(_.isEqual(gb.column("e").data, [1]));
       ok(_.isEqual(gb.column("x").data, [3]));
 
-      gb.bind("change", function() {
+      gb.subscribe("change", function() {
         equals(gb.length, 2);
         ok(_.isEqual(gb.column("q").data, [3,50]));
         ok(_.isEqual(gb.column("e").data, [1,12]));
@@ -397,7 +396,7 @@
           start();
         }
       }, 
-      error : function(r) { 
+      error : function() { 
         start();
         ok(false);
       }

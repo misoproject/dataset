@@ -1,6 +1,5 @@
 (function(global) {
   
-  var Util  = global.Util;
   var Dataset = global.Miso.Dataset;
 
   var numbers = ['123', '0.34', '.23'];

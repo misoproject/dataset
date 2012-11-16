@@ -38,6 +38,7 @@
     "lodash": "0.9.0",
     "moment": "1.7.2",
     "underscore.deferred": "0.2.0",
-    "request": "2.9.153"
+    "request": "2.9.153",
+    "miso.events" : "*"
   }
 }

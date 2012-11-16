@@ -1,5 +1,6 @@
 (function(global, _) {
 
+  var Miso = global.Miso || (global.Miso = {});
   var Dataset = global.Miso.Dataset;
 
   /**
@@ -36,7 +37,7 @@
     return this;
   };
 
-  _.extend(Dataset.Product.prototype, Dataset.Events, {
+  _.extend(Dataset.Product.prototype, Miso.Events, {
 
     /**
     * return the raw value of the product
@@ -94,14 +95,14 @@
             var delta = this._buildDelta(this.value, producer.call(_self));
             this.value = delta.changed;
             if (_self.syncable) {
-              var event = this._buildEvent(delta, this);
+              var event = Dataset.Events._buildEvent(delta, this);
               if (!_.isUndefined(delta.old) && !options.silent && delta.old !== delta.changed) {
-                this.trigger("change", event);
+                this.publish("change", event);
               }
             }
           }
         });
-        this.bind("change", prod._sync, prod); 
+        this.subscribe("change", prod._sync, { context : prod }); 
         return prod; 
 
       } else {

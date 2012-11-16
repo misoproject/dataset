@@ -70,7 +70,7 @@
         var positionRegex = /([A-Z]+)(\d+)/,
             columnPositions = {};
 
-        _.each(data.feed.entry, function(cell, index) {
+        _.each(data.feed.entry, function(cell) {
 
           var parts = positionRegex.exec(cell.title.$t),
           column = parts[1],

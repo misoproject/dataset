@@ -121,7 +121,6 @@
 
   test("updating a row with a custom idAttribute (updating id col)", 1, function() {
     var ds = Util.baseSampleCustomID();
-    var firstRowId = ds.rowByPosition(0).one;
 
     raises(function() {
       ds.update({ one : 99});
@@ -425,12 +424,12 @@
     ds.fetch().then(function() {
       ok(_.isEqual(ds.columnNames(), ["one", "two"]));
 
-      var newcol = ds.addComputedColumn("three", "number", function(row) {
+      ds.addComputedColumn("three", "number", function(row) {
         return row.one + row.two;
       });
 
       stop();
-      ds.bind("add", function(event) {
+      ds.subscribe("add", function(event) {
         ok(event.deltas[0].changed.three === 44);
         start();
       });
@@ -456,12 +455,12 @@
     ds.fetch().then(function() {
       ok(_.isEqual(ds.columnNames(), ["one", "two"]));
 
-      var newcol = ds.addComputedColumn("three", "number", function(row) {
+      ds.addComputedColumn("three", "number", function(row) {
         return row.one + row.two;
       });
 
       stop();
-      ds.bind("change", function(event) {
+      ds.subscribe("change", function(event) {
         ok(event.deltas[0].changed.three === 110);
         start();
       });
