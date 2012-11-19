@@ -11,9 +11,8 @@ All downloads are located in the [/dist](https://github.com/misoproject/dataset/
 
 ### Including Dependencies
 
-[miso.ds.dev.0.4.1.zip](https://github.com/downloads/misoproject/dataset/miso.ds.dev.0.4.1.zip) - Download Development With Dependencies - 0.3.0
 
-[miso.ds.deps.min.0.3.0.js](https://github.com/downloads/misoproject/dataset/miso.ds.deps.min.0.4.1.js) - Download Production With Dependencies - 0.4.1
+[miso.ds.dev.0.4.1.zip](https://github.com/downloads/misoproject/dataset/miso.ds.dev.0.4.1.zip) - Download Development With Dependencies - 0.4.1
 
 [miso.ds.deps.ie.0.4.1.js](https://github.com/downloads/misoproject/dataset/miso.ds.deps.ie.0.4.1.js) - Download Development With Dependencies for IE - 0.4.1
 
