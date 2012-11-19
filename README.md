@@ -11,25 +11,25 @@ All downloads are located in the [/dist](https://github.com/misoproject/dataset/
 
 ### Including Dependencies
 
-[miso.ds.dev.0.4.0.zip](https://github.com/downloads/misoproject/dataset/miso.ds.dev.0.4.0.zip) - Download Development With Dependencies - 0.3.0
+[miso.ds.dev.0.4.1.zip](https://github.com/downloads/misoproject/dataset/miso.ds.dev.0.4.1.zip) - Download Development With Dependencies - 0.3.0
 
-[miso.ds.deps.min.0.3.0.js](https://github.com/downloads/misoproject/dataset/miso.ds.deps.min.0.4.0.js) - Download Production With Dependencies - 0.4.0
+[miso.ds.deps.min.0.3.0.js](https://github.com/downloads/misoproject/dataset/miso.ds.deps.min.0.4.1.js) - Download Production With Dependencies - 0.4.1
 
-[miso.ds.deps.ie.0.4.0.js](https://github.com/downloads/misoproject/dataset/miso.ds.deps.ie.0.4.0.js) - Download Development With Dependencies for IE - 0.4.0
+[miso.ds.deps.ie.0.4.1.js](https://github.com/downloads/misoproject/dataset/miso.ds.deps.ie.0.4.1.js) - Download Development With Dependencies for IE - 0.4.1
 
-[miso.ds.deps.ie.min.0.4.0.js](https://github.com/downloads/misoproject/dataset/miso.ds.deps.ie.0.4.0.js) - Download Production With Dependencies for IE - 0.4.0
+[miso.ds.deps.ie.min.0.4.1.js](https://github.com/downloads/misoproject/dataset/miso.ds.deps.ie.0.4.1.js) - Download Production With Dependencies for IE - 0.4.1
 
 ### Without Dependencies
 
 The following builds do not have any of the dependencies built in. It is your own responsibility to include them as appropriate script elements in your page.
 
-[miso.ds.0.4.0.js](https://github.com/downloads/misoproject/dataset/miso.ds.0.4.0.js) - Download Development No Dependencies - 0.4.0
+[miso.ds.0.4.1.js](https://github.com/downloads/misoproject/dataset/miso.ds.0.4.1.js) - Download Development No Dependencies - 0.4.1
 
-[miso.ds.min.0.4.0.js](https://github.com/misoproject/dataset/tree/master/dist/miso.ds.min.0.4.0.js) - Download Production No Dependencies - 0.4.0
+[miso.ds.min.0.4.1.js](https://github.com/misoproject/dataset/tree/master/dist/miso.ds.min.0.4.1.js) - Download Production No Dependencies - 0.4.1
 
-[miso.ds.0.4.0.m.js](https://github.com/misoproject/dataset/tree/master/dist/miso.ds.0.4.0.m.js) - Download AMD Compatibile Build No Dependencies- 0.4.0
+[miso.ds.0.4.1.m.js](https://github.com/misoproject/dataset/tree/master/dist/miso.ds.0.4.1.m.js) - Download AMD Compatibile Build No Dependencies- 0.4.1
 
-[miso.ds.min.0.4.0.m.js](https://github.com/misoproject/dataset/tree/master/dist/miso.ds.min.0.4.0.m.js) - Download AMD Compatibile Build Production No Dependencies- 0.4.0
+[miso.ds.min.0.4.1.m.js](https://github.com/misoproject/dataset/tree/master/dist/miso.ds.min.0.4.1.m.js) - Download AMD Compatibile Build Production No Dependencies- 0.4.1
 
 
 ### Dependencies

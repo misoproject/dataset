@@ -1,5 +1,5 @@
 /**
-* Miso.Dataset - v0.4.0 - 11/16/2012
+* Miso.Dataset - v0.4.1 - 11/19/2012
 * http://github.com/misoproject/dataset
 * Copyright (c) 2012 Alex Graul, Irene Ros;
 * Dual Licensed: MIT, GPL
@@ -6053,7 +6053,7 @@
 }(this, _));
 
 /**
-* Miso.Dataset - v0.4.0 - 11/16/2012
+* Miso.Dataset - v0.4.1 - 11/19/2012
 * http://github.com/misoproject/dataset
 * Copyright (c) 2012 Alex Graul, Irene Ros;
 * Dual Licensed: MIT, GPL
