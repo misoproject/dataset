@@ -119,7 +119,7 @@ Open the test page on the browser
 ### Guideline
   
 * Any new functionality must have tests and ensure all current tests still pass. All tests are located in the ```test/unit``` directory.
-* We use cowboy's grunt library to build all our final dependencies. You will need to install grunt per the instructions here: [https://github.com/cowboy/grunt](https://github.com/cowboy/grunt).
+* We use cowboy's grunt library to build all our final dependencies. You will need to install grunt per the instructions here: [http://gruntjs.com/](http://gruntjs.com/). Dataset uses grunt 0.4.
 
 ## Contact
 
