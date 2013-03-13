@@ -1,12 +1,11 @@
 /**
-* Miso.Dataset - v0.4.1 - 11/19/2012
+* Miso.Dataset - v0.4.1 - 3/13/2013
 * http://github.com/misoproject/dataset
-* Copyright (c) 2012 Alex Graul, Irene Ros;
+* Copyright (c) 2013 Alex Graul, Irene Ros;
 * Dual Licensed: MIT, GPL
 * https://github.com/misoproject/dataset/blob/master/LICENSE-MIT 
 * https://github.com/misoproject/dataset/blob/master/LICENSE-GPL 
 */
-
 // moment.js
 // version : 1.7.2
 // author : Tim Wood
@@ -6053,14 +6052,13 @@
 }(this, _));
 
 /**
-* Miso.Dataset - v0.4.1 - 11/19/2012
+* Miso.Dataset - v0.4.1 - 3/13/2013
 * http://github.com/misoproject/dataset
-* Copyright (c) 2012 Alex Graul, Irene Ros;
+* Copyright (c) 2013 Alex Graul, Irene Ros;
 * Dual Licensed: MIT, GPL
 * https://github.com/misoproject/dataset/blob/master/LICENSE-MIT 
 * https://github.com/misoproject/dataset/blob/master/LICENSE-GPL 
 */
-
 (function(global) {
 
 /**
