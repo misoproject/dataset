@@ -23,7 +23,8 @@
       type : "GET",
       url : _.isFunction(this._url) ? _.bind(this._url, this) : this._url,
       dataType : options.dataType ? options.dataType : (options.jsonp ? "jsonp" : "json"),
-      callback : options.callback
+      callback : options.callback,
+      headers  : options.headers
     };
   };
 
@@ -59,6 +60,7 @@
     success   : function() {},
     type      : "GET",
     async     : true,
+    headers   : {},
     xhr : function() {
       return global.ActiveXObject ? new global.ActiveXObject("Microsoft.XMLHTTP") : new global.XMLHttpRequest();
     }
@@ -75,7 +77,7 @@
       (options.dataType === "jsonp" || options.dataType === "script" )) {
 
         Dataset.Xhr.getJSONP(
-          url, 
+          url,
           options.success,
           options.dataType === "script",
           options.error,
@@ -101,6 +103,14 @@
         }
 
         settings.ajax.open(settings.type, settings.url, settings.async);
+
+        // Add custom headers
+        if (options.headers) {
+          _(options.headers).forEach(function(value, name) {
+            settings.ajax.setRequestHeader(name, value);
+          });
+        }
+
         settings.ajax.send(settings.data || null);
 
         return Dataset.Xhr.httpData(settings);
@@ -144,7 +154,7 @@
       parts = params[params.length - 1].split("=");
     }
     if (!callback) {
-      var fallback = _.uniqueId('callback');
+      var fallback = _.uniqueId("callback");
       callback = params.length ? (parts[ 1 ] ? parts[ 1 ] : fallback) : fallback;
     }
 
@@ -153,7 +163,7 @@
     }
 
     if ( !paramStr || !/callback/.test(paramStr) ) {
-      if (paramStr) { url += '&'; }
+      if (paramStr) { url += "&"; }
       url += "callback=" + callback;
     }
 
@@ -173,7 +183,7 @@
       };
 
       //  Replace callback param and callback name
-      if (parts) { 
+      if (parts) {
         url = url.replace(parts.join("="), parts[0] + "=" + callback);
       }
     }
