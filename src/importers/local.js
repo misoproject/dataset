@@ -12,6 +12,8 @@
    *
    * @param {Object} [options]
    * @param options.data local object containing your data
+   *
+   * @externalExample {runnable} importers/local
    */
   // TODO: Document `options.extract`
   Dataset.Importers.Local = function(options) {

@@ -102,6 +102,8 @@
    *                                       identifier, specify its name here.
    *                                       Note that the row objects will no
    *                                       longer have an _id property.
+   *
+   * @externalExample {runnable} dataset
    */
   global.Miso.Dataset = function(options) {
     

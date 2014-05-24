@@ -13,6 +13,8 @@
    * @param {Object} [options]
    * @param {String} [format] - For `time` type only. Describes the format.
    *
+   * @externalExample {runnable} type-of
+   *
    * @returns {String}
    */
   Dataset.typeOf = function(value, options) {
@@ -41,6 +43,8 @@
    *
    * @namespace types
    * @memberof Miso.Dataset
+   *
+   * @externalExample types
    */
   Dataset.types = {
     

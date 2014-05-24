@@ -18,6 +18,8 @@
    * @param {String} options.dataType - ajax datatype
    * @param {Boolean} options.jsonp - true if it's a jsonp request, false
    *                                  otherwise.
+   *
+   * @externalExample {runnable} importers/remote
    */
   Dataset.Importers.Remote = function(options) {
     options = options || {};

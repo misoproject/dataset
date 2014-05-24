@@ -25,6 +25,8 @@
 
   _.extend(Dataset.Event.prototype, {
     /**
+     * @externalExample {runnable} event/affected-columns
+     *
      * @returns {Array} Columns affected by the event
      */
     affectedColumns : function() {
@@ -48,6 +50,8 @@
     {
 
     /**
+     * @externalExample {runnable} event/is-remove
+     *
      * @returns {Boolean} true if the event is a deletion
      */
     isRemove : function(delta) {
@@ -59,6 +63,8 @@
     },
 
     /**
+     * @externalExample {runnable} event/is-add
+     *
      * @returns {Boolean} true if the event is an add event
      */
     isAdd : function(delta) {
@@ -70,6 +76,8 @@
     },
 
     /**
+     * @externalExample {runnable} event/is-update
+     *
      * @returns {Boolean} true if the event is an update
      */
     isUpdate : function(delta) {

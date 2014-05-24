@@ -282,7 +282,19 @@ module.exports = function(grunt) {
         "src/parsers/google_spreadsheet.js",
         "src/parsers/delimited.js",
         "test/unit/**/*.js"
-      ]
+      ],
+
+      apiExamples: {
+        options: {
+          globals: {
+            log: true,
+            Miso: true
+          }
+        },
+        files: {
+          src: ["examples/api/*.js"]
+        }
+      }
     },
 
     jscs: {

@@ -163,6 +163,8 @@
      * @param {String} byColumn - The column to count instances again.
      * @param {Object} [options]
      *
+     * @externalExample {runnable} dataview/count-by
+     *
      * @returns {Miso.Dataset.Derived}
      */
     countBy : function(byColumn, options) {
@@ -233,6 +235,9 @@
      *                                        need to group by some kind of
      *                                        derivation of those values that
      *                                        are not just equality based.
+     *
+     * @externalExample {runnable} dataview/group-by
+     *
      * @returns {Miso.Dataset.Derived}
      */
     groupBy : function(byColumn, columns, options) {

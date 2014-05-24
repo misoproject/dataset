@@ -25,6 +25,8 @@
    *                                      dates.
    * @param {Number} [options.id] - Sets a custom column _id. We assign one by
    *                                default.
+   *
+   * @externalExample {runnable} column
    */
   Dataset.Column = function(options) {
     _.extend(this, options);
@@ -57,6 +59,8 @@
      * @param {Number} index - index position of the row you want the numeric
      *                         value for
      *
+     * @externalExample {runnable} column/numeric-at
+     *
      * @returns {Number}
      */
     numericAt : function(index) {
@@ -65,6 +69,8 @@
 
     /**
      * Coerces all the data in the column's data array to the appropriate type.
+     *
+     * @externalExample {runnable} column/coerce
      */
     coerce : function() {
       this.data = _.map(this.data, function(datum) {
@@ -300,6 +306,8 @@
      *                                            it passes the criteria.
      * @param {Object} [options]
      *
+     * @externalExample {runnable} dataview/where
+     *
      * @returns {Miso.Dataset.DataView}
      */
     where : function(filter, options) {
@@ -414,6 +422,8 @@
     /**
      * @param {String} name - name of the column to be selected
      *
+     * @externalExample {runnable} dataview/column
+     *
      * @returns {Miso.Dataset.Column} View of the given column name
      */
     column : function(name) {
@@ -429,6 +439,8 @@
     /**
      * @param {String[]} columnsArray - an array of column names
      *
+     * @externalExample {runnable} dataview/columns
+     *
      * @returns {Miso.Dataset.DataView} dataset view of the given columns
      */
     columns : function(columnsArray) {
@@ -439,6 +451,8 @@
     },
 
     /**
+     * @externalExample {runnable} dataview/column-names
+     *
      * @returns {String[]} the names of all columns, not including id column
      */
     columnNames : function() {
@@ -453,6 +467,8 @@
      *
      * @param {String} name - Name of column to check for
      *
+     * @externalExample {runnable} dataview/has-column
+     *
      * @returns {Boolean} true if a column exists, false otherwise.
      */
     hasColumn : function(name) {
@@ -466,6 +482,8 @@
      * @param {Miso.Dataset.DataView~rowIterator} iterator - function that is
      *                                                       passed each row
      * @param {Object} [context] - The context to be bound to the iterator.
+     *
+     * @externalExample {runnable} dataview/each
      */
     each : function(iterator, context) {
       for(var i = 0; i < this.length; i++) {
@@ -481,6 +499,8 @@
      * @param {Miso.Dataset.DataView~rowIterator} iterator - function that is
      *                                                        passed each row
      * @param {Object} [context] - The context to be bound to the iterator.
+     *
+     * @externalExample {runnable} dataview/reverse-each
      */
     reverseEach : function(iterator, context) {
       for(var i = this.length-1; i >= 0; i--) {
@@ -496,6 +516,8 @@
      *                                                          is passed each
      *                                                          column
      * @param {Object} [context] - The context to be bound to the iterator.
+     *
+     * @externalExample {runnable} dataview/each-column
      */
     eachColumn : function(iterator, context) {
       // skip id col
@@ -512,6 +534,8 @@
      *
      * @param {Number} i - position index
      *
+     * @externalExample {runnable} dataview/row-by-position
+     *
      * @returns {Object} a single row based on its position (NOT ID.)
      */
     rowByPosition : function(i) {
@@ -524,6 +548,8 @@
      * will not alter the original data.
      *
      * @param {Number} id - unique id
+     *
+     * @externalExample {runnable} dataview/row-by-id
      *
      * @returns {Object} a single row based on its id (NOT Position.)
      */
@@ -664,6 +690,8 @@
      * @param {Function|Object} filter - a filter function or object, the same
      *                                   as {@link Miso.Dataset.DataView#where}
      *
+     * @externalExample {runnable} dataview/rows
+     *
      * @returns {Miso.Dataset.DataView} a dataset view of filtered rows
      */
     rows : function(filter) {
@@ -691,6 +719,8 @@
    *                                     sort](http://developer.mozilla.org/en/JavaScript/Reference/Global_Objects/Array/sort)
    * @param {Boolean} args.silent - Default false, set true to supress the
    *                                firing of a sort event.
+   *
+   * @externalExample {runnable} dataview/sort
    *
    * @returns {Miso.Dataset.DataView}
    */

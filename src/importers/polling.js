@@ -15,6 +15,8 @@
    *                                    1000.
    * @param {Function} options.extract - a method to pass raw data through
    *                                     before handing back to parser.
+   *
+   * @externalExample {runnable} importers/polling
    */
   Dataset.Importers.Polling = function(options) {
     options = options || {};

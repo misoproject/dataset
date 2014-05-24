@@ -22,6 +22,8 @@
    * @virtual
    * @name Importers
    * @memberof Miso.Dataset
+   *
+   * @externalExample importers
    */
   Dataset.Importers = function(data, options) {};
 

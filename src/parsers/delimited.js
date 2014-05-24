@@ -1,3 +1,4 @@
+/*jshint -W082 */
 (function(global, _) {
 
   var Dataset = global.Miso.Dataset;

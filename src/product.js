@@ -48,6 +48,8 @@
     {
 
     /**
+     * @externalExample {runnable} product/val
+     *
      * @returns {mixed} the raw value of the product, most likely a number
      */
     val : function() {
@@ -85,6 +87,8 @@
    * @param {Function} func - The function which will be wrapped to create a
    *                          product. Function signature is function(columns,
    *                          options)
+   *
+   * @externalExample {runnable} product/define
    *
    * @returns {Function}
    */
@@ -167,6 +171,8 @@
      * @param {String|String[]} columns - column name(s) on which the value is
      *                                    calculated
      *
+     * @externalExample {runnable} dataview/sum
+     *
      * @returns {Miso.Dataset.Product|Number}
      */
     // TODO: Remove unused `options` argument
@@ -190,6 +196,8 @@
      * @param {String|String[]} column - column name(s) on which the value is
      *                                   calculated
      *
+     * @externalExample {runnable} dataview/max
+     *
      * @returns {Miso.Dataset.Product|Number}
      */
     // TODO: Remove unused `options` argument
@@ -211,6 +219,8 @@
      * @param {String[]} columns - array of column names on which the value is
      *                             calculated
      *
+     * @externalExample {runnable} dataview/min
+     *
      * @returns {Miso.Dataset.Product|Number}
      */
     min : Dataset.Product.define( function(columns, options) {
@@ -229,6 +239,8 @@
      *
      * @param {String[]} columns - array of column names on which the value is
      *                             calculated
+     *
+     * @externalExample {runnable} dataview/mean
      *
      * @returns {Miso.Dataset.Product|Number}
      */

@@ -22,6 +22,8 @@
    * @virtual
    * @name Parsers
    * @memberof Miso.Dataset
+   *
+   * @externalExample parsers
    */
   Dataset.Parsers = function( options ) {
     this.options = options || {};

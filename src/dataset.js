@@ -162,6 +162,8 @@ Version 0.0.1.2
      *                                     data fetching fails. Context is the
      *                                     dataset.
      *
+     * @externalExample {runnable} dataset/fetch
+     *
      * @returns {Deferred}
      */
     fetch : function(options) {
@@ -344,6 +346,8 @@ Version 0.0.1.2
      * @param {Function} func - The way that the column is derived. It takes a
      *                          row as a parameter.
      *
+     * @externalExample {runnable} dataset/add-column
+     *
      * @returns {Miso.Dataset.Column}
      */
     addComputedColumn : function(name, type, func) {
@@ -468,6 +472,8 @@ Version 0.0.1.2
      * @param {Boolean} options.silent - do not trigger an add (and thus view
      *                                   updates) event
      *
+     * @externalExample {runnable} dataset/add
+     *
      * @returns {Miso.Dataset}
      */
     add : function(rows, options) {
@@ -514,6 +520,8 @@ Version 0.0.1.2
      * @param {Object} [options]
      * @param {Boolean} options.silent - do not trigger an add (and thus view
      *                                   updates) event
+     *
+     * @externalExample {runnable} dataset/remove
      *
      * @return {Miso.Dataset}
      */
@@ -635,6 +643,8 @@ Version 0.0.1.2
      * @param {Object} [options]
      * @param {Boolean} options.silent - Set to true to disable event firing
      *
+     * @externalExample {runnable} dataset/update
+     *
      * @returns {Miso.Dataset}
      */
     update : function( rowsOrFunction, options ) {
@@ -662,6 +672,8 @@ Version 0.0.1.2
      *
      * @param {Object} [options]
      * @param {Boolean} options.silent
+     *
+     * @externalExample {runnable} dataset/reset
      */
     reset : function(options) {
       _.each(this._columns, function(col) {
