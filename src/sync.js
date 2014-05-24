@@ -3,8 +3,12 @@
   var Dataset = global.Miso.Dataset;
 
   /**
-   * A representation of an event as it is passed through the system. Used for
-   * view synchronization and other default CRUD ops.
+   * Miso.Dataset.Events are objects that will be passed to event callbacks
+   * bound to dataset objects that contain information about the event and what
+   * has changed. See [the Events
+   * tutorial](http://misoproject.com/dataset/dataset/tutorials/events) for
+   * more information.
+   *
    * @constructor
    * @name Event
    * @memberof Miso.Dataset
@@ -20,6 +24,9 @@
   };
 
   _.extend(Dataset.Event.prototype, {
+    /**
+     * @returns {Array} Columns affected by the event
+     */
     affectedColumns : function() {
       var cols = [];
       _.each(this.deltas, function(delta) {

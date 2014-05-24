@@ -3,7 +3,21 @@
   var Dataset = global.Miso.Dataset;
 
   /**
-   * Base Miso.Parser class.
+   * The Base Miso.Parser class. To specify a custom parser, during dataset
+   * instantiation set the `parser` property to the class name of the parser
+   * you want. Some parsers require some custom properties. This section will
+   * document the properties you can set that will either cause this parser to
+   * be selected or will be required by it to continue.
+   *
+   * Built in Parsers include:
+   *
+   * - {@link Miso.Dataset.Parsers.Strict}
+   * - {@link Miso.Dataset.Parsers.Object}
+   * - {@link Miso.Dataset.Parsers.Delimited}
+   * - {@link Miso.Dataset.Parsers.GoogleSpreadsheet}
+   *
+   * The base `Miso.Parser` structure is:
+   *
    * @constructor
    * @virtual
    * @name Parsers

@@ -3,6 +3,21 @@
   var Dataset = global.Miso.Dataset;
 
   /**
+   * To specify a custom importer during dataset instantiation, just set the
+   * `importer` property to the class name of the importer you want. Some
+   * importers require custom properties. This section will document the
+   * properties you can set that will either cause this importer to be selected
+   * or will be required by it to continue.
+   *
+   * Built in Importers include:
+   *
+   * - {@link Miso.Dataset.Importers.Local}
+   * - {@link Miso.Dataset.Importers.Remote}
+   * - {@link Miso.Dataset.Importers.Polling}
+   * - {@link Miso.Dataset.Importers.GoogleSpreadsheet}
+   *
+   * An importer must implement the following interface:
+   *
    * @constructor
    * @virtual
    * @name Importers

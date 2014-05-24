@@ -3,6 +3,9 @@
   var Dataset = global.Miso.Dataset;
   
   /**
+   * Import directly from google spreadsheets, see [the Google Spreadsheets
+   * guide](http://misoproject.com/dataset/dataset/tutorials/googlespreadsheets).
+   *
    * @constructor
    * @name GoogleSpreadsheet
    * @memberof Miso.Dataset.Importers
@@ -18,6 +21,10 @@
    * @param {String} options.url - a more complex url (that may include
    *                               filtering.) In this case make sure it's
    *                               returning the feed json data.
+   * @param {Boolean} options.fast - An optional flag to enable faster parsing.
+   *                                 See [the Google Spreadsheets
+   *                                 guide](http://misoproject.com/dataset/dataset/tutorials/googlespreadsheets)
+   *                                 for more information about this flag.
    */
   Dataset.Importers.GoogleSpreadsheet = function(options) {
     options = options || {};

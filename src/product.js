@@ -48,7 +48,7 @@
     {
 
     /**
-     * @returns the raw value of the product, most likely a number
+     * @returns {mixed} the raw value of the product, most likely a number
      */
     val : function() {
       return this.value;
@@ -81,6 +81,10 @@
    * Use this method to define a new product.
    *
    * @memberof Miso.Dataset.Product
+   *
+   * @param {Function} func - The function which will be wrapped to create a
+   *                          product. Function signature is function(columns,
+   *                          options)
    *
    * @returns {Function}
    */
@@ -152,12 +156,18 @@
     },
 
     /**
-     * Computes the sum of one or more columns.
+     * If the dataset has `sync` enabled this will return a
+     * `Miso.Dataset.Product` that can be used to bind events to and access the
+     * current value.  Otherwise it will return the current value - the sum of
+     * the numeric form of the values in the column.
+     *
      * @method
      *
      *
      * @param {String|String[]} columns - column name(s) on which the value is
      *                                    calculated
+     *
+     * @returns {Miso.Dataset.Product|Number}
      */
     // TODO: Remove unused `options` argument
     sum : Dataset.Product.define( function(columns, options) {
@@ -170,13 +180,17 @@
     }),
 
     /**
+     * If the dataset has `sync` enabled this will return a
+     * `Miso.Dataset.Product` that can be used to bind events to and access the
+     * current value.  Otherwise it will return the current value - the highest
+     * numeric value in that column.
+     *
      * @method
      *
      * @param {String|String[]} column - column name(s) on which the value is
      *                                   calculated
      *
-     * @returns {Miso.Dataset.Product} the value of the maximum value of the
-     *                                 column
+     * @returns {Miso.Dataset.Product|Number}
      */
     // TODO: Remove unused `options` argument
     max : Dataset.Product.define( function(columns, options) {
@@ -187,13 +201,17 @@
 
   
     /**
+     * If the dataset has `sync` enabled this will return a
+     * `Miso.Dataset.Product` that can be used to bind events to and access the
+     * current value.  Otherwise it will return the current value - the lowest
+     * numeric value in that column.
+     *
      * @method
      *
      * @param {String[]} columns - array of column names on which the value is
      *                             calculated
      *
-     * @returns {Miso.Dataset.Product} the value of the minimum value of the
-     *                                 column
+     * @returns {Miso.Dataset.Product|Number}
      */
     min : Dataset.Product.define( function(columns, options) {
       return _.min(_.map(columns, function(c) { 
@@ -202,13 +220,17 @@
     }),
 
     /**
+     * If the dataset has `sync` enabled this will return a
+     * `Miso.Dataset.Product` that can be used to bind events to and access the
+     * current value.  Otherwise it will return the current value - the mean or
+     * average of the numeric form of the values in the column.
+     *
      * @method
      *
      * @param {String[]} columns - array of column names on which the value is
      *                             calculated
      *
-     * @returns {Miso.Dataset.Product} the value of the average value of the
-     * column
+     * @returns {Miso.Dataset.Product|Number}
      */
     mean : Dataset.Product.define( function(columns, options) {
       var vals = [];

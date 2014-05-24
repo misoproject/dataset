@@ -73,17 +73,18 @@
     {
 
     /**
-     * Moving average
+     * Returns a derived dataset in which the specified columns have a moving
+     * average computed over them of a specified size.
      *
      * @param {Dataset.Column} columns - The column on which to calculate the
      *                                   average
      * @param  {Number} size - The window size to utilize for the moving
-     *                         average
+     *                         average (the number of rows to average per row.)
      * @param {Object} [options]
      * @param {Function} options.method - the method to apply to all values in
      *                                    a window. Mean by default.
      *
-     * @returns {Miso.Dataset} a miso.derived dataset instance
+     * @returns {Miso.Dataset.Derived}
      */
     movingAverage : function(columns, size, options) {
       
@@ -155,9 +156,15 @@
     },
 
     /**
-    * Group rows by the column passed and return a column with the
-    * counts of the instance of each value in the column passed.
-    */
+     * Returns a new derived dataset that contains the original byColumn and a
+     * count column that returns the number of occurances each unique value in
+     * the byColumn contained.
+     *
+     * @param {String} byColumn - The column to count instances again.
+     * @param {Object} [options]
+     *
+     * @returns {Miso.Dataset.Derived}
+     */
     countBy : function(byColumn, options) {
 
       options = options || {};
@@ -216,14 +223,17 @@
      * @param {String} byColumn - The column by which rows will be grouped
      * @param {String[]} columns - The columns to be included
      * @param {Object} [options]
-     * @param {Function} options.method - function to be applied, default is
-     *                                    sum
+     * @param {Function} options.method - Function that specifies the way in
+     *                                    which the columns are aggregated. The
+     *                                    default is sum. The function
+     *                                    signature is `function(arr)`. It
+     *                                    should return a single result.
      * @param {Function} options.preprocess - specify a normalization function
      *                                        for the byColumn values if you
      *                                        need to group by some kind of
      *                                        derivation of those values that
      *                                        are not just equality based.
-     * @returns {Miso.Dataset}
+     * @returns {Miso.Dataset.Derived}
      */
     groupBy : function(byColumn, columns, options) {
       

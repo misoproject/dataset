@@ -5,6 +5,10 @@
   /**
    * Handles CSV and other delimited data.
    *
+   * **Note:** The delimited parser will assign custom column names in case the
+   * header row exists, but has missing values. They will be of the form XN
+   * where N starts at 0.
+   *
    * @constructor
    * @name Delimited
    * @memberof Miso.Dataset.Parsers

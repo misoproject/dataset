@@ -125,8 +125,6 @@ Version 0.0.1.2
      * dataset. Note that this needs to be called for either local or remote
      * data.
      *
-     * @param {Object} [options] Success/error callbacks.
-     *
      * There are three different ways to use this method:
      *
      *     ds.fetch();
@@ -155,6 +153,16 @@ Version 0.0.1.2
      *
      * Allows you to use deferred behavior to potentially chain multiple
      * datasets.
+     *
+     * @param {Object} [options]
+     * @param {Function} options.success - Success callback to be called when
+     *                                     data is fetched. Context is the
+     *                                     dataset.
+     * @param {Function} options.failure - Error callback to be called when
+     *                                     data fetching fails. Context is the
+     *                                     dataset.
+     *
+     * @returns {Deferred}
      */
     fetch : function(options) {
       options = options || {};
@@ -326,13 +334,17 @@ Version 0.0.1.2
     },
 
     /**
-     * Allows adding of a computed column. A computed column is
-     * a column that is somehow based on the other existing columns.
+     * Creates a new column that is computationally derived from the rest of
+     * the row. See [the Computed columns
+     * tutorial](http://misoproject.com/dataset/tutorials/computed.html) for
+     * more information.
      *
      * @param {String} name - name of new column
      * @param {String} type - The type of the column based on existing
      * @param {Function} func - The way that the column is derived. It takes a
      *                          row as a parameter.
+     *
+     * @returns {Miso.Dataset.Column}
      */
     addComputedColumn : function(name, type, func) {
       // check if we already ahve a column by this name.
@@ -367,10 +379,19 @@ Version 0.0.1.2
     },
 
     /**
-     * Adds a single column to the dataset
+     * Creates a new column and adds it to the dataset.
      *
      * @param {Object} column - a set of properties describing a {@link
-     *                          Miso.Dataset.Column} (name, type, data etc.)
+     *                          Miso.Dataset.Column}
+     * @param {String} column.name - Column name
+     * @param {String} column.type - String name of column type
+     * @param {String} [column.format] - Only used for columns of the type
+     *                                  `time`. The moment.js format describing
+     *                                  the input dates.
+     * @param {String} [column._id] - Sets a custom column _id. We assign one
+     *                                by default.
+     * @param {Array} [column.data] - Column data. By default, set to an empty
+     *                                array.
      *
      * @returns {Miso.Dataset.Column}
      */
@@ -439,12 +460,15 @@ Version 0.0.1.2
     },
 
     /**
-     * Add a row to the dataset. Triggers add and change.
+     * Add a row to the dataset. Triggers `add` and `change` events on a
+     * syncable dataset.
      *
      * @param {Object} rows - an object representing a row
      * @param {Object} [options]
      * @param {Boolean} options.silent - do not trigger an add (and thus view
      *                                   updates) event
+     *
+     * @returns {Miso.Dataset}
      */
     add : function(rows, options) {
       
@@ -480,13 +504,18 @@ Version 0.0.1.2
     },
 
     /**
-     * Remove all rows that match the filter. Fires remove and change.
+     * Remove all rows that match the filter. Fires `remove` and `change`
+     * events on a syncable dataset.
      *
-     * @param {Number|Function} filter - row id OR function applied to each row
-     *                                   to see if it should be removed.
+     * @param {Number|Function} filter - can be one of two things: A row id, or
+     *                                   a filter function that takes a row and
+     *                                   returns true if that row should be
+     *                                   removed or false otherwise.
      * @param {Object} [options]
      * @param {Boolean} options.silent - do not trigger an add (and thus view
      *                                   updates) event
+     *
+     * @return {Miso.Dataset}
      */
     remove : function(filter, options) {
       filter = this._rowFilter(filter);
@@ -590,13 +619,24 @@ Version 0.0.1.2
     },
 
     /**
-     * Update can be used on one of three ways.
-     * 1. To update specific rows by passing in an object with the `_id`
-     * 2. To update a number of rows by passing in an array of objects with
-     *     `_id`s
-     * 3. To update a number of row by passing in a function which will be
-     *    applied to all rows.
-     * */
+     * Updates one or more rows in a dataset. You can pass either a row object
+     * that contains an the identifying id property and altered property, an
+     * array of objects of the same form or a function that will be first
+     * applied to all rows. The function should take a `row` object for each
+     * row in the dataset. If a row shouldn't be modified, the function can
+     * return false for that row. This will fire update and change events on a
+     * syncable dataset.
+     *
+     * @param {Function|String} rowsOrFunction - Can be one of two things: A
+     *                                           row id, or a filter function
+     *                                           that takes a row and returns
+     *                                           true if that row should be
+     *                                           removed or false otherwise.
+     * @param {Object} [options]
+     * @param {Boolean} options.silent - Set to true to disable event firing
+     *
+     * @returns {Miso.Dataset}
+     */
     update : function( rowsOrFunction, options ) {
       var deltas;
 
