@@ -75,8 +75,8 @@
     /**
      * Moving average
      *
-     * @param {Dataset.Column} column - The column on which to calculate the
-     *                                  average
+     * @param {Dataset.Column} columns - The column on which to calculate the
+     *                                   average
      * @param  {Number} size - The window size to utilize for the moving
      *                         average
      * @param {Object} [options]

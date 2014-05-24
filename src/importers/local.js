@@ -11,9 +11,9 @@
    * @augments Miso.Dataset.Importers.Remote
    *
    * @param {Object} [options]
-   * @param options.data
-   * @param options.extract
+   * @param options.data local object containing your data
    */
+  // TODO: Document `options.extract`
   Dataset.Importers.Local = function(options) {
     options = options || {};
 

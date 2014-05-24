@@ -31,7 +31,7 @@
      * Converts any value to this column's type for a given position in some
      * source array.
      *
-     * @param value
+     * @param {mixed} value
      *
      * @returns {Number}
      */
@@ -64,7 +64,7 @@
      * If this is a computed column, it calculates the value for this column
      * and adds it to the data.
      *
-     * @param row - the row from which column is computed.
+     * @param {Object} row - the row from which column is computed.
      * @param {Number} [i] - the index at which this value will get added.
      *
      * @returns the computed value
