@@ -4,18 +4,18 @@
   var Dataset = global.Miso.Dataset;
 
   /**
-  * A single column in a dataset
-  * Parameters:
-  *   options
-  *     name
-  *     type (from Miso.types)
-  *     data (optional)
-  *     before (a pre coercion formatter)
-  *     format (for time type.)
-  *     any additional arguments here..
-  * Returns:
-  *   new Miso.Column
-  */
+   * A single column in a dataset
+   * @constructor
+   * @name Column
+   * @memberof Miso.Dataset
+   *
+   * @param {Object} [options]
+   * @param {String} options.name
+   * @param {Object} options.type (from Miso.types)
+   * @param {Object} options.data
+   * @param {Function} options.before (a pre coercion formatter)
+   * @param {Function} options.format (for time type.)
+   */
   Dataset.Column = function(options) {
     _.extend(this, options);
     this._id = options.id || _.uniqueId();
@@ -23,35 +23,37 @@
     return this;
   };
 
-  _.extend(Dataset.Column.prototype, {
+  _.extend(Dataset.Column.prototype,
+    /** @lends Miso.Dataset.Column.prototype */
+    {
 
     /**
-    * Converts any value to this column's type for a given position
-    * in some source array.
-    * Parameters:
-    *   value
-    * Returns: 
-    *   number
-    */
+     * Converts any value to this column's type for a given position in some
+     * source array.
+     *
+     * @param value
+     *
+     * @returns {Number}
+     */
     toNumeric : function(value) {
       return Dataset.types[this.type].numeric(value);
     },
 
     /**
-    * Returns the numeric representation of a datum at any index in this 
-    * column.
-    * Parameters:
-    *   index - position in data array
-    * Returns
-    *   number
-    */
+     * Returns the numeric representation of a datum at any index in this
+     * column.
+     *
+     * @param {Number} index - position in data array
+     *
+     * @returns {Number}
+     */
     numericAt : function(index) {
       return this.toNumeric(this.data[index]);
     },
 
     /**
-    * Coerces the entire column's data to the column type.
-    */
+     * Coerces the entire column's data to the column type.
+     */
     coerce : function() {
       this.data = _.map(this.data, function(datum) {
         return Dataset.types[this.type].coerce(datum, this);
@@ -59,14 +61,14 @@
     },
 
     /**
-    * If this is a computed column, it calculates the value
-    * for this column and adds it to the data.
-    * Parameters:
-    *   row - the row from which column is computed.
-    *   i - Optional. the index at which this value will get added.
-    * Returns
-    *   val - the computed value
-    */
+     * If this is a computed column, it calculates the value for this column
+     * and adds it to the data.
+     *
+     * @param row - the row from which column is computed.
+     * @param {Number} [i] - the index at which this value will get added.
+     *
+     * @returns the computed value
+     */
     compute : function(row, i) {
       if (this.func) {
         var val = this.func(row);
@@ -81,8 +83,8 @@
     },
 
     /**
-    * returns true if this is a computed column. False otherwise.
-    */
+     * @returns {Boolean} true if this is a computed column. False otherwise.
+     */
     isComputed : function() {
       return !_.isUndefined(this.func);
     },
@@ -131,16 +133,18 @@
   });
 
   /**
-  * Creates a new view.
-  * Parameters
-  *   options - initialization parameters:
-  *     parent : parent dataset
-  *     filter : filter specification TODO: document better
-  *       columns : column name or multiple names
-  *       rows : rowId or function
-  * Returns
-  *   new Miso.Dataview.
-  */
+   * Creates a new view.
+   * @constructor
+   * @name DataView
+   * @memberof Miso.Dataset
+   *
+   * @param {Object} [options] - initialization parameters
+   * @param {Miso.Dataset} options.parent - parent dataset
+   * @param {Function} options.filter - filter specification TODO: document better
+   * @param {String|String[]} options.filter.columns - column name or multiple
+   *                                                   names
+   * @param {Number|Function} options.filter.rows - rowId or function
+   */
   Dataset.DataView = function(options) {
     if (typeof options !== "undefined") {
       options = options || (options = {});
@@ -153,7 +157,9 @@
     }
   };
 
-  _.extend(Dataset.DataView.prototype, {
+  _.extend(Dataset.DataView.prototype,
+    /** @lends Miso.Dataset.DataView.prototype */
+    {
 
     _initialize: function(options) {
       
@@ -259,13 +265,15 @@
     },
 
     /**
-    * Returns a dataset view based on the filtration parameters 
-    * Parameters:
-    *   filter - object with optional columns array and filter object/function 
-    *   options - Options.
-    * Returns:
-    *   new Miso.Dataset.DataView
-    */
+     * Returns a dataset view based on the filtration parameters
+     *
+     * @param {Object} filter
+     * @param {Array} [filter.columns]
+     * @param {Object|Function} [filter.filter]
+     * @param {Object} [options]
+     *
+     * @returns {Miso.Dataset.DataView}
+     */
     where : function(filter, options) {
       options = options || {};
       options.filter = options.filter || {};
@@ -313,11 +321,12 @@
     },
 
     /**
-    * Returns a normalized version of the column filter function
-    * that can be executed.
-    * Parameters:
-    *   columnFilter - function or column name
-    */
+     * @param {Function|String} columnFilter - function or column name
+     * @private
+     *
+     * @returns normalized version of the column filter function that can be
+     *          executed.
+     */
     _columnFilter: function(columnFilter) {
       var columnSelector;
 
@@ -342,9 +351,10 @@
     },
 
     /**
-    * Returns a normalized row filter function
-    * that can be executed 
-    */
+     * @private
+     *
+     * @returns {Function} normalized row filter function that can be executed
+     */
     _rowFilter: function(rowFilter) {
       
       var rowSelector;
@@ -374,12 +384,10 @@
     },
 
     /**
-    * Returns a dataset view of the given column name
-    * Parameters:
-    *   name - name of the column to be selected
-    * Returns:
-    *   Miso.Column.
-    */
+     * @param {String} name - name of the column to be selected
+     *
+     * @returns {Miso.Dataset.Column} View of the given column name
+     */
     column : function(name) {
       return this._column(name);
     },
@@ -391,12 +399,10 @@
     },
 
     /**
-    * Returns a dataset view of the given columns 
-    * Parameters:
-    *   columnsArray - an array of column names
-    * Returns:
-    *   Miso.DataView.
-    */    
+     * @param {String[]} columnsArray - an array of column names
+     *
+     * @returns {Miso.Dataset.DataView} dataset view of the given columns
+     */
     columns : function(columnsArray) {
      return new Dataset.DataView({
         filter : { columns : columnsArray },
@@ -405,10 +411,8 @@
     },
 
     /**
-    * Returns the names of all columns, not including id column.
-    * Returns:
-    *   columnNames array
-    */
+     * @returns {String[]} the names of all columns, not including id column
+     */
     columnNames : function() {
       var cols = _.pluck(this._columns, 'name');
       return _.reject(cols, function( colName ) {
@@ -416,24 +420,22 @@
       }, this);
     },
 
-    /** 
-    * Returns true if a column exists, false otherwise.
-    * Parameters:
-    *   name (string)
-    * Returns
-    *   true | false
-    */
+    /**
+     * @param {String} name
+     *
+     * @returns {Boolean} true if a column exists, false otherwise.
+     */
     hasColumn : function(name) {
       return (!_.isUndefined(this._columnPositionByName[name]));
     },
 
     /**
-    * Iterates over all rows in the dataset
-    * Paramters:
-    *   iterator - function that is passed each row
-    *              iterator(rowObject, index, dataset)
-    *   context - options object. Optional.
-    */
+     * Iterates over all rows in the dataset
+     *
+     * @param {Miso.Dataset.DataView~rowIterator} iterator - function that is
+     *                                                       passed each row
+     * @param {Object} [context]
+     */
     each : function(iterator, context) {
       for(var i = 0; i < this.length; i++) {
         iterator.apply(context || this, [this.rowByPosition(i), i]);
@@ -441,12 +443,12 @@
     },
 
     /**
-    * Iterates over all rows in the dataset in reverse order
-    * Parameters:
-    *   iterator - function that is passed each row
-    *              iterator(rowObject, index, dataset)
-    *   context - options object. Optional.
-    */
+     * Iterates over all rows in the dataset in reverse order
+     *
+     * @param {Miso.Dataset.DataView~rowIterator} iterator - function that is
+     *                                                        passed each row
+     * @param {Object} [context]
+     */
     reverseEach : function(iterator, context) {
       for(var i = this.length-1; i >= 0; i--) {
         iterator.apply(context || this, [this.rowByPosition(i), i]);
@@ -454,12 +456,13 @@
     },
 
     /**
-    * Iterates over each column.
-    * Parameters:
-    *   iterator - function that is passed:
-    *              iterator(colName, column, index)
-    *   context - options object. Optional.
-    */
+     * Iterates over each column.
+     *
+     * @param {Miso.Dataset.DataView~columnIterator} iterator - function that
+     *                                                          is passed each
+     *                                                          column
+     * @param {Object} [context]
+     */
     eachColumn : function(iterator, context) {
       // skip id col
       var cols = this.columnNames();
@@ -469,23 +472,19 @@
     },
 
     /**
-    * Returns a single row based on its position (NOT ID.)
-    * Paramters:
-    *   i - position index
-    * Returns:
-    *   row object representation
+    * @param {Number} i - position index
+    *
+    * @returns a single row based on its position (NOT ID.)
     */
     rowByPosition : function(i) {
       return this._row(i);
     },
 
-    /** 
-    * Returns a single row based on its id (NOT Position.)
-    * Parameters:
-    *   id - unique id
-    * Returns:
-    *   row object representation
-    */
+    /**
+     * @param {Number} id - unique id
+     *
+     * @returns a single row based on its id (NOT Position.)
+     */
     rowById : function(id) {
       return this._row(this._rowPositionById[id]);
     },
@@ -617,10 +616,11 @@
     },
 
     /**
-    * Returns a dataset view of filtered rows
-    * @param {function|array} filter - a filter function or object, 
-    * the same as where
-    */    
+     * @param {Function|Object} filter - a filter function or object, the same
+     * as {@link Miso.Dataset.DataView#where}
+     *
+     * @returns a dataset view of filtered rows
+     */
     rows : function(filter) {
       return new Dataset.DataView({
         filter : { rows : filter },
@@ -628,17 +628,17 @@
       });
     },
 
-    /**
-    * Sort rows based on comparator
-    *
-    * roughly taken from here: 
-    * http://jxlib.googlecode.com/svn-history/r977/trunk/src/Source/Data/heapsort.js
-    * License:
-    *   Copyright (c) 2009, Jon Bomgardner.
-    *   This file is licensed under an MIT style license
-    * Parameters:
-    *   options - Optional
-    */    
+  /**
+   * Sort rows based on comparator
+   *
+   * roughly taken from here:
+   * http://jxlib.googlecode.com/svn-history/r977/trunk/src/Source/Data/heapsort.js
+   * License:
+   *   Copyright (c) 2009, Jon Bomgardner.
+   *   This file is licensed under an MIT style license
+   *
+   * @param {Object} [args]
+   */
   sort : function(args) {
       var options = {}, cachedRows = [];
     
@@ -686,10 +686,10 @@
     },
    
     /**
-    * Exports a version of the dataset in json format.
-    * Returns:
-    *   Array of rows.
-    */
+     * Exports a version of the dataset in json format.
+     *
+     * @returns {Array} Array of rows.
+     */
     toJSON : function() {
       var rows = [];
       for(var i = 0; i < this.length; i++) {
@@ -699,4 +699,19 @@
     }
   });
 
+  /**
+   * This callback is used to step through each row in a DataView
+   * @callback Miso.Dataset.DataView~rowIterator
+   * @param {Object} row
+   * @param {Number} index
+   * @param {Miso.Dataset} dataset
+   */
+
+  /**
+   * This callback is used to step through each column in a DataView
+   * @callback Miso.Dataset.DataView~columnIterator
+   * @param {Object} column
+   * @param {Number} index
+   * @param {Miso.Dataset} dataset
+   */
 }(this, _));

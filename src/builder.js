@@ -3,19 +3,24 @@
   var Dataset = global.Miso.Dataset;
   
   /**
-  * This is a generic collection of dataset-building utilities
-  * that are used by Miso.Dataset and Miso.DataView.
-  */
-  Dataset.Builder = {
+   * This is a generic collection of dataset-building utilities that are used
+   * by Miso.Dataset and Miso.DataView.
+   *
+   * @namespace Builder
+   * @memberof Miso.Dataset
+   */
+  Dataset.Builder =
+    /** @lends Miso.Dataset.Builder */
+    {
 
     /**
-    * Detects the type of a column based on some input data.
-    * Parameters:
-    *   column - the Miso.Column object
-    *   data - an array of data to be scanned for type detection
-    * Returns:
-    *   input column but typed.
-    */
+     * Detects the type of a column based on some input data.
+     *
+     * @param {Miso.Dataset.Column} column The Column object
+     * @param {Array} data Array of data to be scanned for type detection
+     *
+     * @returns {Miso.Dataset.Column} input column but typed.
+     */
     detectColumnType : function(column, data) {
 
       // compute the type by assembling a sample of computed types
@@ -42,11 +47,11 @@
     },
 
     /**
-    * Detects the types of all columns in a dataset.
-    * Parameters:
-    *   dataset - the dataset to test the columns of
-    *   parsedData - the data to check the type of
-    */
+     * Detects the types of all columns in a dataset.
+     *
+     * @param {Miso.Dataset} dataset the dataset to test the columns of
+     * @param {Array} parsedData the data to check the type of
+     */
     detectColumnTypes : function(dataset, parsedData) {
 
       _.each(parsedData, function(data, columnName) {
@@ -65,11 +70,10 @@
     },
 
     /**
-    * Used by internal importers to cache the rows 
-    * in quick lookup tables for any id based operations.
-    * also used by views to cache the new rows they get
-    * as a result of whatever filter created them.
-    */
+     * Used by internal importers to cache the rows in quick lookup tables for
+     * any id based operations. Also used by views to cache the new rows they
+     * get as a result of whatever filter created them.
+     */
     cacheRows : function(dataset) {
 
       Dataset.Builder.clearRowCache(dataset);
@@ -96,20 +100,20 @@
     },
 
     /**
-    * Clears the row cache objects of a dataset
-    * Parameters:
-    *   dataset - Miso.Dataset instance.
-    */
+     * Clears the row cache objects of a dataset
+     *
+     * @param {Miso.Dataset} dataset
+     */
     clearRowCache : function(dataset) {
       dataset._rowPositionById = {};
       dataset._rowIdByPosition = [];
     },
 
     /**
-    * Caches the column positions by name
-    * Parameters:
-    *   dataset - Miso.Dataset instance.
-    */
+     * Caches the column positions by name
+     *
+     * @param {Miso.Dataset} dataset
+     */
     cacheColumns : function(dataset) {
       dataset._columnPositionByName = {};
       _.each(dataset._columns, function(column, i) {

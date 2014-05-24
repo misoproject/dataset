@@ -13,14 +13,17 @@ Version 0.0.1.2
   // take on miso dataview's prototype
   Dataset.prototype = new Dataset.DataView();
 
-  // add dataset methods to dataview.
-  _.extend(Dataset.prototype, {
+  // Add dataset methods to dataview.
+  _.extend(Dataset.prototype,
+    /** @lends Miso.Dataset.prototype */
+    {
 
     /**
-    * @private
-    * Internal initialization method. Reponsible for data parsing.
-    * @param {object} options - Optional options  
-    */
+     * Internal initialization method. Reponsible for data parsing.
+     * @private
+     *
+     * @param {object} [options]
+     */
     _initialize: function(options) {
 
       // is this a syncable dataset? if so, pull
@@ -118,30 +121,41 @@ Version 0.0.1.2
     },
 
     /**
-    * Responsible for actually fetching the data based on the initialized dataset.
-    * Note that this needs to be called for either local or remote data.
-    * There are three different ways to use this method:
-    * ds.fetch() - will just fetch the data based on the importer. Note that for async 
-    *              fetching this isn't blocking so don't put your next set of instructions
-    *              expecting the data to be there.
-    * ds.fetch({
-    *   success: function() { 
-    *     // do stuff
-    *     // this is the dataset.
-    *   },
-    *   error : function(e) {
-    *     // do stuff
-    *   }
-    * })        - Allows you to pass success and error callbacks that will be called once data
-    *             is property fetched.
-    *
-    * _.when(ds.fetch(), function() {
-    *   // do stuff
-    *   // note 'this' is NOT the dataset.
-    * })        - Allows you to use deferred behavior to potentially chain multiple datasets.
-    *
-    * @param {object} options Optional success/error callbacks.
-    **/
+     * Responsible for actually fetching the data based on the initialized
+     * dataset. Note that this needs to be called for either local or remote
+     * data.
+     *
+     * @param {Object} [options] Success/error callbacks.
+     *
+     * There are three different ways to use this method:
+     *
+     *     ds.fetch();
+     *
+     * will just fetch the data based on the importer. Note that for async
+     * fetching this isn't blocking so don't put your next set of instructions
+     * expecting the data to be there.
+     *
+     *     ds.fetch({
+     *       success: function() {
+     *         // do stuff
+     *         // this is the dataset.
+     *       },
+     *       error : function(e) {
+     *         // do stuff
+     *       }
+     *     });
+     *
+     * Allows you to pass success and error callbacks that will be called once
+     * data is property fetched.
+     *
+     *     _.when(ds.fetch(), function() {
+     *       // do stuff
+     *       // note 'this' is NOT the dataset.
+     *     });
+     *
+     * Allows you to use deferred behavior to potentially chain multiple
+     * datasets.
+     */
     fetch : function(options) {
       options = options || {};
       
@@ -312,13 +326,14 @@ Version 0.0.1.2
     },
 
     /**
-    * Allows adding of a computed column. A computed column is
-    * a column that is somehow based on the other existing columns.
-    * Parameters:
-    *   name : name of new column
-    *   type : The type of the column based on existing types.
-    *   func : The way that the column is derived. It takes a row as a parameter.
-    */
+     * Allows adding of a computed column. A computed column is
+     * a column that is somehow based on the other existing columns.
+     *
+     * @param {String} name - name of new column
+     * @param {String} type - The type of the column based on existing
+     * @param {Function} func - The way that the column is derived. It takes a
+     *                          row as a parameter.
+     */
     addComputedColumn : function(name, type, func) {
       // check if we already ahve a column by this name.
       if ( !_.isUndefined(this.column(name)) ) { 
@@ -351,13 +366,14 @@ Version 0.0.1.2
       }
     },
 
-    /** 
-    * Adds a single column to the dataset
-    * Parameters:
-    *   column : a set of properties describing a column (name, type, data etc.)
-    * Returns
-    *   Miso.Column object.
-    */
+    /**
+     * Adds a single column to the dataset
+     *
+     * @param {Object} column - a set of properties describing a {@link
+     *                          Miso.Dataset.Column} (name, type, data etc.)
+     *
+     * @returns {Miso.Dataset.Column}
+     */
     addColumn : function(column) {
       //don't create a column that already exists
       if ( !_.isUndefined(this.column(column.name)) ) { 
@@ -373,11 +389,12 @@ Version 0.0.1.2
     },
 
     /**
-    * Adds an id column to the column definition. If a count
-    * is provided, also generates unique ids.
-    * Parameters:
-    *   count - the number of ids to generate.
-    */
+     * Adds an id column to the column definition. If a count is provided, also
+     * generates unique ids.
+     * @private
+     *
+     * @param {Number} count - the number of ids to generate.
+     */
     _addIdColumn : function( count ) {
       // if we have any data, generate actual ids.
 
@@ -422,13 +439,13 @@ Version 0.0.1.2
     },
 
     /**
-    * Add a row to the dataset. Triggers add and change.
-    * Parameters:
-    *   row - an object representing a row in the form of:
-    *         {columnName: value}
-    *   options - options
-    *     silent: boolean, do not trigger an add (and thus view updates) event
-    */    
+     * Add a row to the dataset. Triggers add and change.
+     *
+     * @param {Object} rows - an object representing a row
+     * @param {Object} [options]
+     * @param {Boolean} options.silent - do not trigger an add (and thus view
+     *                                   updates) event
+     */
     add : function(rows, options) {
       
       options = options || {};
@@ -463,12 +480,14 @@ Version 0.0.1.2
     },
 
     /**
-    * Remove all rows that match the filter. Fires remove and change.
-    * Parameters:
-    *   filter - row id OR function applied to each row to see if it should be removed.
-    *   options - options. Optional.
-    *     silent: boolean, do not trigger an add (and thus view updates) event
-    */    
+     * Remove all rows that match the filter. Fires remove and change.
+     *
+     * @param {Number|Function} filter - row id OR function applied to each row
+     *                                   to see if it should be removed.
+     * @param {Object} [options]
+     * @param {Boolean} options.silent - do not trigger an add (and thus view
+     *                                   updates) event
+     */
     remove : function(filter, options) {
       filter = this._rowFilter(filter);
       var deltas = [], rowsToRemove = [];
@@ -571,12 +590,13 @@ Version 0.0.1.2
     },
 
     /**
-    * Update can be used on one of three ways.
-    * 1: To update specific rows by passing in an object with the _id
-    * 2: To update a number of rows by passing in an array of objects with _ids
-    * 3: To update a number of row by passing in a function which will be applied to
-    * all rows.
-    * */    
+     * Update can be used on one of three ways.
+     * 1. To update specific rows by passing in an object with the `_id`
+     * 2. To update a number of rows by passing in an array of objects with
+     *     `_id`s
+     * 3. To update a number of row by passing in a function which will be
+     *    applied to all rows.
+     * */
     update : function( rowsOrFunction, options ) {
       var deltas;
 
@@ -598,12 +618,11 @@ Version 0.0.1.2
     },
 
     /**
-    * Clears all the rows
-    * Fires a "reset" event.
-    * Parameters:
-    *   options (object)
-    *     silent : true | false.
-    */
+     * Clears all the rows. Fires a `reset` event.
+     *
+     * @param {Object} [options]
+     * @param {Boolean} options.silent
+     */
     reset : function(options) {
       _.each(this._columns, function(col) {
         col.data = [];

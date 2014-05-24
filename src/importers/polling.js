@@ -3,12 +3,19 @@
   var Dataset = global.Miso.Dataset;
 
   /**
-  * A remote polling importer that queries a url once every 1000
-  * seconds.
-  * Parameters:
-  *   interval - poll every N milliseconds. Default is 1000.
-  *   extract  - a method to pass raw data through before handing back to parser.
-  */
+   * A remote polling importer that queries a url once every 1000 seconds.
+   *
+   * @constructor
+   * @name Polling
+   * @memberof Miso.Dataset.Importers
+   * @augments Miso.Dataset.Importers.Remote
+   *
+   * @param {Object} [options]
+   * @param {Number} options.interval - poll every N milliseconds. Default is
+   *                                    1000.
+   * @param {Function} options.extract - a method to pass raw data through
+   *                                     before handing back to parser.
+   */
   Dataset.Importers.Polling = function(options) {
     options = options || {};
     this.interval = options.interval || 1000;

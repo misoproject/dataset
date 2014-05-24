@@ -3,17 +3,22 @@
   var Dataset = global.Miso.Dataset;
   
   /**
-  * Instantiates a new google spreadsheet importer.
-  * Parameters
-  *   options - Options object. Requires at the very least:
-  *     key - the google spreadsheet key
-  *     gid - the index of the spreadsheet to be retrieved (1 default)
-  *       OR
-  *     sheetName - the name of the sheet to fetch ("Sheet1" default)
-  *   OR
-  *     url - a more complex url (that may include filtering.) In this case
-  *           make sure it's returning the feed json data.
-  */
+   * @constructor
+   * @name GoogleSpreadsheet
+   * @memberof Miso.Dataset.Importers
+   * @augments Miso.Dataset.Importers.Remote
+   *
+   * @param {Object} options - Requires at the very least: (`key` AND (`gid` OR
+   *                           `sheedNAme`)) OR `url`
+   * @param {String} options.key - the google spreadsheet key
+   * @param {Number} options.gid - the index of the spreadsheet to be retrieved
+   *                               (1 default)
+   * @param {String} options.sheetName - the name of the sheet to fetch
+   *                                     ("Sheet1" default)
+   * @param {String} options.url - a more complex url (that may include
+   *                               filtering.) In this case make sure it's
+   *                               returning the feed json data.
+   */
   Dataset.Importers.GoogleSpreadsheet = function(options) {
     options = options || {};
     if (options.url) {
