@@ -283,6 +283,13 @@ module.exports = function(grunt) {
         "src/parsers/delimited.js",
         "test/unit/**/*.js"
       ]
+    },
+
+    jscs: {
+      src: ["src/**/*.js", "!src/node/compat.js"],
+      options: {
+        config: ".jscs.json"
+      }
     }
   });
 
@@ -297,6 +304,7 @@ module.exports = function(grunt) {
   grunt.loadNpmTasks("grunt-contrib-compress");
   grunt.loadNpmTasks("grunt-contrib-clean");
   grunt.loadNpmTasks("grunt-contrib-qunit");
+  grunt.loadNpmTasks("grunt-jscs-checker");
 
   // Task specific for building Node compatible version
   grunt.registerTask("node", function() {
@@ -318,5 +326,5 @@ module.exports = function(grunt) {
   });
 
   // Default task.
-  grunt.registerTask("default", ["jshint", "qunit", "concat", "uglify", "compress", "node", "clean"]);
+  grunt.registerTask("default", ["jshint", "jscs", "qunit", "concat", "uglify", "compress", "node", "clean"]);
 };
