@@ -20,7 +20,7 @@
    */
   Dataset.Product = function(options) {
     options = options || {};
-    
+
     // save column name. This will be necessary later
     // when we decide whether we need to update the column
     // when sync is called.
@@ -32,7 +32,7 @@
       if (_.isArray(options.columns)) {
         column = options.columns[0];
       }
-      
+
       this.valuetype = column.type;
       this.numeric = function() {
         return column.toNumeric(this.value);
@@ -63,7 +63,7 @@
     type : function() {
       return this.valuetype;
     },
-    
+
     //This is a callback method that is responsible for recomputing
     //the value based on the column its closed on.
     _sync : function(event) {
@@ -122,8 +122,8 @@
             }
           }
         });
-        this.subscribe("change", prod._sync, { context : prod }); 
-        return prod; 
+        this.subscribe("change", prod._sync, { context : prod });
+        return prod;
 
       } else {
         return producer.call(_self);
@@ -175,8 +175,7 @@
      *
      * @returns {Miso.Dataset.Product|Number}
      */
-    // TODO: Remove unused `options` argument
-    sum : Dataset.Product.define( function(columns, options) {
+    sum : Dataset.Product.define( function(columns) {
       _.each(columns, function(col) {
         if (col.type === Dataset.types.time.name) {
           throw new Error("Can't sum up time");
@@ -193,21 +192,20 @@
      *
      * @method
      *
-     * @param {String|String[]} column - column name(s) on which the value is
+     * @param {String|String[]} columns - column name(s) on which the value is
      *                                   calculated
      *
      * @externalExample {runnable} dataview/max
      *
      * @returns {Miso.Dataset.Product|Number}
      */
-    // TODO: Remove unused `options` argument
-    max : Dataset.Product.define( function(columns, options) {
-      return _.max(_.map(columns, function(c) { 
-        return c._max(); 
+    max : Dataset.Product.define( function(columns) {
+      return _.max(_.map(columns, function(c) {
+        return c._max();
       }));
     }),
 
-  
+
     /**
      * If the dataset has `sync` enabled this will return a
      * `Miso.Dataset.Product` that can be used to bind events to and access the
@@ -223,9 +221,9 @@
      *
      * @returns {Miso.Dataset.Product|Number}
      */
-    min : Dataset.Product.define( function(columns, options) {
-      return _.min(_.map(columns, function(c) { 
-        return c._min(); 
+    min : Dataset.Product.define( function(columns) {
+      return _.min(_.map(columns, function(c) {
+        return c._min();
       }));
     }),
 
@@ -257,7 +255,7 @@
 
       // convert the values to their appropriate numeric value
       vals = _.map(vals, function(v) { return Dataset.types[type].numeric(v); });
-      return _.mean(vals);   
+      return _.mean(vals);
     })
 
   });

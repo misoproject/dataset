@@ -11,11 +11,11 @@
    * @augments Miso.Dataset.Importers.Remote
    *
    * @param {Object} [options]
-   * @param options.data local object containing your data
+   * @param {Object} options.data local object containing your data
+   * @param {Function} options.extract override for Dataset.Importers.prototype.extract
    *
    * @externalExample {runnable} importers/local
    */
-  // TODO: Document `options.extract`
   Dataset.Importers.Local = function(options) {
     options = options || {};
 

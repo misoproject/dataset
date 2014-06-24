@@ -11,7 +11,7 @@
    *
    * @param {mixed} value - The value to test
    * @param {Object} [options]
-   * @param {String} [format] - For `time` type only. Describes the format.
+   * @param {String} [options.format] - For `time` type only. Describes the format.
    *
    * @externalExample {runnable} type-of
    *
@@ -33,7 +33,7 @@
 
     return chosenType;
   };
-  
+
   /**
    * Miso types are used to set and manage the data types on columns. These
    * sets of functions handle testing what type data is and coercing it into
@@ -47,7 +47,7 @@
    * @externalExample types
    */
   Dataset.types = {
-    
+
     mixed :
     /**
      * @namespace mixed
@@ -279,7 +279,7 @@
         if (value === null || _.isNaN(value)) {
           return null;
         } else {
-          return (value) ? 1 : 0;  
+          return (value) ? 1 : 0;
         }
       }
     },
@@ -415,7 +415,7 @@
 
         // save the string of the regexp, NOT the regexp itself.
         // For some reason, this resulted in inconsistant behavior
-        this._regexpTable[format] = regexp; 
+        this._regexpTable[format] = regexp;
         return new RegExp(this._regexpTable[format], 'g');
       },
 
@@ -442,7 +442,7 @@
         // if string, then parse as a time
         if (_.isString(v)) {
           var format = options.format || this.format;
-          return moment(v, format);   
+          return moment(v, format);
         } else if (_.isNumber(v)) {
           return moment(v);
         } else {

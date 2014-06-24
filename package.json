@@ -5,12 +5,12 @@
   "version"     : "0.4.1",
   "homepage"    : "http://github.com/misoproject/dataset",
   "authors"     : "Alex Graul, Irene Ros",
-  
+
   "bugs" : {
     "url" : "http://github.com:misoproject/Dataset/issues"
   },
 
-  "licenses" : [  
+  "licenses" : [
     {
       "type" : "MIT",
       "url" : "http://github.com:misoproject/dataset/blob/master/LICENSE-MIT"
@@ -35,7 +35,7 @@
   },
 
   "devDependencies" : {
-    "grunt" : "~0.4.0",
+    "grunt" : "~0.4.2",
     "grunt-contrib-jshint": "~0.10.0",
     "grunt-contrib-uglify": "~0.1.2",
     "grunt-contrib-watch": "~0.3.0",
