@@ -114,47 +114,120 @@ this.Miso = require("miso.events");
 
 // Include Miso Dataset lib
 /**
-* Miso.Dataset - v0.4.1 - 3/13/2013
+* Miso.Dataset - v0.4.1 - 6/24/2014
 * http://github.com/misoproject/dataset
-* Copyright (c) 2013 Alex Graul, Irene Ros;
+* Copyright (c) 2014 Alex Graul, Irene Ros;
 * Dual Licensed: MIT, GPL
 * https://github.com/misoproject/dataset/blob/master/LICENSE-MIT 
 * https://github.com/misoproject/dataset/blob/master/LICENSE-GPL 
 */
 (function(global) {
 
-/**
-  * Instantiates a new dataset.
-  * Parameters:
-  * options - optional parameters.
-  *   data : "Object - an actual javascript object that already contains the data",
-  *   url : "String - url to fetch data from",
-  *   sync : Set to true to be able to bind to dataset changes. False by default.
-  *   jsonp : "boolean - true if this is a jsonp request",
-  *   delimiter : "String - a delimiter string that is used in a tabular datafile",
-  *   strict : "Whether to expect the json in our format or whether to interpret as raw array of objects, default false",
-  *   extract : "function to apply to JSON before internal interpretation, optional"
-  *   ready : the callback function to act on once the data is fetched. Isn't reuired for local imports
-  *           but is required for remote url fetching.
-  *   columns: A way to manually override column type detection. Expects an array of
-  *            objects of the following structure:
-  *           { name : 'columnname', type: 'columntype',
-  *             ... (additional params required for type here.) }
-  *   comparator : function (optional) - takes two rows and returns 1, 0, or -1  if row1 is
-  *     before, equal or after row2.
-  *   deferred : by default we use underscore.deferred, but if you want to pass your own (like jquery's) just
-  *              pass it here.
-  *   importer : The classname of any importer (passes through auto detection based on parameters.
-  *              For example: <code>Miso.Importers.Polling</code>.
-  *   parser   : The classname of any parser (passes through auto detection based on parameters.
-  *              For example: <code>Miso.Parsers.Delimited</code>.
-  *   resetOnFetch : set to true if any subsequent fetches after first one should overwrite the
-  *                  current data.
-  *   uniqueAgainst : Set to a column name to check for duplication on subsequent fetches.
-  *   interval : Polling interval. Set to any value in milliseconds to enable polling on a url.
-  }
-  */
+  /**
+   * @namespace Miso
+   */
   global.Miso = global.Miso || {};
+
+  /**
+   * Miso.Dataset is the main object you will instantiate to create a new
+   * dataset. A `Miso.Dataset` also extends from {@link Miso.Dataset.DataView}.
+   * All the methods available on a {@link Miso.Dataset.DataView} will also be
+   * available on the dataset.
+   *
+   * See [the creating datasets
+   * guide](http://misoproject.com/dataset/tutorials/creating) for detailed
+   * information.
+   *
+   * @constructor
+   * @memberof Miso
+   * @name Dataset
+   * @augments Miso.Dataset.DataView
+   *
+   * @param {Object} [options] - optional parameters.
+   * @param {Object} options.data - an actual javascript object that already
+   *                                   contains the data
+   * @param {String|Function} options.url - The url of a remote file or a
+   *                                        function returning a string for a
+   *                                        url containing your data, used for
+   *                                        remote importers
+   * @param {Boolean} options.sync - Set to true to be able to bind to dataset
+   *                                 changes. False by default. See [the
+   *                                 Syncronization & Events
+   *                                 guide](http://misoproject.com/dataset/dataset/tutorials/events)
+   *                                 for detailed information
+   * @param {String} options.callback - By default, If making a jsonp request,
+   *                                    you can use this parameter to specify
+   *                                    an alternate callback function name
+   *                                    than the one that would be auto
+   *                                    generated for you.
+   * @param {Boolean} options.jsonp - Whether a remote request should use jsonp
+   *                                  to enable cross-domain requests.
+   * @param {String} options.delimiter - When using {@link
+   *                                     Miso.Dataset.Parsers.Delimited|the
+   *                                     Delimeted parser} this is used to set
+   *                                     a custom field delimiter such as
+   *                                     `delimiter: '||'` for CSV files such
+   *                                     as `value1||value2`
+   * @param {Boolean} options.strict - Whether to expect the json in our format
+   *                                   or whether to interpret as raw array of
+   *                                   objects; shorthand for using {@link
+   *                                   Miso.Dataset.Parsers.Strict|the Strict
+   *                                   parser}; default `false`
+   * @param {Function} options.extract - function used to pre-process raw data,
+   *                                     see [the creating a dataset
+   *                                     guide](http://misoproject.com/dataset/dataset/tutorials/creating)
+   *                                     for more information.
+   * @param {Function} options.ready - the callback function to act on once the
+   *                                   data is fetched. Isn't reuired for local
+   *                                   imports but is required for remote url
+   *                                   fetching.
+   * @param {Array} options.columns - A way to manually override column type
+   *                                  detection. Expects an array of objects of
+   *                                  the following structure: `{ name :
+   *                                  'columnname', type: 'columntype', ...
+   *                                  (additional params required for type
+   *                                  here.) }`
+   * @param {Function} options.comparator - A function to sort the data by. It
+   *                                        will be sorted on fetch and on any
+   *                                        successive addition. See {@link
+   *                                        Miso.Dataset.DataView#sort|the sort
+   *                                        function} for more information.
+   * @param {Function} options.deferred - by default we use
+   *                                      underscore.deferred, but if you want
+   *                                      to pass your own (like jquery's) just
+   *                                      pass it here.
+   * @param {String} options.importer - The classname of any importer (passes
+   *                                    through auto detection based on
+   *                                    parameters). For example:
+   *                                    `Miso.Importers.Polling`. See [the
+   *                                    Creating a dataset
+   *                                    guide](http://misoproject.com/dataset/dataset/tutorials/creating)
+   *                                    for more information.
+   * @param {String} options.parser - The classname of any parser (passes
+   *                                  through auto detection based on
+   *                                  parameters). For example:
+   *                                  `Miso.Parsers.Delimited`. See [the
+   *                                  Creating a dataset
+   *                                  guide](http://misoproject.com/dataset/dataset/tutorials/creating)
+   *                                  for more information.
+   * @param {Boolean} options.resetOnFetch - set to true if any subsequent
+   *                                         fetches after first one should
+   *                                         overwrite the current data.
+   * @param {String} options.uniqueAgainst - Set to a column name to check for
+   *                                         duplication on subsequent fetches.
+   * @param {Number} options.interval - Polling interval. Set to any value in
+   *                                    milliseconds to enable polling on a
+   *                                    url.
+   * @param {String} options.idAttribute - By default all ids are stored in a
+   *                                       column called '_id'. If there is an
+   *                                       alternate column in the dataset that
+   *                                       already includes a unique
+   *                                       identifier, specify its name here.
+   *                                       Note that the row objects will no
+   *                                       longer have an _id property.
+   *
+   * @externalExample {runnable} dataset
+   */
   global.Miso.Dataset = function(options) {
     
     options = options || {};
@@ -175,18 +248,30 @@ this.Miso = require("miso.events");
   var Dataset = global.Miso.Dataset;
 
   /**
-  * A single column in a dataset
-  * Parameters:
-  *   options
-  *     name
-  *     type (from Miso.types)
-  *     data (optional)
-  *     before (a pre coercion formatter)
-  *     format (for time type.)
-  *     any additional arguments here..
-  * Returns:
-  *   new Miso.Column
-  */
+   * `Miso.Dataset.Column` objects make up the columns contained in a dataset and
+   * are returned by some methods such as .column on {@link Miso.Dataset} and
+   * {@link Miso.Dataset.DataView}
+   *
+   * @constructor
+   * @name Column
+   * @memberof Miso.Dataset
+   *
+   * @param {Object} options
+   * @param {String} options.name - Column name
+   * @param {Object} [options.type] - Column type (from Miso.types)
+   * @param {Object} [options.data] - A set of data. By default, set to an
+   *                                  empty array.
+   * @param {Function} [options.before] - A function to pre-process a column's
+   *                                      value before it is coerced. Signature
+   *                                      is `function(value)`
+   * @param {Function} [options.format] - Optional. Only set if time type. The
+   *                                      moment.js format describing the input
+   *                                      dates.
+   * @param {Number} [options.id] - Sets a custom column _id. We assign one by
+   *                                default.
+   *
+   * @externalExample {runnable} column
+   */
   Dataset.Column = function(options) {
     _.extend(this, options);
     this._id = options.id || _.uniqueId();
@@ -194,35 +279,43 @@ this.Miso = require("miso.events");
     return this;
   };
 
-  _.extend(Dataset.Column.prototype, {
+  _.extend(Dataset.Column.prototype,
+    /** @lends Miso.Dataset.Column.prototype */
+    {
 
     /**
-    * Converts any value to this column's type for a given position
-    * in some source array.
-    * Parameters:
-    *   value
-    * Returns: 
-    *   number
-    */
+     * Converts any value to this column's type for a given position in some
+     * source array.
+     *
+     * @param {mixed} value
+     *
+     * @returns {Number}
+     */
     toNumeric : function(value) {
       return Dataset.types[this.type].numeric(value);
     },
 
     /**
-    * Returns the numeric representation of a datum at any index in this 
-    * column.
-    * Parameters:
-    *   index - position in data array
-    * Returns
-    *   number
-    */
+     * Internal function used to return the numeric value of a given input in a
+     * column. Index is used as this is currently the return value for numeric
+     * coercion of string values.
+     *
+     * @param {Number} index - index position of the row you want the numeric
+     *                         value for
+     *
+     * @externalExample {runnable} column/numeric-at
+     *
+     * @returns {Number}
+     */
     numericAt : function(index) {
       return this.toNumeric(this.data[index]);
     },
 
     /**
-    * Coerces the entire column's data to the column type.
-    */
+     * Coerces all the data in the column's data array to the appropriate type.
+     *
+     * @externalExample {runnable} column/coerce
+     */
     coerce : function() {
       this.data = _.map(this.data, function(datum) {
         return Dataset.types[this.type].coerce(datum, this);
@@ -230,14 +323,14 @@ this.Miso = require("miso.events");
     },
 
     /**
-    * If this is a computed column, it calculates the value
-    * for this column and adds it to the data.
-    * Parameters:
-    *   row - the row from which column is computed.
-    *   i - Optional. the index at which this value will get added.
-    * Returns
-    *   val - the computed value
-    */
+     * If this is a computed column, it calculates the value for this column
+     * and adds it to the data.
+     *
+     * @param {Object} row - the row from which column is computed.
+     * @param {Number} [i] - the index at which this value will get added.
+     *
+     * @returns the computed value
+     */
     compute : function(row, i) {
       if (this.func) {
         var val = this.func(row);
@@ -252,8 +345,8 @@ this.Miso = require("miso.events");
     },
 
     /**
-    * returns true if this is a computed column. False otherwise.
-    */
+     * @returns {Boolean} true if this is a computed column. False otherwise.
+     */
     isComputed : function() {
       return !_.isUndefined(this.func);
     },
@@ -302,16 +395,24 @@ this.Miso = require("miso.events");
   });
 
   /**
-  * Creates a new view.
-  * Parameters
-  *   options - initialization parameters:
-  *     parent : parent dataset
-  *     filter : filter specification TODO: document better
-  *       columns : column name or multiple names
-  *       rows : rowId or function
-  * Returns
-  *   new Miso.Dataview.
-  */
+   * A `DataView` is an immutable version of dataset. It is the result of
+   * selecting a subset of the data using the {@link Miso.Dataset#where} call.
+   * If the dataset is syncing, this view will be updated when changes take
+   * place in the original dataset. A {@link Miso.Dataset} also extends from
+   * `DataView`. All the methods available on a dataview will also be available
+   * on the dataset.
+   *
+   * @constructor
+   * @name DataView
+   * @memberof Miso.Dataset
+   *
+   * @param {Object} [options] - initialization parameters
+   * @param {Miso.Dataset} options.parent - parent dataset
+   * @param {Function} options.filter - filter specification TODO: document better
+   * @param {String|String[]} options.filter.columns - column name or multiple
+   *                                                   names
+   * @param {Number|Function} options.filter.rows - rowId or function
+   */
   Dataset.DataView = function(options) {
     if (typeof options !== "undefined") {
       options = options || (options = {});
@@ -324,7 +425,9 @@ this.Miso = require("miso.events");
     }
   };
 
-  _.extend(Dataset.DataView.prototype, {
+  _.extend(Dataset.DataView.prototype,
+    /** @lends Miso.Dataset.DataView.prototype */
+    {
 
     _initialize: function(options) {
       
@@ -430,13 +533,27 @@ this.Miso = require("miso.events");
     },
 
     /**
-    * Returns a dataset view based on the filtration parameters 
-    * Parameters:
-    *   filter - object with optional columns array and filter object/function 
-    *   options - Options.
-    * Returns:
-    *   new Miso.Dataset.DataView
-    */
+     * Used to create Dataviews, subsets of data based on a set of filters.
+     * Filtration can be applied to both rows & columns and for syncing
+     * datasets changes in the parent dataset from which the dataview was
+     * created will be reflected in the dataview.
+     *
+     * @param {Function|Object} [filter] - a function that takes in a row or an
+     *                                     options object that can contain the
+     *                                     following parameters.
+     * @param {String|String[]} [filter.columns] - A filter for columns. A
+     *                                             single or multiple column
+     *                                             names.
+     * @param {String|Function} [filter.filter] - A filter for rows. A rowId or
+     *                                            a filter function that takes
+     *                                            in a row and returns true if
+     *                                            it passes the criteria.
+     * @param {Object} [options]
+     *
+     * @externalExample {runnable} dataview/where
+     *
+     * @returns {Miso.Dataset.DataView}
+     */
     where : function(filter, options) {
       options = options || {};
       options.filter = options.filter || {};
@@ -484,11 +601,12 @@ this.Miso = require("miso.events");
     },
 
     /**
-    * Returns a normalized version of the column filter function
-    * that can be executed.
-    * Parameters:
-    *   columnFilter - function or column name
-    */
+     * @param {Function|String} columnFilter - function or column name
+     * @private
+     *
+     * @returns normalized version of the column filter function that can be
+     *          executed.
+     */
     _columnFilter: function(columnFilter) {
       var columnSelector;
 
@@ -513,9 +631,10 @@ this.Miso = require("miso.events");
     },
 
     /**
-    * Returns a normalized row filter function
-    * that can be executed 
-    */
+     * @private
+     *
+     * @returns {Function} normalized row filter function that can be executed
+     */
     _rowFilter: function(rowFilter) {
       
       var rowSelector;
@@ -545,12 +664,12 @@ this.Miso = require("miso.events");
     },
 
     /**
-    * Returns a dataset view of the given column name
-    * Parameters:
-    *   name - name of the column to be selected
-    * Returns:
-    *   Miso.Column.
-    */
+     * @param {String} name - name of the column to be selected
+     *
+     * @externalExample {runnable} dataview/column
+     *
+     * @returns {Miso.Dataset.Column} View of the given column name
+     */
     column : function(name) {
       return this._column(name);
     },
@@ -562,12 +681,12 @@ this.Miso = require("miso.events");
     },
 
     /**
-    * Returns a dataset view of the given columns 
-    * Parameters:
-    *   columnsArray - an array of column names
-    * Returns:
-    *   Miso.DataView.
-    */    
+     * @param {String[]} columnsArray - an array of column names
+     *
+     * @externalExample {runnable} dataview/columns
+     *
+     * @returns {Miso.Dataset.DataView} dataset view of the given columns
+     */
     columns : function(columnsArray) {
      return new Dataset.DataView({
         filter : { columns : columnsArray },
@@ -576,10 +695,10 @@ this.Miso = require("miso.events");
     },
 
     /**
-    * Returns the names of all columns, not including id column.
-    * Returns:
-    *   columnNames array
-    */
+     * @externalExample {runnable} dataview/column-names
+     *
+     * @returns {String[]} the names of all columns, not including id column
+     */
     columnNames : function() {
       var cols = _.pluck(this._columns, 'name');
       return _.reject(cols, function( colName ) {
@@ -587,24 +706,29 @@ this.Miso = require("miso.events");
       }, this);
     },
 
-    /** 
-    * Returns true if a column exists, false otherwise.
-    * Parameters:
-    *   name (string)
-    * Returns
-    *   true | false
-    */
+    /**
+     * Checks for the existance of a column and returns true/false
+     *
+     * @param {String} name - Name of column to check for
+     *
+     * @externalExample {runnable} dataview/has-column
+     *
+     * @returns {Boolean} true if a column exists, false otherwise.
+     */
     hasColumn : function(name) {
       return (!_.isUndefined(this._columnPositionByName[name]));
     },
 
     /**
-    * Iterates over all rows in the dataset
-    * Paramters:
-    *   iterator - function that is passed each row
-    *              iterator(rowObject, index, dataset)
-    *   context - options object. Optional.
-    */
+     * Iterates over all rows in the dataset. Each row is not a direct
+     * reference to the data and thus should not be altered in any way.
+     *
+     * @param {Miso.Dataset.DataView~rowIterator} iterator - function that is
+     *                                                       passed each row
+     * @param {Object} [context] - The context to be bound to the iterator.
+     *
+     * @externalExample {runnable} dataview/each
+     */
     each : function(iterator, context) {
       for(var i = 0; i < this.length; i++) {
         iterator.apply(context || this, [this.rowByPosition(i), i]);
@@ -612,12 +736,16 @@ this.Miso = require("miso.events");
     },
 
     /**
-    * Iterates over all rows in the dataset in reverse order
-    * Parameters:
-    *   iterator - function that is passed each row
-    *              iterator(rowObject, index, dataset)
-    *   context - options object. Optional.
-    */
+     * Iterates over all rows in the dataset in reverse order.  Each row is not
+     * a direct reference to the data and thus should not be altered in any
+     * way.
+     *
+     * @param {Miso.Dataset.DataView~rowIterator} iterator - function that is
+     *                                                        passed each row
+     * @param {Object} [context] - The context to be bound to the iterator.
+     *
+     * @externalExample {runnable} dataview/reverse-each
+     */
     reverseEach : function(iterator, context) {
       for(var i = this.length-1; i >= 0; i--) {
         iterator.apply(context || this, [this.rowByPosition(i), i]);
@@ -625,12 +753,16 @@ this.Miso = require("miso.events");
     },
 
     /**
-    * Iterates over each column.
-    * Parameters:
-    *   iterator - function that is passed:
-    *              iterator(colName, column, index)
-    *   context - options object. Optional.
-    */
+     * Iterates over each column. Direct column references, not arrays so
+     * modifying data may cause internal inconsistencies.
+     *
+     * @param {Miso.Dataset.DataView~columnIterator} iterator - function that
+     *                                                          is passed each
+     *                                                          column
+     * @param {Object} [context] - The context to be bound to the iterator.
+     *
+     * @externalExample {runnable} dataview/each-column
+     */
     eachColumn : function(iterator, context) {
       // skip id col
       var cols = this.columnNames();
@@ -640,23 +772,31 @@ this.Miso = require("miso.events");
     },
 
     /**
-    * Returns a single row based on its position (NOT ID.)
-    * Paramters:
-    *   i - position index
-    * Returns:
-    *   row object representation
-    */
+     * Fetches a row object at a specified position. Note that the returned row
+     * object is NOT a direct reference to the data and thus any changes to it
+     * will not alter the original data.
+     *
+     * @param {Number} i - position index
+     *
+     * @externalExample {runnable} dataview/row-by-position
+     *
+     * @returns {Object} a single row based on its position (NOT ID.)
+     */
     rowByPosition : function(i) {
       return this._row(i);
     },
 
-    /** 
-    * Returns a single row based on its id (NOT Position.)
-    * Parameters:
-    *   id - unique id
-    * Returns:
-    *   row object representation
-    */
+    /**
+     * Fetches a row object with a specific _id. Note that the returned row
+     * object is NOT a direct reference to the data and thus any changes to it
+     * will not alter the original data.
+     *
+     * @param {Number} id - unique id
+     *
+     * @externalExample {runnable} dataview/row-by-id
+     *
+     * @returns {Object} a single row based on its id (NOT Position.)
+     */
     rowById : function(id) {
       return this._row(this._rowPositionById[id]);
     },
@@ -788,10 +928,16 @@ this.Miso = require("miso.events");
     },
 
     /**
-    * Returns a dataset view of filtered rows
-    * @param {function|array} filter - a filter function or object, 
-    * the same as where
-    */    
+     * Shorthand for {@link Miso.Dataset.DataView#where|ds.where({ rows :
+     * rowFilter });} If run with no filter will return all rows.
+     *
+     * @param {Function|Object} filter - a filter function or object, the same
+     *                                   as {@link Miso.Dataset.DataView#where}
+     *
+     * @externalExample {runnable} dataview/rows
+     *
+     * @returns {Miso.Dataset.DataView} a dataset view of filtered rows
+     */
     rows : function(filter) {
       return new Dataset.DataView({
         filter : { rows : filter },
@@ -799,17 +945,29 @@ this.Miso = require("miso.events");
       });
     },
 
-    /**
-    * Sort rows based on comparator
-    *
-    * roughly taken from here: 
-    * http://jxlib.googlecode.com/svn-history/r977/trunk/src/Source/Data/heapsort.js
-    * License:
-    *   Copyright (c) 2009, Jon Bomgardner.
-    *   This file is licensed under an MIT style license
-    * Parameters:
-    *   options - Optional
-    */    
+  /**
+   * Sorts the dataset according to the comparator. A comparator can either be
+   * passed in as part of the options object or have been defined on the
+   * dataset already, for example as part of the initialization block.
+   *
+   * roughly taken from here:
+   * http://jxlib.googlecode.com/svn-history/r977/trunk/src/Source/Data/heapsort.js
+   * License:
+   *   Copyright (c) 2009, Jon Bomgardner.
+   *   This file is licensed under an MIT style license
+   *
+   * @param {Object|Function} [args] - Comparator Function OR Options object
+   * @param {Function} args.comparator - Function used to sort the dataset,
+   *                                     uses the same return structure as a
+   *                                     standard [JavaScript
+   *                                     sort](http://developer.mozilla.org/en/JavaScript/Reference/Global_Objects/Array/sort)
+   * @param {Boolean} args.silent - Default false, set true to supress the
+   *                                firing of a sort event.
+   *
+   * @externalExample {runnable} dataview/sort
+   *
+   * @returns {Miso.Dataset.DataView}
+   */
   sort : function(args) {
       var options = {}, cachedRows = [];
     
@@ -857,10 +1015,10 @@ this.Miso = require("miso.events");
     },
    
     /**
-    * Exports a version of the dataset in json format.
-    * Returns:
-    *   Array of rows.
-    */
+     * Exports a version of the dataset in json format.
+     *
+     * @returns {Array} Array of rows.
+     */
     toJSON : function() {
       var rows = [];
       for(var i = 0; i < this.length; i++) {
@@ -870,6 +1028,21 @@ this.Miso = require("miso.events");
     }
   });
 
+  /**
+   * This callback is used to step through each row in a DataView
+   * @callback Miso.Dataset.DataView~rowIterator
+   * @param {Object} row
+   * @param {Number} index
+   * @param {Miso.Dataset} dataset
+   */
+
+  /**
+   * This callback is used to step through each column in a DataView
+   * @callback Miso.Dataset.DataView~columnIterator
+   * @param {Object} column
+   * @param {Number} index
+   * @param {Miso.Dataset} dataset
+   */
 }(this, _));
 
 /**
@@ -887,14 +1060,17 @@ Version 0.0.1.2
   // take on miso dataview's prototype
   Dataset.prototype = new Dataset.DataView();
 
-  // add dataset methods to dataview.
-  _.extend(Dataset.prototype, {
+  // Add dataset methods to dataview.
+  _.extend(Dataset.prototype,
+    /** @lends Miso.Dataset.prototype */
+    {
 
     /**
-    * @private
-    * Internal initialization method. Reponsible for data parsing.
-    * @param {object} options - Optional options  
-    */
+     * Internal initialization method. Reponsible for data parsing.
+     * @private
+     *
+     * @param {object} [options]
+     */
     _initialize: function(options) {
 
       // is this a syncable dataset? if so, pull
@@ -992,30 +1168,51 @@ Version 0.0.1.2
     },
 
     /**
-    * Responsible for actually fetching the data based on the initialized dataset.
-    * Note that this needs to be called for either local or remote data.
-    * There are three different ways to use this method:
-    * ds.fetch() - will just fetch the data based on the importer. Note that for async 
-    *              fetching this isn't blocking so don't put your next set of instructions
-    *              expecting the data to be there.
-    * ds.fetch({
-    *   success: function() { 
-    *     // do stuff
-    *     // this is the dataset.
-    *   },
-    *   error : function(e) {
-    *     // do stuff
-    *   }
-    * })        - Allows you to pass success and error callbacks that will be called once data
-    *             is property fetched.
-    *
-    * _.when(ds.fetch(), function() {
-    *   // do stuff
-    *   // note 'this' is NOT the dataset.
-    * })        - Allows you to use deferred behavior to potentially chain multiple datasets.
-    *
-    * @param {object} options Optional success/error callbacks.
-    **/
+     * Responsible for actually fetching the data based on the initialized
+     * dataset. Note that this needs to be called for either local or remote
+     * data.
+     *
+     * There are three different ways to use this method:
+     *
+     *     ds.fetch();
+     *
+     * will just fetch the data based on the importer. Note that for async
+     * fetching this isn't blocking so don't put your next set of instructions
+     * expecting the data to be there.
+     *
+     *     ds.fetch({
+     *       success: function() {
+     *         // do stuff
+     *         // this is the dataset.
+     *       },
+     *       error : function(e) {
+     *         // do stuff
+     *       }
+     *     });
+     *
+     * Allows you to pass success and error callbacks that will be called once
+     * data is property fetched.
+     *
+     *     _.when(ds.fetch(), function() {
+     *       // do stuff
+     *       // note 'this' is NOT the dataset.
+     *     });
+     *
+     * Allows you to use deferred behavior to potentially chain multiple
+     * datasets.
+     *
+     * @param {Object} [options]
+     * @param {Function} options.success - Success callback to be called when
+     *                                     data is fetched. Context is the
+     *                                     dataset.
+     * @param {Function} options.failure - Error callback to be called when
+     *                                     data fetching fails. Context is the
+     *                                     dataset.
+     *
+     * @externalExample {runnable} dataset/fetch
+     *
+     * @returns {Deferred}
+     */
     fetch : function(options) {
       options = options || {};
       
@@ -1186,13 +1383,20 @@ Version 0.0.1.2
     },
 
     /**
-    * Allows adding of a computed column. A computed column is
-    * a column that is somehow based on the other existing columns.
-    * Parameters:
-    *   name : name of new column
-    *   type : The type of the column based on existing types.
-    *   func : The way that the column is derived. It takes a row as a parameter.
-    */
+     * Creates a new column that is computationally derived from the rest of
+     * the row. See [the Computed columns
+     * tutorial](http://misoproject.com/dataset/tutorials/computed.html) for
+     * more information.
+     *
+     * @param {String} name - name of new column
+     * @param {String} type - The type of the column based on existing
+     * @param {Function} func - The way that the column is derived. It takes a
+     *                          row as a parameter.
+     *
+     * @externalExample {runnable} dataset/add-column
+     *
+     * @returns {Miso.Dataset.Column}
+     */
     addComputedColumn : function(name, type, func) {
       // check if we already ahve a column by this name.
       if ( !_.isUndefined(this.column(name)) ) { 
@@ -1225,13 +1429,23 @@ Version 0.0.1.2
       }
     },
 
-    /** 
-    * Adds a single column to the dataset
-    * Parameters:
-    *   column : a set of properties describing a column (name, type, data etc.)
-    * Returns
-    *   Miso.Column object.
-    */
+    /**
+     * Creates a new column and adds it to the dataset.
+     *
+     * @param {Object} column - a set of properties describing a {@link
+     *                          Miso.Dataset.Column}
+     * @param {String} column.name - Column name
+     * @param {String} column.type - String name of column type
+     * @param {String} [column.format] - Only used for columns of the type
+     *                                  `time`. The moment.js format describing
+     *                                  the input dates.
+     * @param {String} [column._id] - Sets a custom column _id. We assign one
+     *                                by default.
+     * @param {Array} [column.data] - Column data. By default, set to an empty
+     *                                array.
+     *
+     * @returns {Miso.Dataset.Column}
+     */
     addColumn : function(column) {
       //don't create a column that already exists
       if ( !_.isUndefined(this.column(column.name)) ) { 
@@ -1247,11 +1461,12 @@ Version 0.0.1.2
     },
 
     /**
-    * Adds an id column to the column definition. If a count
-    * is provided, also generates unique ids.
-    * Parameters:
-    *   count - the number of ids to generate.
-    */
+     * Adds an id column to the column definition. If a count is provided, also
+     * generates unique ids.
+     * @private
+     *
+     * @param {Number} count - the number of ids to generate.
+     */
     _addIdColumn : function( count ) {
       // if we have any data, generate actual ids.
 
@@ -1296,13 +1511,18 @@ Version 0.0.1.2
     },
 
     /**
-    * Add a row to the dataset. Triggers add and change.
-    * Parameters:
-    *   row - an object representing a row in the form of:
-    *         {columnName: value}
-    *   options - options
-    *     silent: boolean, do not trigger an add (and thus view updates) event
-    */    
+     * Add a row to the dataset. Triggers `add` and `change` events on a
+     * syncable dataset.
+     *
+     * @param {Object} rows - an object representing a row
+     * @param {Object} [options]
+     * @param {Boolean} options.silent - do not trigger an add (and thus view
+     *                                   updates) event
+     *
+     * @externalExample {runnable} dataset/add
+     *
+     * @returns {Miso.Dataset}
+     */
     add : function(rows, options) {
       
       options = options || {};
@@ -1337,12 +1557,21 @@ Version 0.0.1.2
     },
 
     /**
-    * Remove all rows that match the filter. Fires remove and change.
-    * Parameters:
-    *   filter - row id OR function applied to each row to see if it should be removed.
-    *   options - options. Optional.
-    *     silent: boolean, do not trigger an add (and thus view updates) event
-    */    
+     * Remove all rows that match the filter. Fires `remove` and `change`
+     * events on a syncable dataset.
+     *
+     * @param {Number|Function} filter - can be one of two things: A row id, or
+     *                                   a filter function that takes a row and
+     *                                   returns true if that row should be
+     *                                   removed or false otherwise.
+     * @param {Object} [options]
+     * @param {Boolean} options.silent - do not trigger an add (and thus view
+     *                                   updates) event
+     *
+     * @externalExample {runnable} dataset/remove
+     *
+     * @return {Miso.Dataset}
+     */
     remove : function(filter, options) {
       filter = this._rowFilter(filter);
       var deltas = [], rowsToRemove = [];
@@ -1445,12 +1674,26 @@ Version 0.0.1.2
     },
 
     /**
-    * Update can be used on one of three ways.
-    * 1: To update specific rows by passing in an object with the _id
-    * 2: To update a number of rows by passing in an array of objects with _ids
-    * 3: To update a number of row by passing in a function which will be applied to
-    * all rows.
-    * */    
+     * Updates one or more rows in a dataset. You can pass either a row object
+     * that contains an the identifying id property and altered property, an
+     * array of objects of the same form or a function that will be first
+     * applied to all rows. The function should take a `row` object for each
+     * row in the dataset. If a row shouldn't be modified, the function can
+     * return false for that row. This will fire update and change events on a
+     * syncable dataset.
+     *
+     * @param {Function|String} rowsOrFunction - Can be one of two things: A
+     *                                           row id, or a filter function
+     *                                           that takes a row and returns
+     *                                           true if that row should be
+     *                                           removed or false otherwise.
+     * @param {Object} [options]
+     * @param {Boolean} options.silent - Set to true to disable event firing
+     *
+     * @externalExample {runnable} dataset/update
+     *
+     * @returns {Miso.Dataset}
+     */
     update : function( rowsOrFunction, options ) {
       var deltas;
 
@@ -1472,12 +1715,13 @@ Version 0.0.1.2
     },
 
     /**
-    * Clears all the rows
-    * Fires a "reset" event.
-    * Parameters:
-    *   options (object)
-    *     silent : true | false.
-    */
+     * Clears all the rows. Fires a `reset` event.
+     *
+     * @param {Object} [options]
+     * @param {Boolean} options.silent
+     *
+     * @externalExample {runnable} dataset/reset
+     */
     reset : function(options) {
       _.each(this._columns, function(col) {
         col.data = [];
@@ -1497,6 +1741,21 @@ Version 0.0.1.2
 
   var Dataset = global.Miso.Dataset;
 
+  /**
+   * Tests the type of a given input against the registered Miso types and
+   * returns the closest match.
+   *
+   * @name typeOf
+   * @memberof Miso.Dataset
+   *
+   * @param {mixed} value - The value to test
+   * @param {Object} [options]
+   * @param {String} [options.format] - For `time` type only. Describes the format.
+   *
+   * @externalExample {runnable} type-of
+   *
+   * @returns {String}
+   */
   Dataset.typeOf = function(value, options) {
     var types = _.keys(Dataset.types),
         chosenType;
@@ -1513,32 +1772,107 @@ Version 0.0.1.2
 
     return chosenType;
   };
-  
+
+  /**
+   * Miso types are used to set and manage the data types on columns. These
+   * sets of functions handle testing what type data is and coercing it into
+   * the correct format for a given type. The type system is completely
+   * extensible, making it easy to create rich custom types for your data when
+   * it would be helpful to do so. All types must have the following interface.
+   *
+   * @namespace types
+   * @memberof Miso.Dataset
+   *
+   * @externalExample types
+   */
   Dataset.types = {
-    
-    mixed : {
+
+    mixed :
+    /**
+     * @namespace mixed
+     * @memberof Miso.Dataset.types
+     */
+    {
       name : 'mixed',
+      /**
+       * Coerces the value, given the is the mixed type it's a passthrough.
+       *
+       * @memberof Miso.Dataset.types.mixed
+       * @name coerce
+       * @method
+       *
+       * @param {mixed} v - Value to be coerced
+       */
       coerce : function(v) {
         if (_.isNull(v) || typeof v === "undefined" || _.isNaN(v)) {
           return null;
         }
         return v;
       },
+      /**
+       * Tests whether the value is of the given type. Given this is the mixed
+       * type it will always be true.
+       *
+       * @memberof Miso.Dataset.types.mixed
+       * @name test
+       * @method
+       *
+       * @returns {Boolean}
+       */
       test : function() {
         return true;
       },
+      /**
+       * Compares two mixed type values
+       *
+       * @memberof Miso.Dataset.types.mixed
+       * @name compare
+       * @method
+       *
+       * @param {mixed} s1 - First value to be compared
+       * @param {mixed} s2 - Second value to be compared
+       *
+       * @returns {Number}
+       */
       compare : function(s1, s2) {
         if ( _.isEqual(s1, s2) ) { return 0; }
         if (s1 < s2)  { return -1;}
         if (s1 > s2)  { return 1; }
       },
+      /**
+       * @memberof Miso.Dataset.types.mixed
+       * @name numeric
+       * @method
+       *
+       * @param {mixed} v - Value to be coerced to numeric
+       *
+       * @returns {Number} The numeric representation of a mixed value. If it's
+       *                   an integer, then it coerces it. Otherwise it returns
+       *                   0.
+       */
       numeric : function(v) {
         return v === null || _.isNaN(+v) ? null : +v;
       }
     },
 
-    string : {
+    string :
+    /**
+     * @namespace string
+     * @memberof Miso.Dataset.types
+     */
+    {
       name : "string",
+      /**
+       * Coerces the value to a string.
+       *
+       * @memberof Miso.Dataset.types.string
+       * @name coerce
+       * @method
+       *
+       * @param {mixed} v - Value to be coerced
+       *
+       * @returns {String}
+       */
       coerce : function(v) {
         if (_.isNaN(v) || v === null || typeof v === "undefined") {
           return null;
@@ -1546,10 +1880,33 @@ Version 0.0.1.2
         return v.toString();
       },
 
+      /**
+       * Tests whether the value is a string.
+       *
+       * @memberof Miso.Dataset.types.string
+       * @name test
+       * @method
+       *
+       * @param {mixed} v - The value to be tested
+       *
+       * @returns {Boolean}
+       */
       test : function(v) {
         return (v === null || typeof v === "undefined" || typeof v === 'string');
       },
 
+      /**
+       * Compares two `string` type values
+       *
+       * @memberof Miso.Dataset.types.string
+       * @name compare
+       * @method
+       *
+       * @param {String} s1 - First value to be compared
+       * @param {String} s2 - Second value to be compared
+       *
+       * @returns {Number}
+       */
       compare : function(s1, s2) {
         if (s1 == null && s2 != null) { return -1; }
         if (s1 != null && s2 == null) { return 1; }
@@ -1558,6 +1915,17 @@ Version 0.0.1.2
         return 0;
       },
 
+      /**
+       * Returns the numeric representation of a string value
+       *
+       * @memberof Miso.Dataset.types.string
+       * @name numeric
+       * @method
+       *
+       * @param {mixed} value - Value to be coerced to numeric
+       *
+       * @returns {Number}
+       */
       numeric : function(value) {
         if (_.isNaN(+value) || value === null) {
           return null;
@@ -1569,9 +1937,27 @@ Version 0.0.1.2
       }
     },
 
-    "boolean" : {
+    "boolean" :
+    /**
+     * The boolean type is used for columns of true/false booleans.
+     *
+     * @namespace boolean
+     * @memberof Miso.Dataset.types
+     */
+    {
       name : "boolean",
       regexp : /^(true|false)$/,
+      /**
+       * Coerces the value to a boolean, uses javascript truthy/falsy.
+       *
+       * @memberof Miso.Dataset.types.boolean
+       * @name coerce
+       * @method
+       *
+       * @param {mixed} v - Value to be coerced
+       *
+       * @returns {Boolean}
+       */
       coerce : function(v) {
         if (_.isNaN(v) || v === null || typeof v === "undefined") {
           return null;
@@ -1579,6 +1965,17 @@ Version 0.0.1.2
         if (v === 'false') { return false; }
         return Boolean(v);
       },
+      /**
+       * Tests whether the value is a boolean.
+       *
+       * @memberof Miso.Dataset.types.boolean
+       * @name test
+       * @method
+       *
+       * @param {mixed} v - Value to be tested
+       *
+       * @returns {Boolean}
+       */
       test : function(v) {
         if (v === null || typeof v === "undefined" || typeof v === 'boolean' || this.regexp.test( v ) ) {
           return true;
@@ -1586,6 +1983,18 @@ Version 0.0.1.2
           return false;
         }
       },
+      /**
+       * Compares two boolean type values
+       *
+       * @memberof Miso.Dataset.types.boolean
+       * @name compare
+       * @method
+       *
+       * @param {Boolean} n1 - First value to be compared
+       * @param {Boolean} n2 - Second value to be compared
+       *
+       * @return {Number}
+       */
       compare : function(n1, n2) {
         if (n1 == null && n2 != null) { return -1; }
         if (n1 != null && n2 == null) { return 1; }
@@ -1593,18 +2002,48 @@ Version 0.0.1.2
         if (n1 === n2) { return 0; }
         return (n1 < n2 ? -1 : 1);
       },
+      /**
+       * Returns the numeric representation of a boolean value - false is 0,
+       * true 1.
+       *
+       * @memberof Miso.Dataset.types.boolean
+       * @name numeric
+       * @method
+       *
+       * @param {mixed} value - Value to be coerced to numeric
+       *
+       * @returns {Number}
+       */
       numeric : function(value) {
         if (value === null || _.isNaN(value)) {
           return null;
         } else {
-          return (value) ? 1 : 0;  
+          return (value) ? 1 : 0;
         }
       }
     },
 
-    number : {  
+    number :
+    /**
+     * The number type is used for columns of numbers.
+     *
+     * @namespace number
+     * @memberof Miso.Dataset.types
+     */
+    {
       name : "number",
       regexp : /^\s*[\-\.]?[0-9]+([\.][0-9]+)?\s*$/,
+      /**
+       * Coerces the value to a number, a passthrough.
+       *
+       * @memberof Miso.Dataset.types.number
+       * @name coerce
+       * @method
+       *
+       * @param {mixed} v - Value to be coerced
+       *
+       * @returns {Number}
+       */
       coerce : function(v) {
         var cv = +v;
         if (_.isNull(v) || typeof v === "undefined" || _.isNaN(cv)) {
@@ -1612,6 +2051,17 @@ Version 0.0.1.2
         }
         return cv;
       },
+      /**
+       * Tests whether the value is a number.
+       *
+       * @memberof Miso.Dataset.types.number
+       * @name test
+       * @method
+       *
+       * @param {mixed} v - Value to be tested
+       *
+       * @returns {Boolean}
+       */
       test : function(v) {
         if (v === null || typeof v === "undefined" || typeof v === 'number' || this.regexp.test( v ) ) {
           return true;
@@ -1619,6 +2069,17 @@ Version 0.0.1.2
           return false;
         }
       },
+      /**
+       * Compares two `number` type values
+       *
+       * @memberof Miso.Dataset.types.number
+       * @name compare
+       * @method
+       *
+       * @param {Number} n1 - First value to be compared
+       * @param {Number} n2 - Second value to be compared
+       * @returns {Number}
+       */
       compare : function(n1, n2) {
         if (n1 == null && n2 != null) { return -1; }
         if (n1 != null && n2 == null) { return 1; }
@@ -1626,6 +2087,18 @@ Version 0.0.1.2
         if (n1 === n2) { return 0; }
         return (n1 < n2 ? -1 : 1);
       },
+      /**
+       * Returns the numeric representation of a `number` which will be..the
+       * number.
+       *
+       * @memberof Miso.Dataset.types.number
+       * @name numeric
+       * @method
+       *
+       * @param {mixed} value - Value to be coerced to numeric
+       *
+       * @returns {Number}
+       */
       numeric : function(value) {
         if (_.isNaN(value) || value === null) {
           return null;
@@ -1634,7 +2107,15 @@ Version 0.0.1.2
       }
     },
 
-    time : {
+    time :
+    /**
+     * The time type is used for columns of dates & timestamps, this uses
+     * [moment.js](http://momentjs.com/) internally and returns moment objects.
+     *
+     * @namespace time
+     * @memberof Miso.Dataset.types
+     */
+     {
       name : "time",
       format : "DD/MM/YYYY",
       _formatLookup : [
@@ -1673,10 +2154,23 @@ Version 0.0.1.2
 
         // save the string of the regexp, NOT the regexp itself.
         // For some reason, this resulted in inconsistant behavior
-        this._regexpTable[format] = regexp; 
+        this._regexpTable[format] = regexp;
         return new RegExp(this._regexpTable[format], 'g');
       },
 
+      /**
+       * Coerces the value to a time.
+       *
+       * @memberof Miso.Dataset.types.time
+       * @name coerce
+       * @method
+       *
+       * @param {mixed} v - Value to be coerced
+       * @param {Object} [options]
+       * @param {String} options.format - Time format. See
+       *                                  [Moment.js](http://momentjs.com/)
+       *                                  documentation.
+       */
       coerce : function(v, options) {
         options = options || {};
 
@@ -1687,7 +2181,7 @@ Version 0.0.1.2
         // if string, then parse as a time
         if (_.isString(v)) {
           var format = options.format || this.format;
-          return moment(v, format);   
+          return moment(v, format);
         } else if (_.isNumber(v)) {
           return moment(v);
         } else {
@@ -1696,6 +2190,17 @@ Version 0.0.1.2
 
       },
 
+      /**
+       * Tests whether the value is a time.
+       *
+       * @memberof Miso.Dataset.types.time
+       * @name test
+       * @method
+       *
+       * @param {mixed} v - Value to be tested
+       *
+       * @returns {Boolean}
+       */
       test : function(v, options) {
         options = options || {};
         if (v === null || typeof v === "undefined") {
@@ -1710,11 +2215,35 @@ Version 0.0.1.2
           return true;
         }
       },
+      /**
+       * Compares two `time` type values
+       *
+       * @memberof Miso.Dataset.types.time
+       * @name compare
+       * @method
+       *
+       * @param {time} d1 - First value to be compared
+       * @param {time} d2 - Second value to be compared
+       *
+       * @returns {Number}
+       */
       compare : function(d1, d2) {
         if (d1 < d2) {return -1;}
         if (d1 > d2) {return 1;}
         return 0;
       },
+      /**
+       * Returns the numeric representation of a time which will be an [epoch
+       * time](http://en.wikipedia.org/wiki/Unix_time).
+       *
+       * @memberof Miso.Dataset.types.time
+       * @name numeric
+       * @method
+       *
+       * @param {mixed} value - Value to be coerced to numeric
+       *
+       * @returns {Number}
+       */
       numeric : function( value ) {
         if (_.isNaN(value) || value === null) {
           return null;
@@ -1731,13 +2260,18 @@ Version 0.0.1.2
   var Dataset = global.Miso.Dataset;
 
   /**
-  * A representation of an event as it is passed through the
-  * system. Used for view synchronization and other default
-  * CRUD ops.
-  * Parameters:
-  *   deltas - array of deltas.
-  *     each delta: { changed : {}, old : {} }
-  */
+   * Miso.Dataset.Events are objects that will be passed to event callbacks
+   * bound to dataset objects that contain information about the event and what
+   * has changed. See [the Events
+   * tutorial](http://misoproject.com/dataset/dataset/tutorials/events) for
+   * more information.
+   *
+   * @constructor
+   * @name Event
+   * @memberof Miso.Dataset
+   *
+   * @param {Delta[]} deltas
+   */
   Dataset.Event = function(deltas, dataset) {
     if (!_.isArray(deltas)) {
       deltas = [deltas];
@@ -1747,6 +2281,11 @@ Version 0.0.1.2
   };
 
   _.extend(Dataset.Event.prototype, {
+    /**
+     * @externalExample {runnable} event/affected-columns
+     *
+     * @returns {Array} Columns affected by the event
+     */
     affectedColumns : function() {
       var cols = [];
       _.each(this.deltas, function(delta) {
@@ -1763,10 +2302,15 @@ Version 0.0.1.2
     }
   });
 
-   _.extend(Dataset.Event, {
+   _.extend(Dataset.Event,
+    /** @lends Miso.Dataset.Event */
+    {
+
     /**
-    * Returns true if the event is a deletion
-    */
+     * @externalExample {runnable} event/is-remove
+     *
+     * @returns {Boolean} true if the event is a deletion
+     */
     isRemove : function(delta) {
       if (_.isUndefined(delta.changed) || _.keys(delta.changed).length === 0) {
         return true;
@@ -1776,8 +2320,10 @@ Version 0.0.1.2
     },
 
     /**
-    * Returns true if the event is an add event.
-    */
+     * @externalExample {runnable} event/is-add
+     *
+     * @returns {Boolean} true if the event is an add event
+     */
     isAdd : function(delta) {
       if (_.isUndefined(delta.old) || _.keys(delta.old).length === 0) {
         return true;
@@ -1787,8 +2333,10 @@ Version 0.0.1.2
     },
 
     /**
-    * Returns true if the event is an update.
-    */
+     * @externalExample {runnable} event/is-update
+     *
+     * @returns {Boolean} true if the event is an update
+     */
     isUpdate : function(delta) {
       if (!this.isRemove(delta) && !this.isAdd(delta)) {
         return true;
@@ -1807,6 +2355,13 @@ Version 0.0.1.2
     return new Dataset.Event(delta, dataset);
   };
 
+  /**
+   * @typedef Delta
+   * @type {Object}
+   * @property {Object} changed
+   * @property {Object} old
+   */
+
 }(this, _));
 
 (function(global, _) {
@@ -1814,19 +2369,24 @@ Version 0.0.1.2
   var Dataset = global.Miso.Dataset;
   
   /**
-  * This is a generic collection of dataset-building utilities
-  * that are used by Miso.Dataset and Miso.DataView.
-  */
-  Dataset.Builder = {
+   * This is a generic collection of dataset-building utilities that are used
+   * by Miso.Dataset and Miso.DataView.
+   *
+   * @namespace Builder
+   * @memberof Miso.Dataset
+   */
+  Dataset.Builder =
+    /** @lends Miso.Dataset.Builder */
+    {
 
     /**
-    * Detects the type of a column based on some input data.
-    * Parameters:
-    *   column - the Miso.Column object
-    *   data - an array of data to be scanned for type detection
-    * Returns:
-    *   input column but typed.
-    */
+     * Detects the type of a column based on some input data.
+     *
+     * @param {Miso.Dataset.Column} column The Column object
+     * @param {Array} data Array of data to be scanned for type detection
+     *
+     * @returns {Miso.Dataset.Column} input column but typed.
+     */
     detectColumnType : function(column, data) {
 
       // compute the type by assembling a sample of computed types
@@ -1853,11 +2413,11 @@ Version 0.0.1.2
     },
 
     /**
-    * Detects the types of all columns in a dataset.
-    * Parameters:
-    *   dataset - the dataset to test the columns of
-    *   parsedData - the data to check the type of
-    */
+     * Detects the types of all columns in a dataset.
+     *
+     * @param {Miso.Dataset} dataset the dataset to test the columns of
+     * @param {Array} parsedData the data to check the type of
+     */
     detectColumnTypes : function(dataset, parsedData) {
 
       _.each(parsedData, function(data, columnName) {
@@ -1876,11 +2436,10 @@ Version 0.0.1.2
     },
 
     /**
-    * Used by internal importers to cache the rows 
-    * in quick lookup tables for any id based operations.
-    * also used by views to cache the new rows they get
-    * as a result of whatever filter created them.
-    */
+     * Used by internal importers to cache the rows in quick lookup tables for
+     * any id based operations. Also used by views to cache the new rows they
+     * get as a result of whatever filter created them.
+     */
     cacheRows : function(dataset) {
 
       Dataset.Builder.clearRowCache(dataset);
@@ -1907,20 +2466,20 @@ Version 0.0.1.2
     },
 
     /**
-    * Clears the row cache objects of a dataset
-    * Parameters:
-    *   dataset - Miso.Dataset instance.
-    */
+     * Clears the row cache objects of a dataset
+     *
+     * @param {Miso.Dataset} dataset
+     */
     clearRowCache : function(dataset) {
       dataset._rowPositionById = {};
       dataset._rowIdByPosition = [];
     },
 
     /**
-    * Caches the column positions by name
-    * Parameters:
-    *   dataset - Miso.Dataset instance.
-    */
+     * Caches the column positions by name
+     *
+     * @param {Miso.Dataset} dataset
+     */
     cacheColumns : function(dataset) {
       dataset._columnPositionByName = {};
       _.each(dataset._columns, function(column, i) {
@@ -1947,17 +2506,23 @@ Version 0.0.1.2
   var Dataset = global.Miso.Dataset;
 
   /**
-  * A Miso.Product is a single computed value that can be obtained 
-  * from a Miso.Dataset. When a dataset is syncable, it will be an object
-  * that one can subscribe to the changes of. Otherwise, it returns
-  * the actual computed value.
-  * Parameters:
-  *   func - the function that derives the computation.
-  *   columns - the columns from which the function derives the computation
-  */
+   * A Miso.Product is a single computed value that can be obtained from a
+   * Miso.Dataset. When a dataset is syncable, it will be an object that one
+   * can subscribe to the changes of. Otherwise, it returns the actual computed
+   * value.
+   *
+   * @constructor
+   * @name Product
+   * @memberof Miso.Dataset
+   *
+   * @param {Object} [options]
+   * @param {Function} options.func - the function that derives the computation
+   * @param {mixed} options.columns - the columns from which the function
+   *                                  derives the computation
+   */
   Dataset.Product = function(options) {
     options = options || {};
-    
+
     // save column name. This will be necessary later
     // when we decide whether we need to update the column
     // when sync is called.
@@ -1969,7 +2534,7 @@ Version 0.0.1.2
       if (_.isArray(options.columns)) {
         column = options.columns[0];
       }
-      
+
       this.valuetype = column.type;
       this.numeric = function() {
         return column.toNumeric(this.value);
@@ -1980,26 +2545,27 @@ Version 0.0.1.2
     return this;
   };
 
-  _.extend(Dataset.Product.prototype, Miso.Events, {
+  _.extend(Dataset.Product.prototype, Miso.Events,
+    /** @lends Miso.Dataset.Product.prototype */
+    {
 
     /**
-    * return the raw value of the product
-    * Returns:
-    *   The value of the product. Most likely a number.
-    */
+     * @externalExample {runnable} product/val
+     *
+     * @returns {mixed} the raw value of the product, most likely a number
+     */
     val : function() {
       return this.value;
     },
 
     /**
-    * return the type of product this is (numeric, time etc.)
-    * Returns
-    *   type. Matches the name of one of the Miso.types.
-    */
+     * @returns the type of product this is (numeric, time etc.) Matches the
+     *          name of one of the Miso.types.
+     */
     type : function() {
       return this.valuetype;
     },
-    
+
     //This is a callback method that is responsible for recomputing
     //the value based on the column its closed on.
     _sync : function(event) {
@@ -2015,6 +2581,19 @@ Version 0.0.1.2
     }
   });
 
+  /**
+   * Use this method to define a new product.
+   *
+   * @memberof Miso.Dataset.Product
+   *
+   * @param {Function} func - The function which will be wrapped to create a
+   *                          product. Function signature is function(columns,
+   *                          options)
+   *
+   * @externalExample {runnable} product/define
+   *
+   * @returns {Function}
+   */
   Dataset.Product.define = function(func) {
     return function(columns, options) {
       options = options || {};
@@ -2045,8 +2624,8 @@ Version 0.0.1.2
             }
           }
         });
-        this.subscribe("change", prod._sync, { context : prod }); 
-        return prod; 
+        this.subscribe("change", prod._sync, { context : prod });
+        return prod;
 
       } else {
         return producer.call(_self);
@@ -2056,7 +2635,9 @@ Version 0.0.1.2
   };
 
 
-  _.extend(Dataset.DataView.prototype, {
+  _.extend(Dataset.DataView.prototype,
+    /** @lends Miso.Dataset.DataView.prototype */
+    {
 
     // finds the column objects that match the single/multiple
     // input columns. Helper method.
@@ -2081,13 +2662,22 @@ Version 0.0.1.2
     },
 
     /**
-    * Computes the sum of one or more columns.
-    * Parameters:
-    *   columns - string or array of column names on which the value is calculated 
-    *   options
-    *     silent - set to tue to prevent event propagation
-    */
-    sum : Dataset.Product.define( function(columns, options) {
+     * If the dataset has `sync` enabled this will return a
+     * `Miso.Dataset.Product` that can be used to bind events to and access the
+     * current value.  Otherwise it will return the current value - the sum of
+     * the numeric form of the values in the column.
+     *
+     * @method
+     *
+     *
+     * @param {String|String[]} columns - column name(s) on which the value is
+     *                                    calculated
+     *
+     * @externalExample {runnable} dataview/sum
+     *
+     * @returns {Miso.Dataset.Product|Number}
+     */
+    sum : Dataset.Product.define( function(columns) {
       _.each(columns, function(col) {
         if (col.type === Dataset.types.time.name) {
           throw new Error("Can't sum up time");
@@ -2096,37 +2686,64 @@ Version 0.0.1.2
       return _.sum(_.map(columns, function(c) { return c._sum(); }));
     }),
 
-     /**
-    * return a Product with the value of the maximum 
-    * value of the column
-    * Parameters:
-    *   column - string or array of column names on which the value is calculated 
-    */    
-    max : Dataset.Product.define( function(columns, options) {
-      return _.max(_.map(columns, function(c) { 
-        return c._max(); 
+    /**
+     * If the dataset has `sync` enabled this will return a
+     * `Miso.Dataset.Product` that can be used to bind events to and access the
+     * current value.  Otherwise it will return the current value - the highest
+     * numeric value in that column.
+     *
+     * @method
+     *
+     * @param {String|String[]} columns - column name(s) on which the value is
+     *                                   calculated
+     *
+     * @externalExample {runnable} dataview/max
+     *
+     * @returns {Miso.Dataset.Product|Number}
+     */
+    max : Dataset.Product.define( function(columns) {
+      return _.max(_.map(columns, function(c) {
+        return c._max();
       }));
     }),
 
-  
+
     /**
-    * return a Product with the value of the minimum 
-    * value of the column
-    * Paramaters:
-    *   columns - string or array of column names on which the value is calculated 
-    */    
-    min : Dataset.Product.define( function(columns, options) {
-      return _.min(_.map(columns, function(c) { 
-        return c._min(); 
+     * If the dataset has `sync` enabled this will return a
+     * `Miso.Dataset.Product` that can be used to bind events to and access the
+     * current value.  Otherwise it will return the current value - the lowest
+     * numeric value in that column.
+     *
+     * @method
+     *
+     * @param {String[]} columns - array of column names on which the value is
+     *                             calculated
+     *
+     * @externalExample {runnable} dataview/min
+     *
+     * @returns {Miso.Dataset.Product|Number}
+     */
+    min : Dataset.Product.define( function(columns) {
+      return _.min(_.map(columns, function(c) {
+        return c._min();
       }));
     }),
 
     /**
-    * return a Product with the value of the average
-    * value of the column
-    * Parameters:
-    *   column - string or array of column names on which the value is calculated 
-    */    
+     * If the dataset has `sync` enabled this will return a
+     * `Miso.Dataset.Product` that can be used to bind events to and access the
+     * current value.  Otherwise it will return the current value - the mean or
+     * average of the numeric form of the values in the column.
+     *
+     * @method
+     *
+     * @param {String[]} columns - array of column names on which the value is
+     *                             calculated
+     *
+     * @externalExample {runnable} dataview/mean
+     *
+     * @returns {Miso.Dataset.Product|Number}
+     */
     mean : Dataset.Product.define( function(columns, options) {
       var vals = [];
       _.each(columns, function(col) {
@@ -2140,7 +2757,7 @@ Version 0.0.1.2
 
       // convert the values to their appropriate numeric value
       vals = _.map(vals, function(v) { return Dataset.types[type].numeric(v); });
-      return _.mean(vals);   
+      return _.mean(vals);
     })
 
   });
@@ -2152,20 +2769,44 @@ Version 0.0.1.2
 
   var Dataset = global.Miso.Dataset;
 
+  /**
+   * To specify a custom importer during dataset instantiation, just set the
+   * `importer` property to the class name of the importer you want. Some
+   * importers require custom properties. This section will document the
+   * properties you can set that will either cause this importer to be selected
+   * or will be required by it to continue.
+   *
+   * Built in Importers include:
+   *
+   * - {@link Miso.Dataset.Importers.Local}
+   * - {@link Miso.Dataset.Importers.Remote}
+   * - {@link Miso.Dataset.Importers.Polling}
+   * - {@link Miso.Dataset.Importers.GoogleSpreadsheet}
+   *
+   * An importer must implement the following interface:
+   *
+   * @constructor
+   * @virtual
+   * @name Importers
+   * @memberof Miso.Dataset
+   *
+   * @externalExample importers
+   */
   Dataset.Importers = function(data, options) {};
 
   /**
-  * Simple base extract method, passing data through
-  * If your importer needs to extract the data from the
-  * returned payload before converting it to
-  * a dataset, overwrite this method to return the
-  * actual data object.
-  */
+   * Simple base extract method, passing data through.  If your importer needs
+   * to extract the data from the returned payload before converting it to a
+   * {@link Miso.Dataset}, overwrite this method to return the actual data
+   * object.
+   *
+   * @memberof Miso.Dataset.Importers.prototype
+   * @name extract
+   */
   Dataset.Importers.prototype.extract = function(data) {
     data = _.clone(data);
     return data;
   };
-
 }(this, _));
 
 (function(global, _) {
@@ -2173,9 +2814,19 @@ Version 0.0.1.2
   var Dataset = global.Miso.Dataset;
 
   /**
-  * Local data importer is responsible for just using
-  * a data object and passing it appropriately.
-  */
+   * Responsible for just using a data object and passing it appropriately.
+   *
+   * @constructor
+   * @name Local
+   * @memberof Miso.Dataset.Importers
+   * @augments Miso.Dataset.Importers.Remote
+   *
+   * @param {Object} [options]
+   * @param {Object} options.data local object containing your data
+   * @param {Function} options.extract override for Dataset.Importers.prototype.extract
+   *
+   * @externalExample {runnable} importers/local
+   */
   Dataset.Importers.Local = function(options) {
     options = options || {};
 
@@ -2198,14 +2849,23 @@ Version 0.0.1.2
   
 
   /**
-  * A remote importer is responsible for fetching data from a url.
-  * Parameters:
-  *   options
-  *     url - url to query
-  *     extract - a method to pass raw data through before handing back to parser.
-  *     dataType - ajax datatype
-  *     jsonp  - true if it's a jsonp request, false otherwise.
-  */
+   * Responsible for fetching data from a url.
+   *
+   * @constructor
+   * @name Remote
+   * @memberof Miso.Dataset.Importers
+   * @augments Miso.Dataset.Importers
+   *
+   * @param {Object} options
+   * @param {String} options.url - url to query
+   * @param {Function} options.extract - a method to pass raw data through
+   *                                     before handing back to parser.
+   * @param {String} options.dataType - ajax datatype
+   * @param {Boolean} options.jsonp - true if it's a jsonp request, false
+   *                                  otherwise.
+   *
+   * @externalExample {runnable} importers/remote
+   */
   Dataset.Importers.Remote = function(options) {
     options = options || {};
 
@@ -2217,7 +2877,8 @@ Version 0.0.1.2
       type : "GET",
       url : _.isFunction(this._url) ? _.bind(this._url, this) : this._url,
       dataType : options.dataType ? options.dataType : (options.jsonp ? "jsonp" : "json"),
-      callback : options.callback
+      callback : options.callback,
+      headers  : options.headers
     };
   };
 
@@ -2253,6 +2914,7 @@ Version 0.0.1.2
     success   : function() {},
     type      : "GET",
     async     : true,
+    headers   : {},
     xhr : function() {
       return global.ActiveXObject ? new global.ActiveXObject("Microsoft.XMLHTTP") : new global.XMLHttpRequest();
     }
@@ -2269,7 +2931,7 @@ Version 0.0.1.2
       (options.dataType === "jsonp" || options.dataType === "script" )) {
 
         Dataset.Xhr.getJSONP(
-          url, 
+          url,
           options.success,
           options.dataType === "script",
           options.error,
@@ -2295,6 +2957,14 @@ Version 0.0.1.2
         }
 
         settings.ajax.open(settings.type, settings.url, settings.async);
+
+        // Add custom headers
+        if (options.headers) {
+          _(options.headers).forEach(function(value, name) {
+            settings.ajax.setRequestHeader(name, value);
+          });
+        }
+
         settings.ajax.send(settings.data || null);
 
         return Dataset.Xhr.httpData(settings);
@@ -2338,7 +3008,7 @@ Version 0.0.1.2
       parts = params[params.length - 1].split("=");
     }
     if (!callback) {
-      var fallback = _.uniqueId('callback');
+      var fallback = _.uniqueId("callback");
       callback = params.length ? (parts[ 1 ] ? parts[ 1 ] : fallback) : fallback;
     }
 
@@ -2347,7 +3017,7 @@ Version 0.0.1.2
     }
 
     if ( !paramStr || !/callback/.test(paramStr) ) {
-      if (paramStr) { url += '&'; }
+      if (paramStr) { url += "&"; }
       url += "callback=" + callback;
     }
 
@@ -2367,7 +3037,7 @@ Version 0.0.1.2
       };
 
       //  Replace callback param and callback name
-      if (parts) { 
+      if (parts) {
         url = url.replace(parts.join("="), parts[0] + "=" + callback);
       }
     }
@@ -2453,18 +3123,26 @@ Version 0.0.1.2
   };
 
 }(this, _));
-
 (function(global,_){
   
   var Dataset = global.Miso.Dataset;
 
   /**
-  * A remote polling importer that queries a url once every 1000
-  * seconds.
-  * Parameters:
-  *   interval - poll every N milliseconds. Default is 1000.
-  *   extract  - a method to pass raw data through before handing back to parser.
-  */
+   * A remote polling importer that queries a url once every 1000 seconds.
+   *
+   * @constructor
+   * @name Polling
+   * @memberof Miso.Dataset.Importers
+   * @augments Miso.Dataset.Importers.Remote
+   *
+   * @param {Object} [options]
+   * @param {Number} options.interval - poll every N milliseconds. Default is
+   *                                    1000.
+   * @param {Function} options.extract - a method to pass raw data through
+   *                                     before handing back to parser.
+   *
+   * @externalExample {runnable} importers/polling
+   */
   Dataset.Importers.Polling = function(options) {
     options = options || {};
     this.interval = options.interval || 1000;
@@ -2540,17 +3218,29 @@ Version 0.0.1.2
   var Dataset = global.Miso.Dataset;
   
   /**
-  * Instantiates a new google spreadsheet importer.
-  * Parameters
-  *   options - Options object. Requires at the very least:
-  *     key - the google spreadsheet key
-  *     gid - the index of the spreadsheet to be retrieved (1 default)
-  *       OR
-  *     sheetName - the name of the sheet to fetch ("Sheet1" default)
-  *   OR
-  *     url - a more complex url (that may include filtering.) In this case
-  *           make sure it's returning the feed json data.
-  */
+   * Import directly from google spreadsheets, see [the Google Spreadsheets
+   * guide](http://misoproject.com/dataset/dataset/tutorials/googlespreadsheets).
+   *
+   * @constructor
+   * @name GoogleSpreadsheet
+   * @memberof Miso.Dataset.Importers
+   * @augments Miso.Dataset.Importers.Remote
+   *
+   * @param {Object} options - Requires at the very least: (`key` AND (`gid` OR
+   *                           `sheedNAme`)) OR `url`
+   * @param {String} options.key - the google spreadsheet key
+   * @param {Number} options.gid - the index of the spreadsheet to be retrieved
+   *                               (1 default)
+   * @param {String} options.sheetName - the name of the sheet to fetch
+   *                                     ("Sheet1" default)
+   * @param {String} options.url - a more complex url (that may include
+   *                               filtering.) In this case make sure it's
+   *                               returning the feed json data.
+   * @param {Boolean} options.fast - An optional flag to enable faster parsing.
+   *                                 See [the Google Spreadsheets
+   *                                 guide](http://misoproject.com/dataset/dataset/tutorials/googlespreadsheets)
+   *                                 for more information about this flag.
+   */
   Dataset.Importers.GoogleSpreadsheet = function(options) {
     options = options || {};
     if (options.url) {
@@ -2611,17 +3301,43 @@ Version 0.0.1.2
   var Dataset = global.Miso.Dataset;
 
   /**
-  * Base Miso.Parser class.
-  */
+   * The Base Miso.Parser class. To specify a custom parser, during dataset
+   * instantiation set the `parser` property to the class name of the parser
+   * you want. Some parsers require some custom properties. This section will
+   * document the properties you can set that will either cause this parser to
+   * be selected or will be required by it to continue.
+   *
+   * Built in Parsers include:
+   *
+   * - {@link Miso.Dataset.Parsers.Strict}
+   * - {@link Miso.Dataset.Parsers.Object}
+   * - {@link Miso.Dataset.Parsers.Delimited}
+   * - {@link Miso.Dataset.Parsers.GoogleSpreadsheet}
+   *
+   * The base `Miso.Parser` structure is:
+   *
+   * @constructor
+   * @virtual
+   * @name Parsers
+   * @memberof Miso.Dataset
+   *
+   * @externalExample parsers
+   */
   Dataset.Parsers = function( options ) {
     this.options = options || {};
   };
 
-  _.extend(Dataset.Parsers.prototype, {
+  _.extend(Dataset.Parsers.prototype,
+    /** @lends Miso.Dataset.Parsers */
+    {
 
-    //this is the main function for the parser,
-    //it must return an object with the columns names
-    //and the data in columns
+    /**
+     * The main function for the parser, it must return an object with the
+     * columns names and the data in columns
+     *
+     * @virtual
+     * @memberof Miso.Dataset.Parsers.prototype
+     */
     parse : function() {}
 
   });
@@ -2632,16 +3348,23 @@ Version 0.0.1.2
   var Dataset = global.Miso.Dataset;
 
   /**
-  * Strict format parser.
-  * Handles basic strict data format.
-  * Looks like: {
-  *   data : {
-  *     columns : [
-  *       { name : colName, type : colType, data : [...] }
-  *     ]
-  *   }
-  * }
-  */
+   * Handles basic strict data format. Looks like:
+   *
+   *     {
+   *       data : {
+   *         columns : [
+   *           { name : colName, type : colType, data : [...] }
+   *         ]
+   *       }
+   *     }
+   *
+   * @constructor
+   * @name Strict
+   * @memberof Miso.Dataset.Parsers
+   * @augments Miso.Dataset.Parsers
+   *
+   * @param {Object} [options]
+   */
   Dataset.Parsers.Strict = function( options ) {
     this.options = options || {};
   }; 
@@ -2675,10 +3398,14 @@ Version 0.0.1.2
   var Dataset = global.Miso.Dataset;
 
   /**
-  * Object parser
-  * Converts an array of objects to strict format.
-  * Each object is a flat json object of properties.
-  */
+   * Converts an array of objects to strict format. Each object is a flat json
+   * object of properties.
+   *
+   * @constructor
+   * @name Obj
+   * @memberof Miso.Dataset.Parsers
+   * @memberof Miso.Dataset.Parsers
+   */
   Dataset.Parsers.Obj = Dataset.Parsers;
 
   _.extend(Dataset.Parsers.Obj.prototype, Dataset.Parsers.prototype, {
@@ -2716,12 +3443,21 @@ Version 0.0.1.2
 (function(global, _) {
 
   var Dataset = global.Miso.Dataset;
+
   /**
-  * Google Spreadsheet Parser. 
-  * This is utilizing the format that can be obtained using this:
-  * http://code.google.com/apis/gdata/samples/spreadsheet_sample.html
-  * Used in conjunction with the Google Spreadsheet Importer.
-  */
+   * This is utilizing the format that can be obtained using this:
+   * http://code.google.com/apis/gdata/samples/spreadsheet_sample.html
+   * Used in conjunction with the [Google Spreadsheet Importer]{@link
+   * Miso.Dataset.Importers.GoogleSpreadsheet}.
+   *
+   * @constructor
+   * @name GoogleSpreadsheet
+   * @memberof Miso.Dataset.Parsers
+   * @augments Miso.Dataset.Parsers
+   *
+   * @param {Object} options
+   * @param {Boolean} options.fase
+   */
   Dataset.Parsers.GoogleSpreadsheet = function(options) {
     this.fast = options.fast || false;
   };
@@ -2843,17 +3579,26 @@ Version 0.0.1.2
 }(this, _));
 
 
+/*jshint -W082 */
 (function(global, _) {
 
   var Dataset = global.Miso.Dataset;
 
   /**
-  * Delimited data parser.
-  * Handles CSV and other delimited data. 
-  * Parameters:
-  *   options
-  *     delimiter : ","
-  */
+   * Handles CSV and other delimited data.
+   *
+   * **Note:** The delimited parser will assign custom column names in case the
+   * header row exists, but has missing values. They will be of the form XN
+   * where N starts at 0.
+   *
+   * @constructor
+   * @name Delimited
+   * @memberof Miso.Dataset.Parsers
+   * @augments Miso.Dataset.Parsers
+   *
+   * @param {Object} [options]
+   * @param {String} options.delimiter. Default: ","
+   */
   Dataset.Parsers.Delimited = function(options) {
     options = options || {};
 
@@ -2885,7 +3630,9 @@ Version 0.0.1.2
     };
   }
 
-  _.extend(Dataset.Parsers.Delimited.prototype, Dataset.Parsers.prototype, {
+  _.extend(Dataset.Parsers.Delimited.prototype, Dataset.Parsers.prototype,
+    /** @lends Dataset.Parsers.Delimited */
+    {
 
     parse : function(data) {
       var columns = [],
@@ -3087,18 +3834,22 @@ Version 0.0.1.2
   var Dataset = Miso.Dataset;
 
   /**
-  * A Miso.Derived dataset is a regular dataset that has been derived
-  * through some computation from a parent dataset. It behaves just like 
-  * a regular dataset except it also maintains a reference to its parent
-  * and the method that computed it.
-  * Parameters:
-  *   options
-  *     parent - the parent dataset
-  *     method - the method by which this derived dataset was computed
-  * Returns
-  *   a derived dataset instance
-  */
-
+   * A Miso.Derived dataset is a regular dataset that has been derived through
+   * some computation from a parent dataset. It behaves just like a regular
+   * dataset except it also maintains a reference to its parent and the method
+   * that computed it.
+   *
+   * @constructor
+   * @augments Miso.Dataset
+   * @name Derived
+   * @memberof Miso.Dataset
+   *
+   * @param {Object} [options]
+   * @param {Object} options.parent - the parent dataset
+   * @param {Function} options.method - the method by which this derived
+   *                                    dataset was computed
+   * @returns a derived dataset instance
+   */
   Dataset.Derived = function(options) {
     options = options || {};
 
@@ -3134,7 +3885,9 @@ Version 0.0.1.2
   Dataset.Derived.prototype = new Dataset();
 
   // inherit all of dataset's methods.
-  _.extend(Dataset.Derived.prototype, {
+  _.extend(Dataset.Derived.prototype,
+    /** @lends Miso.Dataset.Derived.prototype */
+    {
     _sync : function() {
       // recompute the function on an event.
       // TODO: would be nice to be more clever about this at some point.
@@ -3145,18 +3898,24 @@ Version 0.0.1.2
 
 
   // add derived methods to dataview (and thus dataset & derived)
-  _.extend(Dataset.DataView.prototype, {
+  _.extend(Dataset.DataView.prototype,
+    /** @lends Miso.Dataset.DataView.prototype */
+    {
 
     /**
-    * moving average
-    * Parameters:
-    *   column - The column on which to calculate the average
-    *   size - The window size to utilize for the moving average
-    *   options
-    *     method - the method to apply to all values in a window. Mean by default.
-    * Returns:
-    *   a miso.derived dataset instance
-    */
+     * Returns a derived dataset in which the specified columns have a moving
+     * average computed over them of a specified size.
+     *
+     * @param {Dataset.Column} columns - The column on which to calculate the
+     *                                   average
+     * @param  {Number} size - The window size to utilize for the moving
+     *                         average (the number of rows to average per row.)
+     * @param {Object} [options]
+     * @param {Function} options.method - the method to apply to all values in
+     *                                    a window. Mean by default.
+     *
+     * @returns {Miso.Dataset.Derived}
+     */
     movingAverage : function(columns, size, options) {
       
       options = options || {};
@@ -3227,9 +3986,17 @@ Version 0.0.1.2
     },
 
     /**
-    * Group rows by the column passed and return a column with the
-    * counts of the instance of each value in the column passed.
-    */
+     * Returns a new derived dataset that contains the original byColumn and a
+     * count column that returns the number of occurances each unique value in
+     * the byColumn contained.
+     *
+     * @param {String} byColumn - The column to count instances again.
+     * @param {Object} [options]
+     *
+     * @externalExample {runnable} dataview/count-by
+     *
+     * @returns {Miso.Dataset.Derived}
+     */
     countBy : function(byColumn, options) {
 
       options = options || {};
@@ -3283,18 +4050,26 @@ Version 0.0.1.2
     },
 
     /**
-    * group rows by values in a given column
-    * Parameters:
-    *   byColumn - The column by which rows will be grouped (string)
-    *   columns - The columns to be included (string array of column names)
-    *   options 
-    *     method - function to be applied, default is sum
-    *     preprocess - specify a normalization function for the
-    *                  byColumn values if you need to group by some kind of 
-    *                  derivation of those values that are not just equality based.
-    * Returns:
-    *   a miso.derived dataset instance
-    */
+     * Group rows by values in a given column
+     *
+     * @param {String} byColumn - The column by which rows will be grouped
+     * @param {String[]} columns - The columns to be included
+     * @param {Object} [options]
+     * @param {Function} options.method - Function that specifies the way in
+     *                                    which the columns are aggregated. The
+     *                                    default is sum. The function
+     *                                    signature is `function(arr)`. It
+     *                                    should return a single result.
+     * @param {Function} options.preprocess - specify a normalization function
+     *                                        for the byColumn values if you
+     *                                        need to group by some kind of
+     *                                        derivation of those values that
+     *                                        are not just equality based.
+     *
+     * @externalExample {runnable} dataview/group-by
+     *
+     * @returns {Miso.Dataset.Derived}
+     */
     groupBy : function(byColumn, columns, options) {
       
       options = options || {};

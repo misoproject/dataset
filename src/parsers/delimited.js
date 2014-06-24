@@ -1,14 +1,23 @@
+/*jshint -W082 */
 (function(global, _) {
 
   var Dataset = global.Miso.Dataset;
 
   /**
-  * Delimited data parser.
-  * Handles CSV and other delimited data. 
-  * Parameters:
-  *   options
-  *     delimiter : ","
-  */
+   * Handles CSV and other delimited data.
+   *
+   * **Note:** The delimited parser will assign custom column names in case the
+   * header row exists, but has missing values. They will be of the form XN
+   * where N starts at 0.
+   *
+   * @constructor
+   * @name Delimited
+   * @memberof Miso.Dataset.Parsers
+   * @augments Miso.Dataset.Parsers
+   *
+   * @param {Object} [options]
+   * @param {String} options.delimiter. Default: ","
+   */
   Dataset.Parsers.Delimited = function(options) {
     options = options || {};
 
@@ -40,7 +49,9 @@
     };
   }
 
-  _.extend(Dataset.Parsers.Delimited.prototype, Dataset.Parsers.prototype, {
+  _.extend(Dataset.Parsers.Delimited.prototype, Dataset.Parsers.prototype,
+    /** @lends Dataset.Parsers.Delimited */
+    {
 
     parse : function(data) {
       var columns = [],

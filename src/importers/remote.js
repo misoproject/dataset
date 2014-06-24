@@ -4,14 +4,23 @@
   
 
   /**
-  * A remote importer is responsible for fetching data from a url.
-  * Parameters:
-  *   options
-  *     url - url to query
-  *     extract - a method to pass raw data through before handing back to parser.
-  *     dataType - ajax datatype
-  *     jsonp  - true if it's a jsonp request, false otherwise.
-  */
+   * Responsible for fetching data from a url.
+   *
+   * @constructor
+   * @name Remote
+   * @memberof Miso.Dataset.Importers
+   * @augments Miso.Dataset.Importers
+   *
+   * @param {Object} options
+   * @param {String} options.url - url to query
+   * @param {Function} options.extract - a method to pass raw data through
+   *                                     before handing back to parser.
+   * @param {String} options.dataType - ajax datatype
+   * @param {Boolean} options.jsonp - true if it's a jsonp request, false
+   *                                  otherwise.
+   *
+   * @externalExample {runnable} importers/remote
+   */
   Dataset.Importers.Remote = function(options) {
     options = options || {};
 

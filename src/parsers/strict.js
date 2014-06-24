@@ -3,16 +3,23 @@
   var Dataset = global.Miso.Dataset;
 
   /**
-  * Strict format parser.
-  * Handles basic strict data format.
-  * Looks like: {
-  *   data : {
-  *     columns : [
-  *       { name : colName, type : colType, data : [...] }
-  *     ]
-  *   }
-  * }
-  */
+   * Handles basic strict data format. Looks like:
+   *
+   *     {
+   *       data : {
+   *         columns : [
+   *           { name : colName, type : colType, data : [...] }
+   *         ]
+   *       }
+   *     }
+   *
+   * @constructor
+   * @name Strict
+   * @memberof Miso.Dataset.Parsers
+   * @augments Miso.Dataset.Parsers
+   *
+   * @param {Object} [options]
+   */
   Dataset.Parsers.Strict = function( options ) {
     this.options = options || {};
   }; 

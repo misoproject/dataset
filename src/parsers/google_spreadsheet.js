@@ -4,12 +4,21 @@
 (function(global, _) {
 
   var Dataset = global.Miso.Dataset;
+
   /**
-  * Google Spreadsheet Parser. 
-  * This is utilizing the format that can be obtained using this:
-  * http://code.google.com/apis/gdata/samples/spreadsheet_sample.html
-  * Used in conjunction with the Google Spreadsheet Importer.
-  */
+   * This is utilizing the format that can be obtained using this:
+   * http://code.google.com/apis/gdata/samples/spreadsheet_sample.html
+   * Used in conjunction with the [Google Spreadsheet Importer]{@link
+   * Miso.Dataset.Importers.GoogleSpreadsheet}.
+   *
+   * @constructor
+   * @name GoogleSpreadsheet
+   * @memberof Miso.Dataset.Parsers
+   * @augments Miso.Dataset.Parsers
+   *
+   * @param {Object} options
+   * @param {Boolean} options.fase
+   */
   Dataset.Parsers.GoogleSpreadsheet = function(options) {
     this.fast = options.fast || false;
   };

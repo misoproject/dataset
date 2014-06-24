@@ -3,10 +3,14 @@
   var Dataset = global.Miso.Dataset;
 
   /**
-  * Object parser
-  * Converts an array of objects to strict format.
-  * Each object is a flat json object of properties.
-  */
+   * Converts an array of objects to strict format. Each object is a flat json
+   * object of properties.
+   *
+   * @constructor
+   * @name Obj
+   * @memberof Miso.Dataset.Parsers
+   * @memberof Miso.Dataset.Parsers
+   */
   Dataset.Parsers.Obj = Dataset.Parsers;
 
   _.extend(Dataset.Parsers.Obj.prototype, Dataset.Parsers.prototype, {

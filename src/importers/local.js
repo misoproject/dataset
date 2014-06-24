@@ -3,9 +3,19 @@
   var Dataset = global.Miso.Dataset;
 
   /**
-  * Local data importer is responsible for just using
-  * a data object and passing it appropriately.
-  */
+   * Responsible for just using a data object and passing it appropriately.
+   *
+   * @constructor
+   * @name Local
+   * @memberof Miso.Dataset.Importers
+   * @augments Miso.Dataset.Importers.Remote
+   *
+   * @param {Object} [options]
+   * @param {Object} options.data local object containing your data
+   * @param {Function} options.extract override for Dataset.Importers.prototype.extract
+   *
+   * @externalExample {runnable} importers/local
+   */
   Dataset.Importers.Local = function(options) {
     options = options || {};
 

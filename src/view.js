@@ -4,18 +4,30 @@
   var Dataset = global.Miso.Dataset;
 
   /**
-  * A single column in a dataset
-  * Parameters:
-  *   options
-  *     name
-  *     type (from Miso.types)
-  *     data (optional)
-  *     before (a pre coercion formatter)
-  *     format (for time type.)
-  *     any additional arguments here..
-  * Returns:
-  *   new Miso.Column
-  */
+   * `Miso.Dataset.Column` objects make up the columns contained in a dataset and
+   * are returned by some methods such as .column on {@link Miso.Dataset} and
+   * {@link Miso.Dataset.DataView}
+   *
+   * @constructor
+   * @name Column
+   * @memberof Miso.Dataset
+   *
+   * @param {Object} options
+   * @param {String} options.name - Column name
+   * @param {Object} [options.type] - Column type (from Miso.types)
+   * @param {Object} [options.data] - A set of data. By default, set to an
+   *                                  empty array.
+   * @param {Function} [options.before] - A function to pre-process a column's
+   *                                      value before it is coerced. Signature
+   *                                      is `function(value)`
+   * @param {Function} [options.format] - Optional. Only set if time type. The
+   *                                      moment.js format describing the input
+   *                                      dates.
+   * @param {Number} [options.id] - Sets a custom column _id. We assign one by
+   *                                default.
+   *
+   * @externalExample {runnable} column
+   */
   Dataset.Column = function(options) {
     _.extend(this, options);
     this._id = options.id || _.uniqueId();
@@ -23,35 +35,43 @@
     return this;
   };
 
-  _.extend(Dataset.Column.prototype, {
+  _.extend(Dataset.Column.prototype,
+    /** @lends Miso.Dataset.Column.prototype */
+    {
 
     /**
-    * Converts any value to this column's type for a given position
-    * in some source array.
-    * Parameters:
-    *   value
-    * Returns: 
-    *   number
-    */
+     * Converts any value to this column's type for a given position in some
+     * source array.
+     *
+     * @param {mixed} value
+     *
+     * @returns {Number}
+     */
     toNumeric : function(value) {
       return Dataset.types[this.type].numeric(value);
     },
 
     /**
-    * Returns the numeric representation of a datum at any index in this 
-    * column.
-    * Parameters:
-    *   index - position in data array
-    * Returns
-    *   number
-    */
+     * Internal function used to return the numeric value of a given input in a
+     * column. Index is used as this is currently the return value for numeric
+     * coercion of string values.
+     *
+     * @param {Number} index - index position of the row you want the numeric
+     *                         value for
+     *
+     * @externalExample {runnable} column/numeric-at
+     *
+     * @returns {Number}
+     */
     numericAt : function(index) {
       return this.toNumeric(this.data[index]);
     },
 
     /**
-    * Coerces the entire column's data to the column type.
-    */
+     * Coerces all the data in the column's data array to the appropriate type.
+     *
+     * @externalExample {runnable} column/coerce
+     */
     coerce : function() {
       this.data = _.map(this.data, function(datum) {
         return Dataset.types[this.type].coerce(datum, this);
@@ -59,14 +79,14 @@
     },
 
     /**
-    * If this is a computed column, it calculates the value
-    * for this column and adds it to the data.
-    * Parameters:
-    *   row - the row from which column is computed.
-    *   i - Optional. the index at which this value will get added.
-    * Returns
-    *   val - the computed value
-    */
+     * If this is a computed column, it calculates the value for this column
+     * and adds it to the data.
+     *
+     * @param {Object} row - the row from which column is computed.
+     * @param {Number} [i] - the index at which this value will get added.
+     *
+     * @returns the computed value
+     */
     compute : function(row, i) {
       if (this.func) {
         var val = this.func(row);
@@ -81,8 +101,8 @@
     },
 
     /**
-    * returns true if this is a computed column. False otherwise.
-    */
+     * @returns {Boolean} true if this is a computed column. False otherwise.
+     */
     isComputed : function() {
       return !_.isUndefined(this.func);
     },
@@ -131,16 +151,24 @@
   });
 
   /**
-  * Creates a new view.
-  * Parameters
-  *   options - initialization parameters:
-  *     parent : parent dataset
-  *     filter : filter specification TODO: document better
-  *       columns : column name or multiple names
-  *       rows : rowId or function
-  * Returns
-  *   new Miso.Dataview.
-  */
+   * A `DataView` is an immutable version of dataset. It is the result of
+   * selecting a subset of the data using the {@link Miso.Dataset#where} call.
+   * If the dataset is syncing, this view will be updated when changes take
+   * place in the original dataset. A {@link Miso.Dataset} also extends from
+   * `DataView`. All the methods available on a dataview will also be available
+   * on the dataset.
+   *
+   * @constructor
+   * @name DataView
+   * @memberof Miso.Dataset
+   *
+   * @param {Object} [options] - initialization parameters
+   * @param {Miso.Dataset} options.parent - parent dataset
+   * @param {Function} options.filter - filter specification TODO: document better
+   * @param {String|String[]} options.filter.columns - column name or multiple
+   *                                                   names
+   * @param {Number|Function} options.filter.rows - rowId or function
+   */
   Dataset.DataView = function(options) {
     if (typeof options !== "undefined") {
       options = options || (options = {});
@@ -153,7 +181,9 @@
     }
   };
 
-  _.extend(Dataset.DataView.prototype, {
+  _.extend(Dataset.DataView.prototype,
+    /** @lends Miso.Dataset.DataView.prototype */
+    {
 
     _initialize: function(options) {
       
@@ -259,13 +289,27 @@
     },
 
     /**
-    * Returns a dataset view based on the filtration parameters 
-    * Parameters:
-    *   filter - object with optional columns array and filter object/function 
-    *   options - Options.
-    * Returns:
-    *   new Miso.Dataset.DataView
-    */
+     * Used to create Dataviews, subsets of data based on a set of filters.
+     * Filtration can be applied to both rows & columns and for syncing
+     * datasets changes in the parent dataset from which the dataview was
+     * created will be reflected in the dataview.
+     *
+     * @param {Function|Object} [filter] - a function that takes in a row or an
+     *                                     options object that can contain the
+     *                                     following parameters.
+     * @param {String|String[]} [filter.columns] - A filter for columns. A
+     *                                             single or multiple column
+     *                                             names.
+     * @param {String|Function} [filter.filter] - A filter for rows. A rowId or
+     *                                            a filter function that takes
+     *                                            in a row and returns true if
+     *                                            it passes the criteria.
+     * @param {Object} [options]
+     *
+     * @externalExample {runnable} dataview/where
+     *
+     * @returns {Miso.Dataset.DataView}
+     */
     where : function(filter, options) {
       options = options || {};
       options.filter = options.filter || {};
@@ -313,11 +357,12 @@
     },
 
     /**
-    * Returns a normalized version of the column filter function
-    * that can be executed.
-    * Parameters:
-    *   columnFilter - function or column name
-    */
+     * @param {Function|String} columnFilter - function or column name
+     * @private
+     *
+     * @returns normalized version of the column filter function that can be
+     *          executed.
+     */
     _columnFilter: function(columnFilter) {
       var columnSelector;
 
@@ -342,9 +387,10 @@
     },
 
     /**
-    * Returns a normalized row filter function
-    * that can be executed 
-    */
+     * @private
+     *
+     * @returns {Function} normalized row filter function that can be executed
+     */
     _rowFilter: function(rowFilter) {
       
       var rowSelector;
@@ -374,12 +420,12 @@
     },
 
     /**
-    * Returns a dataset view of the given column name
-    * Parameters:
-    *   name - name of the column to be selected
-    * Returns:
-    *   Miso.Column.
-    */
+     * @param {String} name - name of the column to be selected
+     *
+     * @externalExample {runnable} dataview/column
+     *
+     * @returns {Miso.Dataset.Column} View of the given column name
+     */
     column : function(name) {
       return this._column(name);
     },
@@ -391,12 +437,12 @@
     },
 
     /**
-    * Returns a dataset view of the given columns 
-    * Parameters:
-    *   columnsArray - an array of column names
-    * Returns:
-    *   Miso.DataView.
-    */    
+     * @param {String[]} columnsArray - an array of column names
+     *
+     * @externalExample {runnable} dataview/columns
+     *
+     * @returns {Miso.Dataset.DataView} dataset view of the given columns
+     */
     columns : function(columnsArray) {
      return new Dataset.DataView({
         filter : { columns : columnsArray },
@@ -405,10 +451,10 @@
     },
 
     /**
-    * Returns the names of all columns, not including id column.
-    * Returns:
-    *   columnNames array
-    */
+     * @externalExample {runnable} dataview/column-names
+     *
+     * @returns {String[]} the names of all columns, not including id column
+     */
     columnNames : function() {
       var cols = _.pluck(this._columns, 'name');
       return _.reject(cols, function( colName ) {
@@ -416,24 +462,29 @@
       }, this);
     },
 
-    /** 
-    * Returns true if a column exists, false otherwise.
-    * Parameters:
-    *   name (string)
-    * Returns
-    *   true | false
-    */
+    /**
+     * Checks for the existance of a column and returns true/false
+     *
+     * @param {String} name - Name of column to check for
+     *
+     * @externalExample {runnable} dataview/has-column
+     *
+     * @returns {Boolean} true if a column exists, false otherwise.
+     */
     hasColumn : function(name) {
       return (!_.isUndefined(this._columnPositionByName[name]));
     },
 
     /**
-    * Iterates over all rows in the dataset
-    * Paramters:
-    *   iterator - function that is passed each row
-    *              iterator(rowObject, index, dataset)
-    *   context - options object. Optional.
-    */
+     * Iterates over all rows in the dataset. Each row is not a direct
+     * reference to the data and thus should not be altered in any way.
+     *
+     * @param {Miso.Dataset.DataView~rowIterator} iterator - function that is
+     *                                                       passed each row
+     * @param {Object} [context] - The context to be bound to the iterator.
+     *
+     * @externalExample {runnable} dataview/each
+     */
     each : function(iterator, context) {
       for(var i = 0; i < this.length; i++) {
         iterator.apply(context || this, [this.rowByPosition(i), i]);
@@ -441,12 +492,16 @@
     },
 
     /**
-    * Iterates over all rows in the dataset in reverse order
-    * Parameters:
-    *   iterator - function that is passed each row
-    *              iterator(rowObject, index, dataset)
-    *   context - options object. Optional.
-    */
+     * Iterates over all rows in the dataset in reverse order.  Each row is not
+     * a direct reference to the data and thus should not be altered in any
+     * way.
+     *
+     * @param {Miso.Dataset.DataView~rowIterator} iterator - function that is
+     *                                                        passed each row
+     * @param {Object} [context] - The context to be bound to the iterator.
+     *
+     * @externalExample {runnable} dataview/reverse-each
+     */
     reverseEach : function(iterator, context) {
       for(var i = this.length-1; i >= 0; i--) {
         iterator.apply(context || this, [this.rowByPosition(i), i]);
@@ -454,12 +509,16 @@
     },
 
     /**
-    * Iterates over each column.
-    * Parameters:
-    *   iterator - function that is passed:
-    *              iterator(colName, column, index)
-    *   context - options object. Optional.
-    */
+     * Iterates over each column. Direct column references, not arrays so
+     * modifying data may cause internal inconsistencies.
+     *
+     * @param {Miso.Dataset.DataView~columnIterator} iterator - function that
+     *                                                          is passed each
+     *                                                          column
+     * @param {Object} [context] - The context to be bound to the iterator.
+     *
+     * @externalExample {runnable} dataview/each-column
+     */
     eachColumn : function(iterator, context) {
       // skip id col
       var cols = this.columnNames();
@@ -469,23 +528,31 @@
     },
 
     /**
-    * Returns a single row based on its position (NOT ID.)
-    * Paramters:
-    *   i - position index
-    * Returns:
-    *   row object representation
-    */
+     * Fetches a row object at a specified position. Note that the returned row
+     * object is NOT a direct reference to the data and thus any changes to it
+     * will not alter the original data.
+     *
+     * @param {Number} i - position index
+     *
+     * @externalExample {runnable} dataview/row-by-position
+     *
+     * @returns {Object} a single row based on its position (NOT ID.)
+     */
     rowByPosition : function(i) {
       return this._row(i);
     },
 
-    /** 
-    * Returns a single row based on its id (NOT Position.)
-    * Parameters:
-    *   id - unique id
-    * Returns:
-    *   row object representation
-    */
+    /**
+     * Fetches a row object with a specific _id. Note that the returned row
+     * object is NOT a direct reference to the data and thus any changes to it
+     * will not alter the original data.
+     *
+     * @param {Number} id - unique id
+     *
+     * @externalExample {runnable} dataview/row-by-id
+     *
+     * @returns {Object} a single row based on its id (NOT Position.)
+     */
     rowById : function(id) {
       return this._row(this._rowPositionById[id]);
     },
@@ -617,10 +684,16 @@
     },
 
     /**
-    * Returns a dataset view of filtered rows
-    * @param {function|array} filter - a filter function or object, 
-    * the same as where
-    */    
+     * Shorthand for {@link Miso.Dataset.DataView#where|ds.where({ rows :
+     * rowFilter });} If run with no filter will return all rows.
+     *
+     * @param {Function|Object} filter - a filter function or object, the same
+     *                                   as {@link Miso.Dataset.DataView#where}
+     *
+     * @externalExample {runnable} dataview/rows
+     *
+     * @returns {Miso.Dataset.DataView} a dataset view of filtered rows
+     */
     rows : function(filter) {
       return new Dataset.DataView({
         filter : { rows : filter },
@@ -628,17 +701,29 @@
       });
     },
 
-    /**
-    * Sort rows based on comparator
-    *
-    * roughly taken from here: 
-    * http://jxlib.googlecode.com/svn-history/r977/trunk/src/Source/Data/heapsort.js
-    * License:
-    *   Copyright (c) 2009, Jon Bomgardner.
-    *   This file is licensed under an MIT style license
-    * Parameters:
-    *   options - Optional
-    */    
+  /**
+   * Sorts the dataset according to the comparator. A comparator can either be
+   * passed in as part of the options object or have been defined on the
+   * dataset already, for example as part of the initialization block.
+   *
+   * roughly taken from here:
+   * http://jxlib.googlecode.com/svn-history/r977/trunk/src/Source/Data/heapsort.js
+   * License:
+   *   Copyright (c) 2009, Jon Bomgardner.
+   *   This file is licensed under an MIT style license
+   *
+   * @param {Object|Function} [args] - Comparator Function OR Options object
+   * @param {Function} args.comparator - Function used to sort the dataset,
+   *                                     uses the same return structure as a
+   *                                     standard [JavaScript
+   *                                     sort](http://developer.mozilla.org/en/JavaScript/Reference/Global_Objects/Array/sort)
+   * @param {Boolean} args.silent - Default false, set true to supress the
+   *                                firing of a sort event.
+   *
+   * @externalExample {runnable} dataview/sort
+   *
+   * @returns {Miso.Dataset.DataView}
+   */
   sort : function(args) {
       var options = {}, cachedRows = [];
     
@@ -686,10 +771,10 @@
     },
    
     /**
-    * Exports a version of the dataset in json format.
-    * Returns:
-    *   Array of rows.
-    */
+     * Exports a version of the dataset in json format.
+     *
+     * @returns {Array} Array of rows.
+     */
     toJSON : function() {
       var rows = [];
       for(var i = 0; i < this.length; i++) {
@@ -699,4 +784,19 @@
     }
   });
 
+  /**
+   * This callback is used to step through each row in a DataView
+   * @callback Miso.Dataset.DataView~rowIterator
+   * @param {Object} row
+   * @param {Number} index
+   * @param {Miso.Dataset} dataset
+   */
+
+  /**
+   * This callback is used to step through each column in a DataView
+   * @callback Miso.Dataset.DataView~columnIterator
+   * @param {Object} column
+   * @param {Number} index
+   * @param {Miso.Dataset} dataset
+   */
 }(this, _));

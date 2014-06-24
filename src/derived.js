@@ -4,18 +4,22 @@
   var Dataset = Miso.Dataset;
 
   /**
-  * A Miso.Derived dataset is a regular dataset that has been derived
-  * through some computation from a parent dataset. It behaves just like 
-  * a regular dataset except it also maintains a reference to its parent
-  * and the method that computed it.
-  * Parameters:
-  *   options
-  *     parent - the parent dataset
-  *     method - the method by which this derived dataset was computed
-  * Returns
-  *   a derived dataset instance
-  */
-
+   * A Miso.Derived dataset is a regular dataset that has been derived through
+   * some computation from a parent dataset. It behaves just like a regular
+   * dataset except it also maintains a reference to its parent and the method
+   * that computed it.
+   *
+   * @constructor
+   * @augments Miso.Dataset
+   * @name Derived
+   * @memberof Miso.Dataset
+   *
+   * @param {Object} [options]
+   * @param {Object} options.parent - the parent dataset
+   * @param {Function} options.method - the method by which this derived
+   *                                    dataset was computed
+   * @returns a derived dataset instance
+   */
   Dataset.Derived = function(options) {
     options = options || {};
 
@@ -51,7 +55,9 @@
   Dataset.Derived.prototype = new Dataset();
 
   // inherit all of dataset's methods.
-  _.extend(Dataset.Derived.prototype, {
+  _.extend(Dataset.Derived.prototype,
+    /** @lends Miso.Dataset.Derived.prototype */
+    {
     _sync : function() {
       // recompute the function on an event.
       // TODO: would be nice to be more clever about this at some point.
@@ -62,18 +68,24 @@
 
 
   // add derived methods to dataview (and thus dataset & derived)
-  _.extend(Dataset.DataView.prototype, {
+  _.extend(Dataset.DataView.prototype,
+    /** @lends Miso.Dataset.DataView.prototype */
+    {
 
     /**
-    * moving average
-    * Parameters:
-    *   column - The column on which to calculate the average
-    *   size - The window size to utilize for the moving average
-    *   options
-    *     method - the method to apply to all values in a window. Mean by default.
-    * Returns:
-    *   a miso.derived dataset instance
-    */
+     * Returns a derived dataset in which the specified columns have a moving
+     * average computed over them of a specified size.
+     *
+     * @param {Dataset.Column} columns - The column on which to calculate the
+     *                                   average
+     * @param  {Number} size - The window size to utilize for the moving
+     *                         average (the number of rows to average per row.)
+     * @param {Object} [options]
+     * @param {Function} options.method - the method to apply to all values in
+     *                                    a window. Mean by default.
+     *
+     * @returns {Miso.Dataset.Derived}
+     */
     movingAverage : function(columns, size, options) {
       
       options = options || {};
@@ -144,9 +156,17 @@
     },
 
     /**
-    * Group rows by the column passed and return a column with the
-    * counts of the instance of each value in the column passed.
-    */
+     * Returns a new derived dataset that contains the original byColumn and a
+     * count column that returns the number of occurances each unique value in
+     * the byColumn contained.
+     *
+     * @param {String} byColumn - The column to count instances again.
+     * @param {Object} [options]
+     *
+     * @externalExample {runnable} dataview/count-by
+     *
+     * @returns {Miso.Dataset.Derived}
+     */
     countBy : function(byColumn, options) {
 
       options = options || {};
@@ -200,18 +220,26 @@
     },
 
     /**
-    * group rows by values in a given column
-    * Parameters:
-    *   byColumn - The column by which rows will be grouped (string)
-    *   columns - The columns to be included (string array of column names)
-    *   options 
-    *     method - function to be applied, default is sum
-    *     preprocess - specify a normalization function for the
-    *                  byColumn values if you need to group by some kind of 
-    *                  derivation of those values that are not just equality based.
-    * Returns:
-    *   a miso.derived dataset instance
-    */
+     * Group rows by values in a given column
+     *
+     * @param {String} byColumn - The column by which rows will be grouped
+     * @param {String[]} columns - The columns to be included
+     * @param {Object} [options]
+     * @param {Function} options.method - Function that specifies the way in
+     *                                    which the columns are aggregated. The
+     *                                    default is sum. The function
+     *                                    signature is `function(arr)`. It
+     *                                    should return a single result.
+     * @param {Function} options.preprocess - specify a normalization function
+     *                                        for the byColumn values if you
+     *                                        need to group by some kind of
+     *                                        derivation of those values that
+     *                                        are not just equality based.
+     *
+     * @externalExample {runnable} dataview/group-by
+     *
+     * @returns {Miso.Dataset.Derived}
+     */
     groupBy : function(byColumn, columns, options) {
       
       options = options || {};

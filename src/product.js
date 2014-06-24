@@ -4,17 +4,23 @@
   var Dataset = global.Miso.Dataset;
 
   /**
-  * A Miso.Product is a single computed value that can be obtained 
-  * from a Miso.Dataset. When a dataset is syncable, it will be an object
-  * that one can subscribe to the changes of. Otherwise, it returns
-  * the actual computed value.
-  * Parameters:
-  *   func - the function that derives the computation.
-  *   columns - the columns from which the function derives the computation
-  */
+   * A Miso.Product is a single computed value that can be obtained from a
+   * Miso.Dataset. When a dataset is syncable, it will be an object that one
+   * can subscribe to the changes of. Otherwise, it returns the actual computed
+   * value.
+   *
+   * @constructor
+   * @name Product
+   * @memberof Miso.Dataset
+   *
+   * @param {Object} [options]
+   * @param {Function} options.func - the function that derives the computation
+   * @param {mixed} options.columns - the columns from which the function
+   *                                  derives the computation
+   */
   Dataset.Product = function(options) {
     options = options || {};
-    
+
     // save column name. This will be necessary later
     // when we decide whether we need to update the column
     // when sync is called.
@@ -26,7 +32,7 @@
       if (_.isArray(options.columns)) {
         column = options.columns[0];
       }
-      
+
       this.valuetype = column.type;
       this.numeric = function() {
         return column.toNumeric(this.value);
@@ -37,26 +43,27 @@
     return this;
   };
 
-  _.extend(Dataset.Product.prototype, Miso.Events, {
+  _.extend(Dataset.Product.prototype, Miso.Events,
+    /** @lends Miso.Dataset.Product.prototype */
+    {
 
     /**
-    * return the raw value of the product
-    * Returns:
-    *   The value of the product. Most likely a number.
-    */
+     * @externalExample {runnable} product/val
+     *
+     * @returns {mixed} the raw value of the product, most likely a number
+     */
     val : function() {
       return this.value;
     },
 
     /**
-    * return the type of product this is (numeric, time etc.)
-    * Returns
-    *   type. Matches the name of one of the Miso.types.
-    */
+     * @returns the type of product this is (numeric, time etc.) Matches the
+     *          name of one of the Miso.types.
+     */
     type : function() {
       return this.valuetype;
     },
-    
+
     //This is a callback method that is responsible for recomputing
     //the value based on the column its closed on.
     _sync : function(event) {
@@ -72,6 +79,19 @@
     }
   });
 
+  /**
+   * Use this method to define a new product.
+   *
+   * @memberof Miso.Dataset.Product
+   *
+   * @param {Function} func - The function which will be wrapped to create a
+   *                          product. Function signature is function(columns,
+   *                          options)
+   *
+   * @externalExample {runnable} product/define
+   *
+   * @returns {Function}
+   */
   Dataset.Product.define = function(func) {
     return function(columns, options) {
       options = options || {};
@@ -102,8 +122,8 @@
             }
           }
         });
-        this.subscribe("change", prod._sync, { context : prod }); 
-        return prod; 
+        this.subscribe("change", prod._sync, { context : prod });
+        return prod;
 
       } else {
         return producer.call(_self);
@@ -113,7 +133,9 @@
   };
 
 
-  _.extend(Dataset.DataView.prototype, {
+  _.extend(Dataset.DataView.prototype,
+    /** @lends Miso.Dataset.DataView.prototype */
+    {
 
     // finds the column objects that match the single/multiple
     // input columns. Helper method.
@@ -138,13 +160,22 @@
     },
 
     /**
-    * Computes the sum of one or more columns.
-    * Parameters:
-    *   columns - string or array of column names on which the value is calculated 
-    *   options
-    *     silent - set to tue to prevent event propagation
-    */
-    sum : Dataset.Product.define( function(columns, options) {
+     * If the dataset has `sync` enabled this will return a
+     * `Miso.Dataset.Product` that can be used to bind events to and access the
+     * current value.  Otherwise it will return the current value - the sum of
+     * the numeric form of the values in the column.
+     *
+     * @method
+     *
+     *
+     * @param {String|String[]} columns - column name(s) on which the value is
+     *                                    calculated
+     *
+     * @externalExample {runnable} dataview/sum
+     *
+     * @returns {Miso.Dataset.Product|Number}
+     */
+    sum : Dataset.Product.define( function(columns) {
       _.each(columns, function(col) {
         if (col.type === Dataset.types.time.name) {
           throw new Error("Can't sum up time");
@@ -153,37 +184,64 @@
       return _.sum(_.map(columns, function(c) { return c._sum(); }));
     }),
 
-     /**
-    * return a Product with the value of the maximum 
-    * value of the column
-    * Parameters:
-    *   column - string or array of column names on which the value is calculated 
-    */    
-    max : Dataset.Product.define( function(columns, options) {
-      return _.max(_.map(columns, function(c) { 
-        return c._max(); 
+    /**
+     * If the dataset has `sync` enabled this will return a
+     * `Miso.Dataset.Product` that can be used to bind events to and access the
+     * current value.  Otherwise it will return the current value - the highest
+     * numeric value in that column.
+     *
+     * @method
+     *
+     * @param {String|String[]} columns - column name(s) on which the value is
+     *                                   calculated
+     *
+     * @externalExample {runnable} dataview/max
+     *
+     * @returns {Miso.Dataset.Product|Number}
+     */
+    max : Dataset.Product.define( function(columns) {
+      return _.max(_.map(columns, function(c) {
+        return c._max();
       }));
     }),
 
-  
+
     /**
-    * return a Product with the value of the minimum 
-    * value of the column
-    * Paramaters:
-    *   columns - string or array of column names on which the value is calculated 
-    */    
-    min : Dataset.Product.define( function(columns, options) {
-      return _.min(_.map(columns, function(c) { 
-        return c._min(); 
+     * If the dataset has `sync` enabled this will return a
+     * `Miso.Dataset.Product` that can be used to bind events to and access the
+     * current value.  Otherwise it will return the current value - the lowest
+     * numeric value in that column.
+     *
+     * @method
+     *
+     * @param {String[]} columns - array of column names on which the value is
+     *                             calculated
+     *
+     * @externalExample {runnable} dataview/min
+     *
+     * @returns {Miso.Dataset.Product|Number}
+     */
+    min : Dataset.Product.define( function(columns) {
+      return _.min(_.map(columns, function(c) {
+        return c._min();
       }));
     }),
 
     /**
-    * return a Product with the value of the average
-    * value of the column
-    * Parameters:
-    *   column - string or array of column names on which the value is calculated 
-    */    
+     * If the dataset has `sync` enabled this will return a
+     * `Miso.Dataset.Product` that can be used to bind events to and access the
+     * current value.  Otherwise it will return the current value - the mean or
+     * average of the numeric form of the values in the column.
+     *
+     * @method
+     *
+     * @param {String[]} columns - array of column names on which the value is
+     *                             calculated
+     *
+     * @externalExample {runnable} dataview/mean
+     *
+     * @returns {Miso.Dataset.Product|Number}
+     */
     mean : Dataset.Product.define( function(columns, options) {
       var vals = [];
       _.each(columns, function(col) {
@@ -197,7 +255,7 @@
 
       // convert the values to their appropriate numeric value
       vals = _.map(vals, function(v) { return Dataset.types[type].numeric(v); });
-      return _.mean(vals);   
+      return _.mean(vals);
     })
 
   });
